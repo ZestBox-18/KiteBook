@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/zestbox/.ohos/config/default_KiteBook_Ikn9zM3I5f0jciJZOwsynahMJtE69lqeJpsvZlUN2To=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B11242B9952352B76987B178FCCCE5346D7D71669249F6A3B829747273D737C002B03E2CE675097",
+          "profile": "/Users/zestbox/.ohos/config/default_KiteBook_Ikn9zM3I5f0jciJZOwsynahMJtE69lqeJpsvZlUN2To=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/zestbox/.ohos/config/default_KiteBook_Ikn9zM3I5f0jciJZOwsynahMJtE69lqeJpsvZlUN2To=.p12",
+          "storePassword": "0000001BBB5BC1C8997A99ED569FF9E815B7F3220AFF9BB1D08711C59CD4FE5C8F8B2B315A38C39A21EB73"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.1.0(23)",
+        "compatibleSdkVersion": "6.1.0(23)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
