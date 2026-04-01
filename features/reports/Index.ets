@@ -1,0 +1,1 @@
+export { Index as Reports } from './src/main/ets/pages/Index';

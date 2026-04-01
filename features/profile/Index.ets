@@ -1,0 +1,1 @@
+export { Index as Profile } from './src/main/ets/pages/Index';

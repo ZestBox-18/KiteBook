@@ -42,7 +42,75 @@
   "modules": [
     {
       "name": "entry",
-      "srcPath": "./entry",
+      "srcPath": "./products/entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "base",
+      "srcPath": "./commons/base"
+    },
+    {
+      "name": "kite_utils",
+      "srcPath": "./commons/kite_utils"
+    },
+    {
+      "name": "home",
+      "srcPath": "./features/home",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "billing",
+      "srcPath": "./features/billing",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "reports",
+      "srcPath": "./features/reports",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "profile",
+      "srcPath": "./features/profile",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "record",
+      "srcPath": "./features/record",
       "targets": [
         {
           "name": "default",

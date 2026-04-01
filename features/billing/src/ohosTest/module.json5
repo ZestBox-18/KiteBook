@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "billing_test",
+    "type": "feature",
+    "deviceTypes": [
+      "phone"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false
+  }
+}

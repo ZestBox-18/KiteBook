@@ -1,0 +1,25 @@
+{
+  "name": "kite_utils",
+  "version": "1.0.12",
+  "description": "HarmonyOS工具库，封装了网络请求、日志输出等。",
+  "main": "Index.ets",
+  "author": "ZestBox.",
+  "homepage": "https://gitee.com/zestbox",
+  "repository": "",
+  "license": "MIT",
+  "dependencies": {},
+  "keywords": [
+    "网络请求",
+    "关系型数据库工具",
+    "日志打印",
+    "日志导出",
+    "断点工具"
+  ],
+  "tags": [
+    "网络请求",
+    "关系型数据库工具",
+    "日志打印",
+    "日志导出",
+    "断点工具"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "home": "file:../../features/home",
+    "billing": "file:../../features/billing",
+    "reports": "file:../../features/reports",
+    "profile": "file:../../features/profile",
+    "base" : "file:../../commons/base",
+    "kite_utils" : "file:../../commons/kite_utils",
+  }
+}
+

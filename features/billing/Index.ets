@@ -1,0 +1,1 @@
+export { Index as Billing  } from './src/main/ets/pages/Index';
