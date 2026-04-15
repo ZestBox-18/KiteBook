@@ -104,6 +104,12 @@ export struct HdsMiniBarButton {
    */
   @Param barOverlap: boolean = true;
 
+  /**
+   * 光效颜色。
+   * @default #33E5E5E5
+   */
+  @Param lightColor: ResourceColor = '#33E5E5E5';
+
   // ==================== 事件回调 ====================
 
   /**
@@ -172,7 +178,8 @@ export struct HdsMiniBarButton {
         systemMaterialEffect: {
           materialType: this.materialType,
           materialLevel: this.materialLevel
-        }
+        },
+        lightColor:this.lightColor
       })
       .onTabBarClick(() => {
         if (this.onButtonClick) {

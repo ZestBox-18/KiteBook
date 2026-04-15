@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "/Users/zestbox/.ohos/config/default_KiteBook_Ikn9zM3I5f0jciJZOwsynahMJtE69lqeJpsvZlUN2To=.cer",
+          "certpath": "/Users/zestbox/.ohos/config/default_KiteBook_5X0KSpLAagfGRbI7IHWv6YM75I-I4qbXpD2iptrM0sQ=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B11242B9952352B76987B178FCCCE5346D7D71669249F6A3B829747273D737C002B03E2CE675097",
-          "profile": "/Users/zestbox/.ohos/config/default_KiteBook_Ikn9zM3I5f0jciJZOwsynahMJtE69lqeJpsvZlUN2To=.p7b",
+          "keyPassword": "0000001A8CFD7A2E4967043224056CD1D8C2191F0A9F660D8ABB0664FE979D93C7A25B8FE3B6A00E6751",
+          "profile": "/Users/zestbox/.ohos/config/default_KiteBook_5X0KSpLAagfGRbI7IHWv6YM75I-I4qbXpD2iptrM0sQ=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "/Users/zestbox/.ohos/config/default_KiteBook_Ikn9zM3I5f0jciJZOwsynahMJtE69lqeJpsvZlUN2To=.p12",
-          "storePassword": "0000001BBB5BC1C8997A99ED569FF9E815B7F3220AFF9BB1D08711C59CD4FE5C8F8B2B315A38C39A21EB73"
+          "storeFile": "/Users/zestbox/.ohos/config/default_KiteBook_5X0KSpLAagfGRbI7IHWv6YM75I-I4qbXpD2iptrM0sQ=.p12",
+          "storePassword": "0000001A734D2D56A836D42AA74C5DF3337896BB40C16FDF4E22F1DA077CFD41E47327D3B143FF92E7D1"
         }
       }
     ],

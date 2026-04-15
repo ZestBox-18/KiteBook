@@ -5,15 +5,15 @@
  * @version 1.0
  * @description:
  */
-import { hdsMaterial } from '@hms.hds.hdsMaterial'
+import { hdsMaterial } from '@hms.hds.hdsMaterial';
 import { HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
 import { RouterUrlConstants } from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
-import { Clog, WindowUtil } from 'kite_utils';
+import { WindowUtil } from 'kite_utils';
 import { Profile } from 'profile';
 import { Reports } from 'reports';
-import { AppStorageV2 } from '@kit.ArkUI';
+import { AppStorageV2, CustomColors, ThemeControl } from '@kit.ArkUI';
 
 const TAG: string = '[Index]';
 
@@ -24,6 +24,28 @@ struct Index {
   // 初始化HdsTabs控制器。
   private controller: HdsTabsController = new HdsTabsController();
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
+
+  aboutToAppear(): void {
+
+    setTimeout(() => {
+      class DefaultAppColors implements CustomColors {
+        brand: string = '#a980ff00'; // 高亮图标
+      }
+
+      class DefaultAppColors1 implements CustomColors {
+        brand: string = '#e8d20565'; // 高亮图标
+      }
+
+      class DefaultAppTheme implements CustomTheme {
+        public colors: DefaultAppColors = new DefaultAppColors()
+        public darkColors: DefaultAppColors1 = new DefaultAppColors1()
+      }
+
+      let defaultAppTheme: CustomTheme = new DefaultAppTheme();
+      ThemeControl.setDefaultTheme(defaultAppTheme)
+      console.log('123')
+    }, 5000)
+  }
 
   build() {
     Column() {
@@ -56,16 +78,13 @@ struct Index {
       .barFloatingStyle({
         barWidth: { smallWidth: 200, mediumWidth: 300, largeWidth: 400 },
         barBottomMargin: 28,
-        gradientMask: { maskColor: '#66F1F3F5', maskHeight: 92 },
         systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
         },
         thermoCtrl: true,
+        lightColor: Color.Red
       })
     }
-    .padding({
-      top: this.winUtil.topSafeHeight
-    })
   }
 }

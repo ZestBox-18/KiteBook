@@ -5,20 +5,19 @@
  * @version 1.0
  * @description: 
  */
-import { common } from '@kit.AbilityKit';
 
 
 const TAG: string = '[GlobalContext]';
 
 
 export class GlobalContext {
-  private static context: common.UIAbilityContext;
+  private static context: UIContext;
 
-  public static initContext(context: common.UIAbilityContext): void {
+  public static initContext(context: UIContext): void {
     GlobalContext.context = context;
   }
 
-  public static getContext(): common.UIAbilityContext {
+  public static getContext(): UIContext {
     return GlobalContext.context;
   }
 }

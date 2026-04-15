@@ -1,9 +1,9 @@
-import { UIContext, window } from '@kit.ArkUI';
+import { display, UIContext, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AbilityConstant, common, StartOptions, Want } from '@kit.AbilityKit';
 import { resourceManager } from '@kit.LocalizationKit';
-import { AppStorageV2 } from '@kit.ArkUI';
+import { sensor } from '@kit.SensorServiceKit';
 
 // 定义窗口沉浸模式枚举类型
 export enum ImmersiveType {
@@ -15,32 +15,6 @@ export enum ImmersiveType {
   FULLSCREEN_IMMERSIVE
 }
 
-// 窗口信息管理类，用于存储当前窗口的各种属性与状态
-@ObservedV2
-export class WindowInfo {
-  // 当前窗口的状态类型（如最小化、最大化、全屏等）
-  public windowStatusType: window.WindowStatusType = window.WindowStatusType.UNDEFINED;
-  // 当前设置的沉浸模式类型
-  public isImmersive: ImmersiveType = ImmersiveType.NORMAL;
-  // 当前窗口的方向设置
-  public orientation: window.Orientation = window.Orientation.UNSPECIFIED;
-  // 当前窗口的实际尺寸
-  public windowSize: window.Size = { width: 0, height: 0 };
-  // 当前窗口宽度对应的断点等级
-  @Trace widthBp: WidthBreakpoint = WidthBreakpoint.WIDTH_XS;
-  // 当前窗口高度对应的断点等级
-  @Trace heightBp: HeightBreakpoint = HeightBreakpoint.HEIGHT_SM;
-  // 需要避开的系统区域范围
-  public AvoidSystem?: window.AvoidArea;
-  // 导航指示器需要避开的区域
-  public AvoidNavigationIndicator?: window.AvoidArea;
-  // 刘海屏区域需要避开的部分
-  public AvoidCutout?: window.AvoidArea;
-  // 系统手势操作所需避开的区域
-  public AvoidSystemGesture?: window.AvoidArea;
-  // 软键盘弹出时需避开的区域
-  public AvoidKeyboard?: window.AvoidArea;
-}
 
 // 窗口工具类，提供对ArkUI窗口对象的一系列封装操作
 @ObservedV2
@@ -138,6 +112,14 @@ export class WindowUtil {
     } catch (error) {
       let err = error as BusinessError;
       hilog.error(0x0000, 'TestLog', `Failed to set immersive type. Code: ${err.code}, message: ${err.message}`);
+    }
+  }
+ setUIContext() {
+    try {
+      this.uiContext = this.mainWindow.getUIContext();
+    } catch (error) {
+      let err = error as BusinessError;
+      hilog.error(0x0000, 'TestLog', `Failed to set UI context. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -283,11 +265,32 @@ export class WindowUtil {
     });
   }
 
+  // 通过资源管理器查询显示方向
+  queryOrientationByDisplay(): void {
+    try {
+      let displayClass: display.Display | null = display.getDefaultDisplaySync();
+    } catch (error) {
+      let err = error as BusinessError;
+      hilog.error(0x0000, 'testLog', `Failed to query display orientation. Code: ${err.code}, message: ${err.message}`);
+    }
+  }
+
   // 通过资源管理器查询方向信息
   queryOrientationByResourceManager(): void {
     let info: resourceManager.Direction | undefined =
       this.uiContext?.getHostContext()?.resourceManager.getConfigurationSync().direction;
     hilog.info(0x0000, 'testLog', `The Orientation is ${info}`);
+  }
+
+  queryDegree(): void {
+    try {
+      sensor.on(sensor.SensorId.GRAVITY, (data: sensor.GravityResponse) => {
+        let degree: number = this.getCalDegree(data.x, data.y, data.z);
+      })
+    } catch (error) {
+      let err = error as BusinessError;
+      hilog.error(0x0000, 'TestLog', `Failed to query degree. Code: ${err.code}, message: ${err.message}`);
+    }
   }
 
   // 计算设备倾斜角度
@@ -316,3 +319,29 @@ export class WindowUtil {
 }
 
 
+// 窗口信息管理类，用于存储当前窗口的各种属性与状态
+@ObservedV2
+export class WindowInfo {
+  // 当前窗口的状态类型（如最小化、最大化、全屏等）
+  public windowStatusType: window.WindowStatusType = window.WindowStatusType.UNDEFINED;
+  // 当前设置的沉浸模式类型
+  public isImmersive: ImmersiveType = ImmersiveType.NORMAL;
+  // 当前窗口的方向设置
+  public orientation: window.Orientation = window.Orientation.UNSPECIFIED;
+  // 当前窗口的实际尺寸
+  public windowSize: window.Size = { width: 0, height: 0 };
+  // 当前窗口宽度对应的断点等级
+  @Trace widthBp: WidthBreakpoint = WidthBreakpoint.WIDTH_XS;
+  // 当前窗口高度对应的断点等级
+  @Trace heightBp: HeightBreakpoint = HeightBreakpoint.HEIGHT_SM;
+  // 需要避开的顶部系统区域范围
+  public AvoidSystem?: window.AvoidArea;
+  // 地步导航指示器需要避开的区域
+  public AvoidNavigationIndicator?: window.AvoidArea;
+  // 挖孔屏区域需要避开的部分
+  public AvoidCutout?: window.AvoidArea;
+  // 系统手势操作所需避开的区域
+  public AvoidSystemGesture?: window.AvoidArea;
+  // 软键盘弹出时需避开的区域
+  public AvoidKeyboard?: window.AvoidArea;
+}

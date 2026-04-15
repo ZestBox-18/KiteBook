@@ -22,8 +22,6 @@ export struct Ordinary {
     .onReady((context: NavDestinationContext) => {
       this.pageInfos = context.pathStack;
     })
-    .hideTitleBar(true)
-    .hideBackButton(true)
   }
 }
 
