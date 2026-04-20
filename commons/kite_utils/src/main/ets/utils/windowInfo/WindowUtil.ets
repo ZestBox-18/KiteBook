@@ -50,7 +50,26 @@ export class WindowUtil {
       } else if (avoidOptions.type === window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR) {
         this.mainWindowInfo.AvoidNavigationIndicator = avoidOptions.area;
       }
+      // 安全区变化后，自动更新预计算值
+      this.updateSafeAreaValues();
     };
+
+  // 更新预计算的安全区值（单位：vp）
+  private updateSafeAreaValues(): void {
+    if (!this.uiContext) return;
+
+    // 顶部安全区（状态栏）
+    this.mainWindowInfo.safeAreaTop = this.uiContext.px2vp(this.mainWindowInfo.AvoidSystem?.topRect.height ?? 0);
+    // 底部安全区
+    this.mainWindowInfo.safeAreaBottom = this.uiContext.px2vp(this.mainWindowInfo.AvoidSystem?.bottomRect.height ?? 0);
+    // 左右安全区
+    this.mainWindowInfo.safeAreaLeft = this.uiContext.px2vp(this.mainWindowInfo.AvoidSystem?.leftRect.width ?? 0);
+    this.mainWindowInfo.safeAreaRight = this.uiContext.px2vp(this.mainWindowInfo.AvoidSystem?.rightRect.width ?? 0);
+    // 导航指示器高度
+    this.mainWindowInfo.navIndicatorHeight = this.uiContext.px2vp(this.mainWindowInfo.AvoidNavigationIndicator?.bottomRect.height ?? 0);
+    // 键盘高度
+    this.mainWindowInfo.keyboardHeight = this.uiContext.px2vp(this.mainWindowInfo.AvoidKeyboard?.bottomRect.height ?? 0);
+  }
 
   // 构造函数，初始化主窗口实例
   constructor(mainWindow: window.Window) {
@@ -114,7 +133,8 @@ export class WindowUtil {
       hilog.error(0x0000, 'TestLog', `Failed to set immersive type. Code: ${err.code}, message: ${err.message}`);
     }
   }
- setUIContext() {
+
+  setUIContext() {
     try {
       this.uiContext = this.mainWindow.getUIContext();
     } catch (error) {
@@ -199,6 +219,8 @@ export class WindowUtil {
       this.mainWindowInfo.AvoidSystemGesture =
         this.mainWindow.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM_GESTURE);
       this.mainWindowInfo.AvoidKeyboard = this.mainWindow.getWindowAvoidArea(window.AvoidAreaType.TYPE_KEYBOARD);
+      // 初次获取后，更新预计算的安全区值
+      this.updateSafeAreaValues();
       this.mainWindow.on('avoidAreaChange', this.onAvoidAreaChange);
     } catch (error) {
       let err = error as BusinessError;
@@ -304,18 +326,7 @@ export class WindowUtil {
     degree = 90 - (Number)(Math.round(Math.atan2(y, -x) / Math.PI * 180));
     return degree >= 0 ? degree % 360 : degree % 360 + 360;
   }
-  @Computed
-  get topSafeHeight(): number {
-    const pxHeight = this.mainWindowInfo.AvoidSystem?.topRect.height || 0;
-    return this.uiContext.px2vp(pxHeight);
-  }
 
-  // 底部安全区 (vp) - 自动监听 AvoidNavigationIndicator 的变化并换算
-  @Computed
-  get bottomSafeHeight(): number {
-    const pxHeight = this.mainWindowInfo.AvoidNavigationIndicator?.bottomRect.height || 0;
-    return this.uiContext.px2vp(pxHeight);
-  }
 }
 
 
@@ -344,4 +355,12 @@ export class WindowInfo {
   public AvoidSystemGesture?: window.AvoidArea;
   // 软键盘弹出时需避开的区域
   public AvoidKeyboard?: window.AvoidArea;
+
+  // 预计算的便捷属性（单位：vp），无需每次调用 px2vp
+  public safeAreaTop: number = 0;           // 顶部安全区高度（状态栏）
+  public safeAreaBottom: number = 0;        // 底部安全区高度
+  public safeAreaLeft: number = 0;          // 左侧安全区宽度
+  public safeAreaRight: number = 0;         // 右侧安全区宽度
+  public navIndicatorHeight: number = 0;    // 导航指示器高度
+  public keyboardHeight: number = 0;        // 键盘高度
 }
