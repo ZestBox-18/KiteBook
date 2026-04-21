@@ -4,7 +4,7 @@ export class AppColors implements CustomColors {
   // 品牌色
   brand: string // 按钮色
   // // 文本颜色
-  _fontPrimary: string // 一级文本 // 部分文本颜色
+  fontPrimary: string // 一级文本 // 部分文本颜色
   // 图标颜色
   iconPrimary: string // 一级图标 // 所有图标颜色
   iconEmphasize: string // 高亮图标 // 悦览主页设置点击后的颜色
@@ -16,7 +16,7 @@ export class AppColors implements CustomColors {
   constructor(brand: string, fontPrimary: string, iconPrimary: string, iconEmphasize: string, backgroundPrimary: string,
     compBackgroundNeutral: string) {
     this.brand = brand
-    this._fontPrimary = fontPrimary
+    this.fontPrimary = fontPrimary
     this.iconPrimary = iconPrimary
     this.iconEmphasize = iconEmphasize
     this.backgroundPrimary = backgroundPrimary

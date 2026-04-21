@@ -6,7 +6,7 @@ export struct Index {
   @Local bloomValue: number = 0;
   @Local index: number = 0;
   @Local illuminatedType: hdsEffect.PointLightIlluminatedType = hdsEffect.PointLightIlluminatedType.NONE;
-  @Local button_gradient_state: hdsEffect.PressShadowType = hdsEffect.PressShadowType.NONE;
+  @Local buttonGradientState: hdsEffect.PressShadowType = hdsEffect.PressShadowType.NONE;
   @Local lightIntensity: number = 1;
   @Local types: hdsEffect.PointLightIlluminatedType[] =
     [hdsEffect.PointLightIlluminatedType.NONE, hdsEffect.PointLightIlluminatedType.BORDER,
@@ -60,7 +60,7 @@ export struct Index {
           .backgroundColor(0x808080)
           .fontColor(0xADD8E6)
           .visualEffect(new hdsEffect.HdsEffectBuilder()
-            .pressShadow(this.button_gradient_state)
+            .pressShadow(this.buttonGradientState)
             .pointLight({
               options: {
                 color: Color.White,
@@ -71,13 +71,13 @@ export struct Index {
               sourceType: hdsEffect.PointLightSourceType.BRIGHT,
               illuminatedType: hdsEffect.PointLightIlluminatedType.DEFAULT_FEATHERING_BORDER
             })
-            .pressShadow(this.button_gradient_state)
+            .pressShadow(this.buttonGradientState)
             .buildEffect())
           .onClick(() => {
             if (this.index <= 3) {
               this.index++;
               this.illuminatedType = this.types[this.index];
-              this.button_gradient_state = hdsEffect.PressShadowType.BLEND_GRADIENT;
+              this.buttonGradientState = hdsEffect.PressShadowType.BLEND_GRADIENT;
             }
             let message = 'NONE';
             if (this.illuminatedType == 1) {

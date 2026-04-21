@@ -7,3 +7,5 @@
  */
 
 const TAG: string = '[index]';
+
+export * from "./SystemOptions"

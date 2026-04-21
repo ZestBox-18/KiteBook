@@ -1,9 +1,9 @@
 import { hdsMaterial, HdsNavigation, ScrollEffectType } from '@kit.UIDesignKit';
-import { CommonConstants, HdsMiniBarButton, RouterUrlConstants } from 'base';
+import { CommonConstants, RouterUrlConstants, SystemOptions } from 'base';
 import { Assets, Ordinary } from 'record';
-import { test } from './view/test';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { WindowUtil } from 'kite_utils';
+import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
 @Entry
 @ComponentV2
@@ -12,6 +12,9 @@ export struct Index {
   @Local pageInfos: NavPathStack = new NavPathStack();
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
   private scrollerForScroll: Scroller = new Scroller();
+  // 用户设置项
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
 
   /**
    * 页面路由表
@@ -26,9 +29,6 @@ export struct Index {
     if (name === RouterUrlConstants.ASSETS) {
       Assets()
     }
-    if (name === 'test') {
-      test()
-    }
   }
 
   aboutToAppear() {
@@ -38,116 +38,14 @@ export struct Index {
     HdsNavigation(this.pageInfos) {
       Scroll(this.scrollerForScroll) {
         Column() {
-          Blank().height(this.winUtil.topSafeHeight + CommonConstants.TITLE_BAR_HEIGHT_FREE)
+          Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
           Button('123')
           Button('3333')
             .fontColor($r('sys.color.font_on_primary'))
 
-          Row() {
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去新增记账记录
-                this.pageInfos.pushPath({ name: RouterUrlConstants.ORDINARY })
-              },
-              lightColor: $r('app.color.brand')
-            })
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去到测试页面
-                this.pageInfos.pushPath({ name: 'test' })
-              }
-            })
-          }
-
-          Row() {
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去新增记账记录
-                this.pageInfos.pushPath({ name: RouterUrlConstants.ORDINARY })
-              }
-            })
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去到测试页面
-                this.pageInfos.pushPath({ name: 'test' })
-              }
-            })
-          }
-
-          Row() {
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去新增记账记录
-                this.pageInfos.pushPath({ name: RouterUrlConstants.ORDINARY })
-              }
-            })
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去到测试页面
-                this.pageInfos.pushPath({ name: 'test' })
-              }
-            })
-          }
-
-          Row() {
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去新增记账记录
-                this.pageInfos.pushPath({ name: RouterUrlConstants.ORDINARY })
-              }
-            })
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去到测试页面
-                this.pageInfos.pushPath({ name: 'test' })
-              }
-            })
-          }
-
-          Row() {
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去新增记账记录
-                this.pageInfos.pushPath({ name: RouterUrlConstants.ORDINARY })
-              }
-            })
-            HdsMiniBarButton({
-              iconResource: $r('sys.symbol.plus_circle'),
-              iconColor: [Color.Blue],
-              iconSize: 24,
-              onButtonClick: () => {
-                // 点击去到测试页面
-                this.pageInfos.pushPath({ name: 'test' })
-              }
-            })
-          }
-        }.height('200%').width('100%')
+        }
+        .height('200%')
+        .width('100%')
       }
     }
     .width(CommonConstants.FULL_WIN)
