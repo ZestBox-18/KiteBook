@@ -141,18 +141,18 @@ export struct UserEditSheet {
       this.onLoginSuccess();
 
       // 用户名动画：左右滑动
-      animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+      this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
         this.oldTextOpacity = 0;
         this.oldTextTranslateX = -30;
       });
 
-      animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+      this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
         this.newTextOpacity = 1;
         this.newTextTranslateX = 0;
       });
 
       // 华为登录按钮：缩小消失（增加时长，让动画更明显）
-      animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 400 }, () => {
+      this.context?.animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 400 }, () => {
         this.loginBtnOpacity = 0;
         this.loginBtnScale = 0;
       });
@@ -160,13 +160,13 @@ export struct UserEditSheet {
       // 更新按钮：等华为按钮消失后再放大出现（弹性曲线）
       setTimeout(() => {
         // 先放大超过目标
-        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
+        this.context?.animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
           this.updateBtnOpacity = 1;
           this.updateBtnScale = 1.15;
         });
         // 然后弹回目标大小
         setTimeout(() => {
-          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
+          this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
             this.updateBtnScale = 1;
           });
         }, 300);
@@ -175,13 +175,13 @@ export struct UserEditSheet {
       // 退出按钮：等更新按钮出现后再放大出现（弹性曲线）
       setTimeout(() => {
         // 先放大超过目标
-        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
+        this.context?.animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
           this.logoutBtnOpacity = 1;
           this.logoutBtnScale = 1.15;
         });
         // 然后弹回目标大小
         setTimeout(() => {
-          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
+          this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
             this.logoutBtnScale = 1;
           });
         }, 300);
@@ -189,14 +189,14 @@ export struct UserEditSheet {
 
       // 光圈扩散
       setTimeout(() => {
-        animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 500 }, () => {
+        this.context?.animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 500 }, () => {
           this.ringOpacity = 0.6;
           this.ringScale = 1.2;
         });
       }, 100);
       
       setTimeout(() => {
-        animateTo({ curve: Curve.EaseOut, duration: 400 }, () => {
+        this.context?.animateTo({ curve: Curve.EaseOut, duration: 400 }, () => {
           this.ringOpacity = 0;
           this.ringScale = 1.5;
         });

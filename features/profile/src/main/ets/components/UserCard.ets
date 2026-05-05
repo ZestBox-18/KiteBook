@@ -16,6 +16,8 @@ export struct UserCard {
   // 点击回调
   @Param onEdit: () => void = () => {
   }
+  // UI上下文
+  @Param uiContext: UIContext | undefined = undefined
   // 登录成功动画触发器（每次变化时触发动画）
   @Param loginAnimationTrigger: number = 0
   // 退出登录动画触发器
@@ -122,12 +124,12 @@ export struct UserCard {
   // 完成登录动画（用户名滑动）
   private finishLoginAnimation(): void {
     // 用户名动画：左右滑动
-    animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+    this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
       this.oldTextOpacity = 0;
       this.oldTextTranslateX = -30;
     });
 
-    animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+    this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
       this.newTextOpacity = 1;
       this.newTextTranslateX = 0;
     });
@@ -229,12 +231,12 @@ export struct UserCard {
   // 完成退出动画（用户名滑动）
   private finishLogoutAnimation(): void {
     // 重置状态
-    animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+    this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
       this.oldTextOpacity = 1;
       this.oldTextTranslateX = 0;
     });
 
-    animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+    this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
       this.newTextOpacity = 0;
       this.newTextTranslateX = 30;
     });

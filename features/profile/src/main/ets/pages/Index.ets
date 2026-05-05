@@ -101,6 +101,7 @@ export struct Index {
               onEdit: () => {
                 this.showEditSheet = true
               },
+              uiContext: this.getUIContext(),
               loginAnimationTrigger: this.loginAnimationTrigger,
               logoutAnimationTrigger: this.logoutAnimationTrigger
             })
