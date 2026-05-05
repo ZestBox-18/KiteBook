@@ -27,15 +27,36 @@ export struct UserEditSheet {
   @Local currentNickname: string = ''
   // 是否登录成功
   @Local loginSuccess: boolean = false
-  // 按钮区域高度（用于动画）
-  @Local buttonAreaHeight: number = 0
+
+  // 用户名动画状态
+  @Local oldTextOpacity: number = 1
+  @Local oldTextTranslateX: number = 0
+  @Local newTextOpacity: number = 0
+  @Local newTextTranslateX: number = 30
+
+  // 按钮动画状态
+  @Local loginBtnOpacity: number = 1      // 华为登录按钮透明度
+  @Local loginBtnScale: number = 1        // 华为登录按钮缩放
+  @Local updateBtnOpacity: number = 0     // 更新按钮透明度
+  @Local updateBtnScale: number = 0.5     // 更新按钮缩放（从中心聚合）
+  @Local logoutBtnOpacity: number = 0     // 退出按钮透明度
+  @Local logoutBtnScale: number = 0.5     // 退出按钮缩放（从中心聚合）
 
   aboutToAppear() {
     if (this.profile.isLoggedIn) {
       this.currentAvatar = this.profile.avatar;
       this.currentNickname = this.profile.nickname;
       this.loginSuccess = true;
-      this.buttonAreaHeight = 100; // 两个按钮的高度
+      // 已登录状态，直接显示最终状态
+      this.oldTextOpacity = 0;
+      this.newTextOpacity = 1;
+      this.newTextTranslateX = 0;
+      this.loginBtnOpacity = 0;
+      this.loginBtnScale = 1.5;
+      this.updateBtnOpacity = 1;
+      this.updateBtnScale = 1;
+      this.logoutBtnOpacity = 1;
+      this.logoutBtnScale = 1;
     }
   }
 
@@ -107,11 +128,55 @@ export struct UserEditSheet {
 
       await waitForStop();
 
-      // 登录成功，展开按钮区域
+      // 登录成功
       this.loginSuccess = true;
-      animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 500 }, () => {
-        this.buttonAreaHeight = 100; // 两个按钮的高度
+
+      // 用户名动画：左右滑动
+      animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+        this.oldTextOpacity = 0;
+        this.oldTextTranslateX = -30;
       });
+
+      animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+        this.newTextOpacity = 1;
+        this.newTextTranslateX = 0;
+      });
+
+      // 华为登录按钮：放大虚化消失
+      animateTo({ curve: curves.springMotion(0.6, 0.85), duration: 350 }, () => {
+        this.loginBtnOpacity = 0;
+        this.loginBtnScale = 1.5;
+      });
+
+      // 更新按钮：弹性曲线出现（类似光圈效果）
+      setTimeout(() => {
+        // 先放大超过目标
+        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 300 }, () => {
+          this.updateBtnOpacity = 1;
+          this.updateBtnScale = 1.15;
+        });
+        // 然后弹回目标大小
+        setTimeout(() => {
+          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 200 }, () => {
+            this.updateBtnScale = 1;
+          });
+        }, 250);
+      }, 150);
+
+      // 退出按钮：弹性曲线出现（类似光圈效果）
+      setTimeout(() => {
+        // 先放大超过目标
+        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 300 }, () => {
+          this.logoutBtnOpacity = 1;
+          this.logoutBtnScale = 1.15;
+        });
+        // 然后弹回目标大小
+        setTimeout(() => {
+          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 200 }, () => {
+            this.logoutBtnScale = 1;
+          });
+        }, 250);
+      }, 250);
 
       // 光圈扩散
       setTimeout(() => {
@@ -175,58 +240,37 @@ export struct UserEditSheet {
       .margin({ top: 32 })
       .rotate({ y: 1, angle: this.avatarRotateY })
 
-      // 昵称/提示文字
-      Text(this.currentNickname || '请通过华为账号登录')
-        .fontSize(16)
-        .fontWeight(this.loginSuccess ? FontWeight.Medium : FontWeight.Normal)
-        .fontColor(this.loginSuccess ? $r('app.color.text_primary') : $r('app.color.text_secondary'))
-        .margin({ top: 16 })
+      // 昵称/提示文字区域（使用Stack实现文字切换动画）
+      Stack() {
+        // 旧文字："请通过华为账号登录"
+        Text('请通过华为账号登录')
+          .fontSize(16)
+          .fontWeight(FontWeight.Normal)
+          .fontColor($r('app.color.text_secondary'))
+          .opacity(this.oldTextOpacity)
+          .translate({ x: this.oldTextTranslateX })
+          .animation({ curve: curves.springMotion(0.6, 0.9) })
 
-      // 按钮区域（高度动画）
+        // 新文字：用户名
+        if (this.currentNickname) {
+          Text(this.currentNickname)
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_primary'))
+            .opacity(this.newTextOpacity)
+            .translate({ x: this.newTextTranslateX })
+            .animation({ curve: curves.springMotion(0.6, 0.9) })
+        }
+      }
+      .width('100%')
+      .height(24)
+      .margin({ top: 16 })
+
+      // 按钮区域
       Column({ space: 12 }) {
-        if (this.loginSuccess) {
-          // 已登录：显示更新和退出按钮
-          Button() {
-            Row({ space: 8 }) {
-              SymbolGlyph($r('sys.symbol.arrow_clockwise'))
-                .fontSize(18)
-                .fontColor([Color.White])
-              Text('更新头像和昵称')
-                .fontSize(15)
-                .fontColor(Color.White)
-            }
-          }
-          .width('100%')
-          .height(44)
-          .backgroundColor($r('app.color.brand'))
-          .borderRadius(22)
-          .enabled(!this.isLoggingIn)
-          .onClick(() => this.updateUserInfo())
-
-          Button() {
-            Row({ space: 6 }) {
-              SymbolGlyph($r('sys.symbol.arrow_right_circle'))
-                .fontSize(18)
-                .fontColor([$r('app.color.text_secondary')])
-              Text('退出登录')
-                .fontSize(15)
-                .fontColor($r('app.color.text_secondary'))
-            }
-          }
-          .width('100%')
-          .height(44)
-          .backgroundColor($r('app.color.action_bg'))
-          .borderRadius(22)
-          .onClick(() => {
-            this.profile.reset();
-            this.currentAvatar = '';
-            this.currentNickname = '';
-            this.loginSuccess = false;
-            this.buttonAreaHeight = 0;
-            this.onClose();
-          })
-        } else {
-          // 未登录：显示华为登录按钮
+        // 第一行：华为登录按钮和更新按钮叠加
+        Stack() {
+          // 华为登录按钮（放大虚化消失）
           Button() {
             Row({ space: 8 }) {
               SymbolGlyph($r('sys.symbol.person'))
@@ -241,18 +285,73 @@ export struct UserEditSheet {
           .height(44)
           .backgroundColor('#C7000B')
           .borderRadius(22)
-          .enabled(!this.isLoggingIn)
-          .opacity(this.isLoggingIn ? 0 : 1)
-          .animation({ curve: Curve.EaseOut })
+          .opacity(this.loginBtnOpacity)
+          .scale({ x: this.loginBtnScale, y: this.loginBtnScale })
           .onClick(() => this.updateUserInfo())
+
+          // 更新按钮（聚合实化出现，主题色）
+          Button() {
+            Row({ space: 8 }) {
+              SymbolGlyph($r('sys.symbol.arrow_clockwise'))
+                .fontSize(18)
+                .fontColor([Color.White])
+              Text('更新头像和昵称')
+                .fontSize(15)
+                .fontColor(Color.White)
+            }
+          }
+          .width('100%')
+          .height(44)
+          .backgroundColor($r('app.color.brand'))
+          .borderRadius(22)
+          .opacity(this.updateBtnOpacity)
+          .scale({ x: this.updateBtnScale, y: this.updateBtnScale })
+          .onClick(() => this.updateUserInfo())
+        }
+        .width('100%')
+        .height(44)
+
+        // 第二行：退出登录按钮（聚合实化出现，灰色背景）
+        if (this.loginSuccess) {
+          Button() {
+            Row({ space: 6 }) {
+              SymbolGlyph($r('sys.symbol.arrow_right_circle'))
+                .fontSize(18)
+                .fontColor([$r('app.color.text_secondary')])
+              Text('退出登录')
+                .fontSize(15)
+                .fontColor($r('app.color.text_secondary'))
+            }
+          }
+          .width('100%')
+          .height(44)
+          .backgroundColor($r('app.color.action_bg'))
+          .borderRadius(22)
+          .opacity(this.logoutBtnOpacity)
+          .scale({ x: this.logoutBtnScale, y: this.logoutBtnScale })
+          .onClick(() => {
+            this.profile.reset();
+            this.currentAvatar = '';
+            this.currentNickname = '';
+            this.loginSuccess = false;
+            // 重置动画状态
+            this.oldTextOpacity = 1;
+            this.oldTextTranslateX = 0;
+            this.newTextOpacity = 0;
+            this.newTextTranslateX = 30;
+            this.loginBtnOpacity = 1;
+            this.loginBtnScale = 1;
+            this.updateBtnOpacity = 0;
+            this.updateBtnScale = 0.5;
+            this.logoutBtnOpacity = 0;
+            this.logoutBtnScale = 0.5;
+            this.onClose();
+          })
         }
       }
       .width('100%')
-      .height(this.buttonAreaHeight + 44) // 初始高度44（一个按钮），登录成功后增加
       .margin({ top: 20 })
       .padding({ left: 20, right: 20 })
-      .clip(true)
-      .animation({ curve: curves.springMotion(0.5, 0.8), duration: 500 })
     }
     .width('100%')
     .height('100%')
