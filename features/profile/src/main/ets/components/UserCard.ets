@@ -192,6 +192,42 @@ export struct UserCard {
       clearInterval(this.rotateInterval);
     }
 
+    // 头像旋转动画：旋转到 90 度切换为默认头像，然后继续旋转到正面
+    this.angle = 0;
+    this.shouldStop = false;
+    this.avatarSwitched = false;
+
+    const rotateSpeed = 8;
+    const updateRotate = () => {
+      if (this.shouldStop) return;
+
+      this.angle += rotateSpeed;
+      if (this.angle >= 360) {
+        this.angle = this.angle - 360;
+      }
+      this.avatarRotateY = this.angle;
+
+      // 在 90 度时切换为默认头像（清空当前头像）
+      if (!this.avatarSwitched && this.angle >= 85 && this.angle <= 95) {
+        this.currentAvatar = '';
+        this.currentNickname = '';
+        this.avatarSwitched = true;
+      }
+
+      // 如果已经切换头像，旋转到正面就停止
+      if (this.avatarSwitched && (this.angle >= 350 || this.angle <= 10)) {
+        this.shouldStop = true;
+        clearInterval(this.rotateInterval);
+        this.avatarRotateY = 0;
+        this.finishLogoutAnimation();
+      }
+    };
+
+    this.rotateInterval = setInterval(updateRotate, 16);
+  }
+
+  // 完成退出动画（用户名滑动）
+  private finishLogoutAnimation(): void {
     // 重置状态
     animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
       this.oldTextOpacity = 1;
@@ -204,10 +240,7 @@ export struct UserCard {
     });
 
     setTimeout(() => {
-      this.currentAvatar = '';
-      this.currentNickname = '';
       this.isAnimating = false;
-      this.avatarRotateY = 0;
     }, 500);
   }
 
