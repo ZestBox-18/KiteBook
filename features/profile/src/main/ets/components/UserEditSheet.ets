@@ -38,9 +38,9 @@ export struct UserEditSheet {
   @Local loginBtnOpacity: number = 1      // 华为登录按钮透明度
   @Local loginBtnScale: number = 1        // 华为登录按钮缩放
   @Local updateBtnOpacity: number = 0     // 更新按钮透明度
-  @Local updateBtnScale: number = 0.5     // 更新按钮缩放（从中心聚合）
+  @Local updateBtnScale: number = 0       // 更新按钮缩放
   @Local logoutBtnOpacity: number = 0     // 退出按钮透明度
-  @Local logoutBtnScale: number = 0.5     // 退出按钮缩放（从中心聚合）
+  @Local logoutBtnScale: number = 0       // 退出按钮缩放
 
   aboutToAppear() {
     if (this.profile.isLoggedIn) {
@@ -52,7 +52,7 @@ export struct UserEditSheet {
       this.newTextOpacity = 1;
       this.newTextTranslateX = 0;
       this.loginBtnOpacity = 0;
-      this.loginBtnScale = 1.5;
+      this.loginBtnScale = 0;
       this.updateBtnOpacity = 1;
       this.updateBtnScale = 1;
       this.logoutBtnOpacity = 1;
@@ -142,41 +142,41 @@ export struct UserEditSheet {
         this.newTextTranslateX = 0;
       });
 
-      // 华为登录按钮：放大虚化消失
-      animateTo({ curve: curves.springMotion(0.6, 0.85), duration: 350 }, () => {
+      // 华为登录按钮：缩小消失（增加时长，让动画更明显）
+      animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 400 }, () => {
         this.loginBtnOpacity = 0;
-        this.loginBtnScale = 1.5;
+        this.loginBtnScale = 0;
       });
 
-      // 更新按钮：弹性曲线出现（类似光圈效果）
+      // 更新按钮：等华为按钮消失后再放大出现（弹性曲线）
       setTimeout(() => {
         // 先放大超过目标
-        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 300 }, () => {
+        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
           this.updateBtnOpacity = 1;
           this.updateBtnScale = 1.15;
         });
         // 然后弹回目标大小
         setTimeout(() => {
-          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 200 }, () => {
+          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
             this.updateBtnScale = 1;
           });
-        }, 250);
-      }, 150);
+        }, 300);
+      }, 450);
 
-      // 退出按钮：弹性曲线出现（类似光圈效果）
+      // 退出按钮：等更新按钮出现后再放大出现（弹性曲线）
       setTimeout(() => {
         // 先放大超过目标
-        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 300 }, () => {
+        animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
           this.logoutBtnOpacity = 1;
           this.logoutBtnScale = 1.15;
         });
         // 然后弹回目标大小
         setTimeout(() => {
-          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 200 }, () => {
+          animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
             this.logoutBtnScale = 1;
           });
-        }, 250);
-      }, 250);
+        }, 300);
+      }, 600);
 
       // 光圈扩散
       setTimeout(() => {
@@ -270,83 +270,98 @@ export struct UserEditSheet {
       Column({ space: 12 }) {
         // 第一行：华为登录按钮和更新按钮叠加
         Stack() {
-          // 华为登录按钮（放大虚化消失）
-          Button() {
-            Row({ space: 8 }) {
-              SymbolGlyph($r('sys.symbol.person'))
-                .fontSize(20)
-                .fontColor([Color.White])
-              Text('华为账号登录')
-                .fontSize(16)
-                .fontColor(Color.White)
+          // 华为登录按钮（缩小消失）- 用 Column 包装，只对 Column 应用动画
+          Column() {
+            Button() {
+              Row({ space: 8 }) {
+                SymbolGlyph($r('sys.symbol.person'))
+                  .fontSize(20)
+                  .fontColor([Color.White])
+                Text('华为账号登录')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+              }
             }
+            .width('100%')
+            .height(44)
+            .backgroundColor('#C7000B')
+            .borderRadius(22)
+            .onClick(() => this.updateUserInfo())
           }
           .width('100%')
           .height(44)
-          .backgroundColor('#C7000B')
-          .borderRadius(22)
           .opacity(this.loginBtnOpacity)
           .scale({ x: this.loginBtnScale, y: this.loginBtnScale })
-          .onClick(() => this.updateUserInfo())
+          .animation({ curve: curves.springMotion(0.5, 0.8) })
 
-          // 更新按钮（聚合实化出现，主题色）
-          Button() {
-            Row({ space: 8 }) {
-              SymbolGlyph($r('sys.symbol.arrow_clockwise'))
-                .fontSize(18)
-                .fontColor([Color.White])
-              Text('更新头像和昵称')
-                .fontSize(15)
-                .fontColor(Color.White)
+          // 更新按钮（放大出现）- 用 Column 包装，只对 Column 应用动画
+          Column() {
+            Button() {
+              Row({ space: 8 }) {
+                SymbolGlyph($r('sys.symbol.arrow_clockwise'))
+                  .fontSize(18)
+                  .fontColor([Color.White])
+                Text('更新头像和昵称')
+                  .fontSize(15)
+                  .fontColor(Color.White)
+              }
             }
+            .width('100%')
+            .height(44)
+            .backgroundColor($r('app.color.brand'))
+            .borderRadius(22)
+            .onClick(() => this.updateUserInfo())
           }
           .width('100%')
           .height(44)
-          .backgroundColor($r('app.color.brand'))
-          .borderRadius(22)
           .opacity(this.updateBtnOpacity)
           .scale({ x: this.updateBtnScale, y: this.updateBtnScale })
-          .onClick(() => this.updateUserInfo())
+          .animation({ curve: curves.springMotion(0.5, 0.7) })
         }
         .width('100%')
         .height(44)
 
-        // 第二行：退出登录按钮（聚合实化出现，灰色背景）
+        // 第二行：退出登录按钮（放大出现）- 用 Column 包装
         if (this.loginSuccess) {
-          Button() {
-            Row({ space: 6 }) {
-              SymbolGlyph($r('sys.symbol.arrow_right_circle'))
-                .fontSize(18)
-                .fontColor([$r('app.color.text_secondary')])
-              Text('退出登录')
-                .fontSize(15)
-                .fontColor($r('app.color.text_secondary'))
+          Column() {
+            Button() {
+              Row({ space: 6 }) {
+                SymbolGlyph($r('sys.symbol.arrow_right_circle'))
+                  .fontSize(18)
+                  .fontColor([$r('app.color.text_secondary')])
+                Text('退出登录')
+                  .fontSize(15)
+                  .fontColor($r('app.color.text_secondary'))
+              }
             }
+            .width('100%')
+            .height(44)
+            .backgroundColor($r('app.color.action_bg'))
+            .borderRadius(22)
+            .onClick(() => {
+              this.profile.reset();
+              this.currentAvatar = '';
+              this.currentNickname = '';
+              this.loginSuccess = false;
+              // 重置动画状态
+              this.oldTextOpacity = 1;
+              this.oldTextTranslateX = 0;
+              this.newTextOpacity = 0;
+              this.newTextTranslateX = 30;
+              this.loginBtnOpacity = 1;
+              this.loginBtnScale = 1;
+              this.updateBtnOpacity = 0;
+              this.updateBtnScale = 0;
+              this.logoutBtnOpacity = 0;
+              this.logoutBtnScale = 0;
+              this.onClose();
+            })
           }
           .width('100%')
           .height(44)
-          .backgroundColor($r('app.color.action_bg'))
-          .borderRadius(22)
           .opacity(this.logoutBtnOpacity)
           .scale({ x: this.logoutBtnScale, y: this.logoutBtnScale })
-          .onClick(() => {
-            this.profile.reset();
-            this.currentAvatar = '';
-            this.currentNickname = '';
-            this.loginSuccess = false;
-            // 重置动画状态
-            this.oldTextOpacity = 1;
-            this.oldTextTranslateX = 0;
-            this.newTextOpacity = 0;
-            this.newTextTranslateX = 30;
-            this.loginBtnOpacity = 1;
-            this.loginBtnScale = 1;
-            this.updateBtnOpacity = 0;
-            this.updateBtnScale = 0.5;
-            this.logoutBtnOpacity = 0;
-            this.logoutBtnScale = 0.5;
-            this.onClose();
-          })
+          .animation({ curve: curves.springMotion(0.5, 0.7) })
         }
       }
       .width('100%')
