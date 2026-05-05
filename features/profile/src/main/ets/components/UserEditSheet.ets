@@ -21,7 +21,7 @@ export struct UserEditSheet {
   @Param onLoginStart: () => void = () => {}  // 登录开始时调用
   @Param onLoginSuccess: () => void = () => {}
   @Param onLogout: () => void = () => {}
-  @Param context: UIContext | undefined = undefined
+  @Param uiContext: UIContext | undefined = undefined
   @Local isLoggingIn: boolean = false
   @Local ringScale: number = 0.8
   @Local ringOpacity: number = 0
@@ -64,7 +64,7 @@ export struct UserEditSheet {
   }
 
   private async updateUserInfo(): Promise<void> {
-    if (!this.context || this.isLoggingIn) {
+    if (!this.uiContext || this.isLoggingIn) {
       return;
     }
 
@@ -103,7 +103,7 @@ export struct UserEditSheet {
       authRequest.scopes = ['profile'];
       authRequest.forceAuthorization = true;
 
-      const controller = new authentication.AuthenticationController(this.context.getHostContext()!);
+      const controller = new authentication.AuthenticationController(this.uiContext!.getHostContext()!);
       const data = await controller.executeRequest(authRequest);
       const response = data as authentication.AuthorizationWithHuaweiIDResponse;
       const credential = response.data!;
@@ -141,18 +141,18 @@ export struct UserEditSheet {
       this.onLoginSuccess();
 
       // 用户名动画：左右滑动
-      this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+      this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
         this.oldTextOpacity = 0;
         this.oldTextTranslateX = -30;
       });
 
-      this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+      this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
         this.newTextOpacity = 1;
         this.newTextTranslateX = 0;
       });
 
       // 华为登录按钮：缩小消失（增加时长，让动画更明显）
-      this.context?.animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 400 }, () => {
+      this.uiContext?.animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 400 }, () => {
         this.loginBtnOpacity = 0;
         this.loginBtnScale = 0;
       });
@@ -160,13 +160,13 @@ export struct UserEditSheet {
       // 更新按钮：等华为按钮消失后再放大出现（弹性曲线）
       setTimeout(() => {
         // 先放大超过目标
-        this.context?.animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
+        this.uiContext?.animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
           this.updateBtnOpacity = 1;
           this.updateBtnScale = 1.15;
         });
         // 然后弹回目标大小
         setTimeout(() => {
-          this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
+          this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
             this.updateBtnScale = 1;
           });
         }, 300);
@@ -175,13 +175,13 @@ export struct UserEditSheet {
       // 退出按钮：等更新按钮出现后再放大出现（弹性曲线）
       setTimeout(() => {
         // 先放大超过目标
-        this.context?.animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
+        this.uiContext?.animateTo({ curve: curves.springMotion(0.5, 0.7), duration: 350 }, () => {
           this.logoutBtnOpacity = 1;
           this.logoutBtnScale = 1.15;
         });
         // 然后弹回目标大小
         setTimeout(() => {
-          this.context?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
+          this.uiContext?.animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 250 }, () => {
             this.logoutBtnScale = 1;
           });
         }, 300);
@@ -189,14 +189,14 @@ export struct UserEditSheet {
 
       // 光圈扩散
       setTimeout(() => {
-        this.context?.animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 500 }, () => {
+        this.uiContext?.animateTo({ curve: curves.springMotion(0.5, 0.8), duration: 500 }, () => {
           this.ringOpacity = 0.6;
           this.ringScale = 1.2;
         });
       }, 100);
       
       setTimeout(() => {
-        this.context?.animateTo({ curve: Curve.EaseOut, duration: 400 }, () => {
+        this.uiContext?.animateTo({ curve: Curve.EaseOut, duration: 400 }, () => {
           this.ringOpacity = 0;
           this.ringScale = 1.5;
         });

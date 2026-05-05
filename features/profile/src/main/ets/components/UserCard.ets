@@ -22,20 +22,17 @@ export struct UserCard {
   @Param loginAnimationTrigger: number = 0
   // 退出登录动画触发器
   @Param logoutAnimationTrigger: number = 0
-
   // 动画状态
   @Local avatarRotateY: number = 0
   @Local currentAvatar: string = ''
   @Local currentNickname: string = ''
   @Local isAnimating: boolean = false
-  @Local isWaitingForLogin: boolean = false  // 是否在等待登录成功
-
+  @Local isWaitingForLogin: boolean = false // 是否在等待登录成功
   // 用户名动画状态
   @Local oldTextOpacity: number = 1
   @Local oldTextTranslateX: number = 0
   @Local newTextOpacity: number = 0
   @Local newTextTranslateX: number = 30
-
   // 动画控制变量
   private rotateInterval: number = 0
   private angle: number = 0
@@ -84,7 +81,9 @@ export struct UserCard {
 
     const rotateSpeed = 8;
     const updateRotate = () => {
-      if (this.shouldStop) return;
+      if (this.shouldStop) {
+        return;
+      }
 
       this.angle += rotateSpeed;
       if (this.angle >= 360) {
@@ -148,7 +147,9 @@ export struct UserCard {
 
     const rotateSpeed = 8;
     const updateRotate = () => {
-      if (this.shouldStop) return;
+      if (this.shouldStop) {
+        return;
+      }
 
       this.angle += rotateSpeed;
       if (this.angle >= 360) {
@@ -201,7 +202,9 @@ export struct UserCard {
 
     const rotateSpeed = 8;
     const updateRotate = () => {
-      if (this.shouldStop) return;
+      if (this.shouldStop) {
+        return;
+      }
 
       this.angle += rotateSpeed;
       if (this.angle >= 360) {

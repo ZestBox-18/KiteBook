@@ -70,7 +70,7 @@ export struct Index {
   EditSheetBuilder() {
     UserEditSheet({
       profile: this.userProfile,
-      context: this.getUIContext(),
+      uiContext: this.getUIContext(),
       onClose: () => {
         this.showEditSheet = false
       },
