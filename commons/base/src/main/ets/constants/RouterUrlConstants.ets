@@ -34,4 +34,29 @@ export class RouterUrlConstants {
    */
   static readonly ASSETS: string = 'Assets';
 
+  // ===== 个人中心子页面 =====
+  /**
+   * 主题设置
+   */
+  static readonly THEME_SETTINGS: string = 'ThemeSettings';
+  /**
+   * 字体设置
+   */
+  static readonly FONT_SETTINGS: string = 'FontSettings';
+  /**
+   * 通知设置
+   */
+  static readonly NOTIFICATION_SETTINGS: string = 'NotificationSettings';
+  /**
+   * 深色模式
+   */
+  static readonly DARK_MODE_SETTINGS: string = 'DarkModeSettings';
+  /**
+   * 数据导出
+   */
+  static readonly DATA_EXPORT: string = 'DataExport';
+  /**
+   * 关于
+   */
+  static readonly ABOUT: string = 'About';
 }

@@ -9,3 +9,4 @@
 const TAG: string = '[index]';
 
 export * from "./SystemOptions"
+export * from "./AppThemes"

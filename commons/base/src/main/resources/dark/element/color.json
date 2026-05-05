@@ -55,6 +55,10 @@
     {
       "name": "title_bar_bg",
       "value": "#1C1C1E"
+    },
+    {
+      "name": "item_pressed",
+      "value": "#2C2C2E"
     }
   ]
 }

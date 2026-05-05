@@ -2,7 +2,7 @@
   "color": [
     {
       "name": "start_window_background",
-      "value": "#FFFFFF"
+      "value": "#f1f3f5"
     },
     {
       "name": "page_background",
@@ -59,6 +59,10 @@
     {
       "name": "title_bar_bg",
       "value": "#F5F7FA"
+    },
+    {
+      "name": "item_pressed",
+      "value": "#E8E8E8"
     }
   ]
 }

@@ -1,10 +1,12 @@
 {
   "name": "profile",
   "version": "1.0.0",
-  "description": "Please describe the basic information.",
+  "description": "个人中心模块",
   "main": "Index.ets",
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
+    "base": "file:../../commons/base",
+    "kite_utils": "file:../../commons/kite_utils"
   }
 }

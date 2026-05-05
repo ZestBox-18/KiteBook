@@ -4,7 +4,7 @@
     "type": "shared",
     "description": "$string:shared_desc",
     "deviceTypes": [
-      "phone"
+      "phone","2in1"
     ],
     "deliveryWithInstall": true,
   }
