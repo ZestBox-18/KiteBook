@@ -18,6 +18,7 @@ const TAG = '[UserEditSheet]';
 export struct UserEditSheet {
   @Param profile: UserProfile = new UserProfile()
   @Param onClose: () => void = () => {}
+  @Param onLoginStart: () => void = () => {}  // 登录开始时调用
   @Param onLoginSuccess: () => void = () => {}
   @Param onLogout: () => void = () => {}
   @Param context: UIContext | undefined = undefined
@@ -68,6 +69,9 @@ export struct UserEditSheet {
     }
 
     this.isLoggingIn = true;
+
+    // 立即通知 UserCard 开始旋转动画
+    this.onLoginStart();
 
     let angle = 0;
     let avatarSwitched = false;

@@ -26,12 +26,19 @@ export struct UserCard {
   @Local currentAvatar: string = ''
   @Local currentNickname: string = ''
   @Local isAnimating: boolean = false
+  @Local isWaitingForLogin: boolean = false  // 是否在等待登录成功
 
   // 用户名动画状态
   @Local oldTextOpacity: number = 1
   @Local oldTextTranslateX: number = 0
   @Local newTextOpacity: number = 0
   @Local newTextTranslateX: number = 30
+
+  // 动画控制变量
+  private rotateInterval: number = 0
+  private angle: number = 0
+  private shouldStop: boolean = false
+  private avatarSwitched: boolean = false
 
   aboutToAppear(): void {
     // 初始化当前显示的头像和昵称
@@ -49,7 +56,11 @@ export struct UserCard {
   @Monitor('loginAnimationTrigger')
   onLoginTriggerChanged(): void {
     if (this.profile.isLoggedIn && !this.isAnimating) {
-      this.playLoginAnimation();
+      // 登录成功，切换头像并完成动画
+      this.onLoginSuccess();
+    } else if (!this.isAnimating) {
+      // 开始旋转动画（等待登录）
+      this.startRotateAnimation();
     }
   }
 
@@ -61,43 +72,105 @@ export struct UserCard {
     }
   }
 
-  // 播放登录动画
-  playLoginAnimation(): void {
+  // 开始旋转动画（等待登录成功）
+  private startRotateAnimation(): void {
     this.isAnimating = true;
-
-    let angle = 0;
-    let avatarSwitched = false;
-    let shouldStop = false;
-    const newAvatar = this.profile.avatar;
-    const newNickname = this.profile.nickname;
+    this.isWaitingForLogin = true;
+    this.angle = 0;
+    this.shouldStop = false;
+    this.avatarSwitched = false;
 
     const rotateSpeed = 8;
     const updateRotate = () => {
-      if (shouldStop) return;
+      if (this.shouldStop) return;
 
-      angle += rotateSpeed;
-      if (angle >= 360) {
-        angle = angle - 360;
+      this.angle += rotateSpeed;
+      if (this.angle >= 360) {
+        this.angle = this.angle - 360;
       }
-      this.avatarRotateY = angle;
+      this.avatarRotateY = this.angle;
 
-      if (!avatarSwitched && angle >= 85 && angle <= 95 && newAvatar) {
-        this.currentAvatar = newAvatar;
-        this.currentNickname = newNickname;
-        avatarSwitched = true;
+      // 在 90 度时切换头像（如果已经登录成功）
+      if (!this.avatarSwitched && this.angle >= 85 && this.angle <= 95 && this.profile.isLoggedIn) {
+        this.currentAvatar = this.profile.avatar;
+        this.currentNickname = this.profile.nickname;
+        this.avatarSwitched = true;
+      }
+
+      // 如果已经切换头像，旋转到正面就停止
+      if (this.avatarSwitched && (this.angle >= 350 || this.angle <= 10)) {
+        this.shouldStop = true;
+        clearInterval(this.rotateInterval);
+        this.avatarRotateY = 0;
+        this.finishLoginAnimation();
       }
     };
 
-    const rotateInterval = setInterval(updateRotate, 16);
+    this.rotateInterval = setInterval(updateRotate, 16);
+  }
+
+  // 登录成功，切换头像
+  private onLoginSuccess(): void {
+    this.isWaitingForLogin = false;
+    // 如果动画正在进行，等待在 90 度时切换头像
+    // 如果动画还没开始，直接播放完整动画
+    if (!this.isAnimating) {
+      this.playLoginAnimation();
+    }
+  }
+
+  // 完成登录动画（用户名滑动）
+  private finishLoginAnimation(): void {
+    // 用户名动画：左右滑动
+    animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+      this.oldTextOpacity = 0;
+      this.oldTextTranslateX = -30;
+    });
+
+    animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
+      this.newTextOpacity = 1;
+      this.newTextTranslateX = 0;
+    });
+
+    setTimeout(() => {
+      this.isAnimating = false;
+    }, 500);
+  }
+
+  // 播放登录动画（完整动画，从头开始）
+  playLoginAnimation(): void {
+    this.isAnimating = true;
+    this.angle = 0;
+    this.shouldStop = false;
+    this.avatarSwitched = false;
+
+    const rotateSpeed = 8;
+    const updateRotate = () => {
+      if (this.shouldStop) return;
+
+      this.angle += rotateSpeed;
+      if (this.angle >= 360) {
+        this.angle = this.angle - 360;
+      }
+      this.avatarRotateY = this.angle;
+
+      if (!this.avatarSwitched && this.angle >= 85 && this.angle <= 95 && this.profile.avatar) {
+        this.currentAvatar = this.profile.avatar;
+        this.currentNickname = this.profile.nickname;
+        this.avatarSwitched = true;
+      }
+    };
+
+    this.rotateInterval = setInterval(updateRotate, 16);
 
     // 等待旋转到正面
     const waitForStop = () => {
       return new Promise<void>(resolve => {
         const checkStop = setInterval(() => {
-          if (avatarSwitched && (angle >= 350 || angle <= 10)) {
+          if (this.avatarSwitched && (this.angle >= 350 || this.angle <= 10)) {
             clearInterval(checkStop);
-            shouldStop = true;
-            clearInterval(rotateInterval);
+            this.shouldStop = true;
+            clearInterval(this.rotateInterval);
             this.avatarRotateY = 0;
             resolve();
           }
@@ -106,26 +179,18 @@ export struct UserCard {
     };
 
     waitForStop().then(() => {
-      // 用户名动画：左右滑动
-      animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
-        this.oldTextOpacity = 0;
-        this.oldTextTranslateX = -30;
-      });
-
-      animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
-        this.newTextOpacity = 1;
-        this.newTextTranslateX = 0;
-      });
-
-      setTimeout(() => {
-        this.isAnimating = false;
-      }, 500);
+      this.finishLoginAnimation();
     });
   }
 
   // 播放退出动画
   playLogoutAnimation(): void {
     this.isAnimating = true;
+
+    // 停止旋转动画
+    if (this.rotateInterval) {
+      clearInterval(this.rotateInterval);
+    }
 
     // 重置状态
     animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
@@ -142,6 +207,7 @@ export struct UserCard {
       this.currentAvatar = '';
       this.currentNickname = '';
       this.isAnimating = false;
+      this.avatarRotateY = 0;
     }, 500);
   }
 

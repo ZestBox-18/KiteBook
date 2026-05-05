@@ -74,7 +74,11 @@ export struct Index {
       onClose: () => {
         this.showEditSheet = false
       },
+      onLoginStart: () => {
+        this.loginAnimationTrigger++
+      },
       onLoginSuccess: () => {
+        // 登录成功，通知 UserCard 切换头像
         this.loginAnimationTrigger++
       },
       onLogout: () => {
