@@ -39,6 +39,9 @@ export struct Index {
     PersistenceV2.connect(UserProfile, 'UserProfile', () => new UserProfile())!
   // 编辑弹窗控制
   @Local showEditSheet: boolean = false
+  // 动画触发器
+  @Local loginAnimationTrigger: number = 0
+  @Local logoutAnimationTrigger: number = 0
 
   /**
    * 页面路由表
@@ -70,6 +73,12 @@ export struct Index {
       context: this.getUIContext(),
       onClose: () => {
         this.showEditSheet = false
+      },
+      onLoginSuccess: () => {
+        this.loginAnimationTrigger++
+      },
+      onLogout: () => {
+        this.logoutAnimationTrigger++
       }
     })
   }
@@ -87,7 +96,9 @@ export struct Index {
               profile: this.userProfile,
               onEdit: () => {
                 this.showEditSheet = true
-              }
+              },
+              loginAnimationTrigger: this.loginAnimationTrigger,
+              logoutAnimationTrigger: this.logoutAnimationTrigger
             })
           }
 

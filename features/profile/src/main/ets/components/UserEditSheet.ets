@@ -18,6 +18,8 @@ const TAG = '[UserEditSheet]';
 export struct UserEditSheet {
   @Param profile: UserProfile = new UserProfile()
   @Param onClose: () => void = () => {}
+  @Param onLoginSuccess: () => void = () => {}
+  @Param onLogout: () => void = () => {}
   @Param context: UIContext | undefined = undefined
   @Local isLoggingIn: boolean = false
   @Local ringScale: number = 0.8
@@ -196,6 +198,8 @@ export struct UserEditSheet {
       setTimeout(() => {
         this.isLoggingIn = false;
         this.ringScale = 0.8;
+        // 通知 Index 页面触发 UserCard 动画
+        this.onLoginSuccess();
       }, 1000);
 
       hilog.info(0x0000, TAG, 'Login success');
@@ -354,6 +358,8 @@ export struct UserEditSheet {
               this.updateBtnScale = 0;
               this.logoutBtnOpacity = 0;
               this.logoutBtnScale = 0;
+              // 通知 Index 页面触发 UserCard 动画
+              this.onLogout();
               this.onClose();
             })
           }
