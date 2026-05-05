@@ -133,6 +133,9 @@ export struct UserEditSheet {
       // 登录成功
       this.loginSuccess = true;
 
+      // 立即通知 Index 页面触发 UserCard 动画
+      this.onLoginSuccess();
+
       // 用户名动画：左右滑动
       animateTo({ curve: curves.springMotion(0.6, 0.9), duration: 400 }, () => {
         this.oldTextOpacity = 0;
@@ -198,8 +201,6 @@ export struct UserEditSheet {
       setTimeout(() => {
         this.isLoggingIn = false;
         this.ringScale = 0.8;
-        // 通知 Index 页面触发 UserCard 动画
-        this.onLoginSuccess();
       }, 1000);
 
       hilog.info(0x0000, TAG, 'Login success');

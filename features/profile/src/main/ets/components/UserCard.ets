@@ -168,7 +168,7 @@ export struct UserCard {
       // 昵称和提示（带滑动动画）
       Column() {
         // 使用 Stack 实现文字切换动画
-        Stack() {
+        Stack({ alignContent: Alignment.Start }) {
           // 旧文字："点击登录"
           Text('点击登录')
             .fontSize(16)
