@@ -7,9 +7,9 @@ export { initRequest,
 
 export { Method, AnyValue } from './src/main/ets/utils/network/Type'
 
-export { ColorSlider, SlideDirection } from './src/main/ets/utils/color-picker/components/ColorSlider';
+export { ColorSlider, SlideDirection } from './src/main/ets/third-party/color-picker/components/ColorSlider';
 
-export { HSBColorPicker, HSBColorPickerLayout } from './src/main/ets/utils/color-picker/components/ColorPicker'
+export { HSBColorPicker, HSBColorPickerLayout } from './src/main/ets/third-party/color-picker/components/ColorPicker'
 
 export { hsv2rgb,
   rgb2hex,
@@ -20,7 +20,7 @@ export { hsv2rgb,
   hex2hexa,
   hsva2hex as hsva2Hex,
   hex2hsva as hex2Hsva,
-  formatHex } from './src/main/ets/utils/color-picker/utils/color'
+  formatHex } from './src/main/ets/third-party/color-picker/utils/color'
 
 
 export { initDatabaseConfig, DatabaseUpgradeSql } from './src/main/ets/utils/database/Config'
@@ -41,4 +41,4 @@ export { WindowUtil, WindowInfo, ImmersiveType } from './src/main/ets/utils/wind
 
 export { GlobalContext } from './src/main/ets/utils/context/GlobalContext'
 
-export { HdsMiniBarButton } from './src/main/ets/components/HdsMiniBarButton'
+export { HdsMiniBarButton } from './src/main/ets/third-party/hds-button/HdsMiniBarButton'

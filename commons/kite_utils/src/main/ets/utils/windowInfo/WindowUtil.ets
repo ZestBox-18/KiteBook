@@ -1,3 +1,23 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Modified by ZestBox, 2025
+ * - WindowInfo 类添加预计算属性（safeAreaTop, safeAreaBottom, keyboardHeight 等）
+ * - 添加 updateSafeAreaValues() 方法自动更新安全区值
+ * - 使用 @ObservedV2 和 @Trace 装饰器优化响应式
+ */
+
 import { display, UIContext, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
