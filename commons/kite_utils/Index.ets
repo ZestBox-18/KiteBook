@@ -40,3 +40,5 @@ export { BreakpointSystem, BreakpointConstants } from './src/main/ets/utils/brea
 export { WindowUtil, WindowInfo, ImmersiveType } from './src/main/ets/utils/windowInfo/WindowUtil'
 
 export { GlobalContext } from './src/main/ets/utils/context/GlobalContext'
+
+export { HdsMiniBarButton } from './src/main/ets/components/HdsMiniBarButton'

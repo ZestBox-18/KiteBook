@@ -2,7 +2,7 @@ import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '
 import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
 import { Assets, Ordinary } from 'record';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
-import { WindowUtil } from 'kite_utils';
+import { WindowUtil, HdsMiniBarButton } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
 @Entry
@@ -50,6 +50,16 @@ export struct Index {
           Button('123')
           Button('3333')
             .fontColor($r('sys.color.font_on_primary'))
+          HdsMiniBarButton({
+            barWidth: 100,
+            barHeight: 40,
+            onButtonClick: () => {
+              console.log("测试");
+            }
+          }) {
+            Text("你好")
+              .fontSize(16)
+          }
 
         }
         .height('200%')
