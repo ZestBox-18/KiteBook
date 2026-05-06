@@ -5,26 +5,26 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "/Users/zestbox/MyCode/projects/KiteBook/harmony/KiteBook/cer/debug/kite_book_debug.p12",
+          "storeFile": "/Users/zestbox/MyCode/projects/KiteBook/cer/debug/kite_book_debug.p12",
           "storePassword": "00000018B3FA29658CFC185CFB3246DF10478ADCF52F1C65147979A39F6A87C625790EEE8AFFD555",
           "keyAlias": "zestbox",
           "keyPassword": "00000018D75CEF4C732BFAEB0C2C662BA28379C8DA8668C1CAF7BE5A87A2BC15E8E5A6FE7634009B",
           "signAlg": "SHA256withECDSA",
-          "profile": "/Users/zestbox/MyCode/projects/KiteBook/harmony/KiteBook/cer/debug/kite_book_debugDebug.p7b",
-          "certpath": "/Users/zestbox/MyCode/projects/KiteBook/harmony/KiteBook/cer/debug/kite_book_debug.cer"
+          "profile": "/Users/zestbox/MyCode/projects/KiteBook/cer/debug/kite_book_debugDebug.p7b",
+          "certpath": "/Users/zestbox/MyCode/projects/KiteBook/cer/debug/kite_book_debug.cer"
         }
       },
       {
         "name": "release",
         "type": "HarmonyOS",
         "material": {
-          "storeFile": "/Users/zestbox/MyCode/projects/KiteBook/harmony/KiteBook/cer/release/kite_book_release.p12",
+          "storeFile": "/Users/zestbox/MyCode/projects/KiteBook/cer/release/kite_book_release.p12",
           "storePassword": "000000184BCD35BBF5DE72E2F42CAF6E45ACB0495E9DEE198E8F49A2627906210CD83775292F4E7C",
           "keyAlias": "zestbox",
           "keyPassword": "00000018C870829E385602CEA8BC576DD7D6C1F3B3A81C0C9531871363A53F2B5C22AC186C1A3728",
           "signAlg": "SHA256withECDSA",
-          "profile": "/Users/zestbox/MyCode/projects/KiteBook/harmony/KiteBook/cer/release/kite_book_releaseRelease.p7b",
-          "certpath": "/Users/zestbox/MyCode/projects/KiteBook/harmony/KiteBook/cer/release/kite_book_release.cer"
+          "profile": "/Users/zestbox/MyCode/projects/KiteBook/cer/release/kite_book_releaseRelease.p7b",
+          "certpath": "/Users/zestbox/MyCode/projects/KiteBook/cer/release/kite_book_release.cer"
         }
       }
     ],

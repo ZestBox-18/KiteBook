@@ -11,3 +11,6 @@
 **/.test
 /.appanalyzer
 /cer
+/docs
+AGENTS.md
+.DS_Store
