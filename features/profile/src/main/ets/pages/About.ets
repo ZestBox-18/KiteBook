@@ -6,12 +6,18 @@
  * @description: 关于页面
  */
 
+import { CommonConstants, mainTabController } from 'base';
+import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
+import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
+import { WindowUtil } from 'kite_utils';
+
 @ComponentV2
 export struct About {
   @Local pageInfos: NavPathStack = new NavPathStack()
+  @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!
 
   build() {
-    NavDestination() {
+    HdsNavDestination() {
       Column() {
         // 应用图标和名称
         Column() {
@@ -59,10 +65,72 @@ export struct About {
       .width('100%')
       .height('100%')
       .backgroundColor($r('app.color.title_bar_bg'))
+      .padding({ top: this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_MINI })
     }
-    .title('关于')
+    .titleBar({
+      padding: {
+        start: LengthMetrics.vp(20),
+        end: LengthMetrics.vp(2)
+      },
+      style: {
+        scrollEffectOpts: {
+          enableScrollEffect: true,
+          scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR,
+          blurEffectiveStartOffset: LengthMetrics.vp(0),
+          blurEffectiveEndOffset: LengthMetrics.vp(20)
+        },
+        systemMaterialEffect: {
+          materialType: hdsMaterial.MaterialType.ADAPTIVE,
+          materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        },
+        originalStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('app.color.title_bar_bg'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('app.color.text_primary'),
+              subTitleColor: $r('app.color.text_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('app.color.action_bg'),
+              iconColor: $r('app.color.text_primary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('app.color.action_bg'),
+              iconColor: $r('app.color.text_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          backgroundStyle: {
+            backgroundColor: $r('app.color.title_bar_bg'),
+          },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('app.color.text_primary'),
+              subTitleColor: $r('app.color.text_secondary'),
+            },
+            menuStyle: {
+              backgroundColor: $r('app.color.action_bg'),
+              textColor: $r('app.color.text_secondary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('app.color.action_bg'),
+              iconColor: $r('app.color.text_primary')
+            }
+          }
+        }
+      },
+      content: { title: { mainTitle: "关于" } },
+      avoidLayoutSafeArea: true
+    })
     .onReady((context: NavDestinationContext) => {
       this.pageInfos = context.pathStack;
+    })
+    .onBackPressed(() => {
+      mainTabController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+      return false;
     })
   }
 

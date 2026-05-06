@@ -8,3 +8,4 @@
 
 
 export { DebounceManager } from './DebounceManager'; //防抖管理器
+export { mainTabController } from './MainTabController'; //全局Tab控制器

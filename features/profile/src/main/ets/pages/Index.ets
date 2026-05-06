@@ -6,8 +6,8 @@
  * @description: 个人中心主页面
  */
 
-import { hdsMaterial, HdsNavigation, ScrollEffectType } from '@kit.UIDesignKit';
-import { CommonConstants, RouterUrlConstants, SystemOptions } from 'base';
+import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
+import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { WindowUtil } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
@@ -61,6 +61,14 @@ export struct Index {
     } else if (name === RouterUrlConstants.ABOUT) {
       About()
     }
+  }
+
+  /**
+   * 导航到子页面（隐藏 Tab 栏）
+   */
+  private navigateToSubPage(name: string): void {
+    mainTabController.applyHideAnimation(HdsAnimationMode.CLICK_ANIMATION);
+    this.pageInfos.pushPath({ name: name });
   }
 
   /**
@@ -118,7 +126,7 @@ export struct Index {
                 icon: $r('sys.symbol.paintpalette'),
                 title: '主题设置',
                 onItemClick: () => {
-                  this.pageInfos.pushPath({ name: RouterUrlConstants.THEME_SETTINGS })
+                  this.navigateToSubPage(RouterUrlConstants.THEME_SETTINGS)
                 }
               })
             }
@@ -128,7 +136,7 @@ export struct Index {
                 icon: $r('sys.symbol.textformat'),
                 title: '字体大小',
                 onItemClick: () => {
-                  this.pageInfos.pushPath({ name: RouterUrlConstants.FONT_SETTINGS })
+                  this.navigateToSubPage(RouterUrlConstants.FONT_SETTINGS)
                 }
               })
             }
@@ -138,7 +146,7 @@ export struct Index {
                 icon: $r('sys.symbol.bell'),
                 title: '通知设置',
                 onItemClick: () => {
-                  this.pageInfos.pushPath({ name: RouterUrlConstants.NOTIFICATION_SETTINGS })
+                  this.navigateToSubPage(RouterUrlConstants.NOTIFICATION_SETTINGS)
                 }
               })
             }
@@ -148,7 +156,7 @@ export struct Index {
                 icon: $r('sys.symbol.moon'),
                 title: '深色模式',
                 onItemClick: () => {
-                  this.pageInfos.pushPath({ name: RouterUrlConstants.DARK_MODE_SETTINGS })
+                  this.navigateToSubPage(RouterUrlConstants.DARK_MODE_SETTINGS)
                 }
               })
             }
@@ -165,7 +173,7 @@ export struct Index {
                 icon: $r('sys.symbol.arrow_up_circle'),
                 title: '数据导出',
                 onItemClick: () => {
-                  this.pageInfos.pushPath({ name: RouterUrlConstants.DATA_EXPORT })
+                  this.navigateToSubPage(RouterUrlConstants.DATA_EXPORT)
                 }
               })
             }
@@ -175,7 +183,7 @@ export struct Index {
                 icon: $r('sys.symbol.info_circle'),
                 title: '关于',
                 onItemClick: () => {
-                  this.pageInfos.pushPath({ name: RouterUrlConstants.ABOUT })
+                  this.navigateToSubPage(RouterUrlConstants.ABOUT)
                 }
               })
             }

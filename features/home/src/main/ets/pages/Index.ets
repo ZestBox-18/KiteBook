@@ -1,5 +1,5 @@
-import { hdsMaterial, HdsNavigation, ScrollEffectType } from '@kit.UIDesignKit';
-import { CommonConstants, RouterUrlConstants, SystemOptions } from 'base';
+import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
+import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
 import { Assets, Ordinary } from 'record';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { WindowUtil } from 'kite_utils';
@@ -29,6 +29,14 @@ export struct Index {
     if (name === RouterUrlConstants.ASSETS) {
       Assets()
     }
+  }
+
+  /**
+   * 导航到子页面（隐藏 Tab 栏）
+   */
+  private navigateToSubPage(name: string): void {
+    mainTabController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+    this.pageInfos.pushPath({ name: name });
   }
 
   aboutToAppear() {

@@ -32,4 +32,16 @@ export class CommonConstants {
    * Tab标签蒙版高度
    */
   static readonly TAB_MASK_HEIGHT: number = 80;
+  /**
+   * HdsNavDestination 标题栏高度
+   * HdsNavDestinationTitleMode.MINI: 标题栏高度 56vp
+   */
+  static readonly TITLE_BAR_HEIGHT_MINI: number = 56;
+  /**
+   * HdsNavDestination 半模态模式
+   * HdsNavDestinationTitleMode.MODAL: 背板高度 64vp，标题栏高度 56vp，上 padding 8vp
+   */
+  static readonly TITLE_BAR_HEIGHT_MODAL: number = 56;
+  static readonly TITLE_BAR_BACKPLATE_HEIGHT_MODAL: number = 64;
+  static readonly TITLE_BAR_PADDING_TOP_MODAL: number = 8;
 }

@@ -6,8 +6,9 @@
  * @description: 字体设置页面
  */
 
-import { SystemOptions } from 'base';
+import { SystemOptions, mainTabController } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
+import { HdsAnimationMode } from '@kit.UIDesignKit';
 
 @ComponentV2
 export struct FontSettings {
@@ -75,6 +76,10 @@ export struct FontSettings {
     .title('字体大小')
     .onReady((context: NavDestinationContext) => {
       this.pageInfos = context.pathStack;
+    })
+    .onBackPressed(() => {
+      mainTabController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+      return false;
     })
   }
 }

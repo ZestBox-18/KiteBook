@@ -5,6 +5,8 @@
  * @version 1.0
  * @description:
  */
+import { HdsAnimationMode } from "@kit.UIDesignKit";
+import { mainTabController } from 'base';
 
 const TAG: string = '[Assets]';
 
@@ -24,6 +26,10 @@ export struct Assets {
     })
     .hideTitleBar(true)
     .hideBackButton(true)
+    .onBackPressed(() => {
+      mainTabController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+      return false;
+    })
   }
 }
 
