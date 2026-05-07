@@ -15,9 +15,10 @@ export struct QuickButton {
   
   build() {
     Column() {
-      // 图标
-      Text(this.category.icon)
+      // 图标 - 使用 SymbolGlyph 显示系统图标
+      SymbolGlyph($r(this.category.icon))
         .fontSize(24)
+        .fontColor([$r('sys.color.font_primary')])
       
       // 名称
       Text(this.category.name)
