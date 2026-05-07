@@ -1,11 +1,3 @@
-/**
- * Copyright (C), 2026-05-06
- * @author ZestBox
- * @date 2026/05/06
- * @version 1.0
- * @description: 收支统计数据模型
- */
-
 export class IncomeExpenseBean {
   timeLabel: string = '';
   income: number = 0;
