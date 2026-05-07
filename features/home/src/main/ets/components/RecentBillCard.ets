@@ -78,7 +78,7 @@ export struct RecentBillCard {
         .height(this.bills.length * 60)
         .divider({
           strokeWidth: 1,
-          color: $r('sys.color.divider_color')
+          color: '#F0F0F0'
         })
       }
     }
@@ -88,7 +88,7 @@ export struct RecentBillCard {
     .padding(20)
     .shadow({
       radius: 8,
-      color: $r('sys.color.shadow_color'),
+      color: '#1A000000',
       offsetX: 0,
       offsetY: 2
     })

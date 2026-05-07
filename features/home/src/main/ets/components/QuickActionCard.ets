@@ -41,7 +41,7 @@ export struct QuickActionCard {
     .padding(20)
     .shadow({
       radius: 8,
-      color: $r('sys.color.shadow_color'),
+      color: '#1A000000',
       offsetX: 0,
       offsetY: 2
     })

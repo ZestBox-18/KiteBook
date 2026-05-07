@@ -26,7 +26,7 @@ export struct OverviewCard {
         LoadingProgress()
           .width(48)
           .height(48)
-          .color($r('sys.color.loading_progress_color'))
+          .color('#2FB04A')
       } else {
         // 收支统计
         Row() {
@@ -72,7 +72,7 @@ export struct OverviewCard {
     .padding(20)
     .shadow({
       radius: 8,
-      color: $r('sys.color.shadow_color'),
+      color: '#1A000000',
       offsetX: 0,
       offsetY: 2
     })
