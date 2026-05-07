@@ -59,6 +59,18 @@
     {
       "name": "title_bar_bg",
       "value": "#F5F7FA"
+    },
+    {
+      "name": "income",
+      "value": "#10B981"
+    },
+    {
+      "name": "expense",
+      "value": "#EF4444"
+    },
+    {
+      "name": "warning",
+      "value": "#F59E0B"
     }
   ]
 }
