@@ -1,0 +1,28 @@
+{
+  "color": [
+    {
+      "name": "income",
+      "value": "#10B981"
+    },
+    {
+      "name": "expense",
+      "value": "#EF4444"
+    },
+    {
+      "name": "warning",
+      "value": "#F59E0B"
+    },
+    {
+      "name": "shadow_color",
+      "value": "#000000"
+    },
+    {
+      "name": "loading_progress_color",
+      "value": "#2FB04A"
+    },
+    {
+      "name": "divider_color",
+      "value": "#F0F0F0"
+    }
+  ]
+}
