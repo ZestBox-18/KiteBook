@@ -1,8 +1,25 @@
 {
   "string": [
-    {
-      "name": "shared_desc",
-      "value": "description"
-    }
+    {"name": "shared_desc", "value": "description"},
+    {"name": "reports_title", "value": "报表"},
+    {"name": "reports_income_expense", "value": "收支统计"},
+    {"name": "reports_category", "value": "分类统计"},
+    {"name": "reports_asset", "value": "资产分析"},
+    {"name": "reports_budget", "value": "预算分析"},
+    {"name": "reports_time_day", "value": "日"},
+    {"name": "reports_time_week", "value": "周"},
+    {"name": "reports_time_month", "value": "月"},
+    {"name": "reports_time_year", "value": "年"},
+    {"name": "reports_income", "value": "收入"},
+    {"name": "reports_expense", "value": "支出"},
+    {"name": "reports_balance", "value": "结余"},
+    {"name": "reports_total", "value": "合计"},
+    {"name": "reports_average", "value": "平均"},
+    {"name": "reports_trend", "value": "趋势"},
+    {"name": "reports_ratio", "value": "占比"},
+    {"name": "reports_budget_used", "value": "已使用"},
+    {"name": "reports_budget_remaining", "value": "剩余"},
+    {"name": "reports_budget_exceeded", "value": "超支"},
+    {"name": "reports_no_data", "value": "暂无数据"}
   ]
 }

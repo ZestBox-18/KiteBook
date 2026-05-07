@@ -1,0 +1,11 @@
+{
+  "color": [
+    {"name": "reports_income_color", "value": "#4CAF50"},
+    {"name": "reports_expense_color", "value": "#F44336"},
+    {"name": "reports_balance_color", "value": "#2196F3"},
+    {"name": "reports_chart_bg", "value": "#FFFFFF"},
+    {"name": "reports_grid_line", "value": "#E0E0E0"},
+    {"name": "reports_text_primary", "value": "#212121"},
+    {"name": "reports_text_secondary", "value": "#757575"}
+  ]
+}
