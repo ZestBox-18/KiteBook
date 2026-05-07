@@ -4,9 +4,9 @@ import { Assets, Ordinary } from 'record';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { WindowUtil } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
-import { OverviewCard } from '../components/OverviewCard';
-import { QuickActionCard } from '../components/QuickActionCard';
-import { RecentBillCard } from '../components/RecentBillCard';
+import { DataOverviewCard } from '../components/DataOverviewCard';
+import { TimelineBillCard } from '../components/TimelineBillCard';
+import { FloatingActionButton } from '../components/FloatingActionButton';
 import { BillItem } from '../entities/BillItem';
 import { BudgetItem } from '../entities/BudgetItem';
 import { CategoryItem } from '../entities/CategoryItem';
@@ -139,55 +139,58 @@ export struct Index {
   
   build() {
     HdsNavigation(this.pageInfos) {
-      Scroll(this.scrollerForScroll) {
-        Column() {
-          // 顶部安全区
-          Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
-          
-          // 账本概览卡片
-          OverviewCard({
-            monthIncome: this.monthIncome,
-            monthExpense: this.monthExpense,
-            monthBalance: this.monthBalance,
-            accountBalance: this.accountBalance,
-            budgets: this.budgets,
-            isLoading: this.isLoading
-          })
-          
-          // 快捷记账卡片
-          QuickActionCard({
-            categories: this.quickCategories,
-            onCategoryClick: (category: CategoryItem) => {
-              this.handleQuickAction(category);
-            }
-          })
-          .margin({ top: 16 })
-          
-          // 最近账单卡片
-          RecentBillCard({
-            bills: this.recentBills,
-            onBillClick: (bill: BillItem) => {
-              this.handleBillClick(bill);
-            },
-            onBillDelete: (bill: BillItem) => {
-              this.handleBillDelete(bill);
-            },
-            onViewAll: () => {
-              this.handleViewAll();
-            }
-          })
-          .margin({ top: 16 })
-          
-          // 底部留白
-          Blank().height(20)
+      Stack() {
+        Scroll(this.scrollerForScroll) {
+          Column() {
+            // 顶部安全区
+            Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
+            
+            // 数据概览卡片
+            DataOverviewCard({
+              monthIncome: this.monthIncome,
+              monthExpense: this.monthExpense,
+              monthBalance: this.monthBalance,
+              accountBalance: this.accountBalance,
+              budgets: this.budgets,
+              isLoading: this.isLoading
+            })
+            
+            // 时间轴账单卡片
+            TimelineBillCard({
+              bills: this.recentBills,
+              onBillClick: (bill: BillItem) => {
+                this.handleBillClick(bill);
+              },
+              onBillDelete: (bill: BillItem) => {
+                this.handleBillDelete(bill);
+              },
+              onViewAll: () => {
+                this.handleViewAll();
+              }
+            })
+            .margin({ top: 16 })
+            
+            // 底部留白
+            Blank().height(20)
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16 })
         }
         .width('100%')
-        .padding({ left: 16, right: 16 })
+        .height('100%')
+        .scrollBar(BarState.Off)
+        .edgeEffect(EdgeEffect.Spring)
+        
+        // 浮动记账按钮
+        FloatingActionButton({
+          categories: this.quickCategories,
+          onCategoryClick: (category: CategoryItem) => {
+            this.handleQuickAction(category);
+          }
+        })
       }
       .width('100%')
       .height('100%')
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.Spring)
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)

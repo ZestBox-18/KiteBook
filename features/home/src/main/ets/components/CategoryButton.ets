@@ -1,26 +1,25 @@
 /**
- * Copyright (C), 2026-05-06
+ * Copyright (C), 2026-05-07
  * @author AI Assistant
- * @date 2026/05/06
+ * @date 2026/05/07
  * @version 1.0
- * @description: 快捷按钮组件
+ * @description: 分类按钮组件
  */
 
 import { CategoryItem } from '../entities/CategoryItem';
 
 @ComponentV2
-export struct QuickButton {
+export struct CategoryButton {
   @Param category: CategoryItem = new CategoryItem();
   @Param onButtonClick: () => void = () => {};
-  
+  @Param index: number = 0;
+
   build() {
     Column() {
-      // 图标 - 使用 SymbolGlyph 显示系统图标
       SymbolGlyph($r(this.category.icon))
         .fontSize(24)
         .fontColor([$r('sys.color.font_primary')])
-      
-      // 名称
+
       Text(this.category.name)
         .fontSize(12)
         .fontColor($r('sys.color.font_secondary'))
