@@ -74,12 +74,10 @@ export struct Index {
       const now = new Date();
       const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       
-      // 并行查询数据
-      const [bills, budgetsData, accounts] = await Promise.all([
-        queryBillsByMonth(month),
-        queryBudgetsByMonth(month),
-        queryAccounts()
-      ]);
+      // 查询数据
+      const bills = await queryBillsByMonth(month);
+      const budgetsData = await queryBudgetsByMonth(month);
+      const accounts = await queryAccounts();
       
       // 计算统计数据
       this.monthIncome = calculateMonthIncome(bills);

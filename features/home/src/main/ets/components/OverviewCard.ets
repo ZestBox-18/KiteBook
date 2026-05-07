@@ -18,7 +18,7 @@ export struct OverviewCard {
   @Param monthBalance: number = 0;
   @Param accountBalance: number = 0;
   @Param budgets: BudgetItem[] = [];
-  @Local isLoading: boolean = false;
+  @Param isLoading: boolean = false;
   
   build() {
     Column() {

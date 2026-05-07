@@ -11,7 +11,7 @@ import { CategoryItem } from '../entities/CategoryItem';
 @ComponentV2
 export struct QuickButton {
   @Param category: CategoryItem = new CategoryItem();
-  @Param onClick: () => void = () => {};
+  @Param onButtonClick: () => void = () => {};
   
   build() {
     Column() {
@@ -32,7 +32,7 @@ export struct QuickButton {
     .backgroundColor($r('sys.color.background_secondary'))
     .borderRadius(12)
     .onClick(() => {
-      this.onClick();
+      this.onButtonClick();
     })
   }
 }

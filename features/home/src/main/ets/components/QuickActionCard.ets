@@ -23,19 +23,17 @@ export struct QuickActionCard {
         .width('100%')
         .margin({ bottom: 16 })
       
-      Row() {
+      Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceBetween }) {
         ForEach(this.categories, (category: CategoryItem) => {
           QuickButton({
             category: category,
-            onClick: () => {
+            onButtonClick: () => {
               this.onCategoryClick(category);
             }
           })
         })
       }
       .width('100%')
-      .justifyContent(FlexAlign.SpaceBetween)
-      .flexWrap(FlexWrap.Wrap)
     }
     .width('100%')
     .backgroundColor($r('sys.color.background_primary'))

@@ -10,6 +10,7 @@ import { BillItem } from '../entities/BillItem';
 import { BudgetItem } from '../entities/BudgetItem';
 import { AccountItem } from '../entities/AccountItem';
 import { dbManager, Clog } from 'kite_utils';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 const TAG: string = '[HomeDataHelper]';
 
@@ -78,7 +79,7 @@ export async function queryBillsByMonth(month: string): Promise<BillItem[]> {
     const endDate = new Date(month + '-31').getTime();
     
     const sql = `SELECT * FROM bills WHERE date >= ${startDate} AND date <= ${endDate} ORDER BY date DESC`;
-    const result = await dbManager.querySql(sql);
+    const result = await dbManager.dbStore?.querySql(sql, []);
     
     const bills: BillItem[] = [];
     // 解析查询结果（具体实现根据 dbManager API）
@@ -86,7 +87,8 @@ export async function queryBillsByMonth(month: string): Promise<BillItem[]> {
     
     return bills;
   } catch (error) {
-    Clog.error(TAG, '查询账单失败', error);
+    const err = error as BusinessError;
+    Clog.error(TAG, '查询账单失败', err);
     return [];
   }
 }
@@ -97,7 +99,7 @@ export async function queryBillsByMonth(month: string): Promise<BillItem[]> {
 export async function queryBudgetsByMonth(month: string): Promise<BudgetItem[]> {
   try {
     const sql = `SELECT * FROM budgets WHERE month = '${month}'`;
-    const result = await dbManager.querySql(sql);
+    const result = await dbManager.dbStore?.querySql(sql, []);
     
     const budgets: BudgetItem[] = [];
     // 解析查询结果
@@ -105,7 +107,8 @@ export async function queryBudgetsByMonth(month: string): Promise<BudgetItem[]> 
     
     return budgets;
   } catch (error) {
-    Clog.error(TAG, '查询预算失败', error);
+    const err = error as BusinessError;
+    Clog.error(TAG, '查询预算失败', err);
     return [];
   }
 }
@@ -116,7 +119,7 @@ export async function queryBudgetsByMonth(month: string): Promise<BudgetItem[]> 
 export async function queryAccounts(): Promise<AccountItem[]> {
   try {
     const sql = 'SELECT * FROM accounts';
-    const result = await dbManager.querySql(sql);
+    const result = await dbManager.dbStore?.querySql(sql, []);
     
     const accounts: AccountItem[] = [];
     // 解析查询结果
@@ -124,7 +127,8 @@ export async function queryAccounts(): Promise<AccountItem[]> {
     
     return accounts;
   } catch (error) {
-    Clog.error(TAG, '查询账户失败', error);
+    const err = error as BusinessError;
+    Clog.error(TAG, '查询账户失败', err);
     return [];
   }
 }
