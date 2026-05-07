@@ -7,8 +7,9 @@ import { relationalStore } from '@kit.ArkData';
  */
 const upgradeSqls: DatabaseUpgradeSql[] = [
   {
-    version: 2,
-    sqls: [
+    fromVersion: 1,
+    toVersion: 2,
+    sql: [
       // 账单表
       `CREATE TABLE IF NOT EXISTS bills (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
