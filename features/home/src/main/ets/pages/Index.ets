@@ -40,12 +40,12 @@ export struct Index {
   
   // 快捷分类
   private quickCategories: CategoryItem[] = [
-    { name: '餐饮', icon: '🍽️', color: '#FF6B6B' },
-    { name: '交通', icon: '🚗', color: '#4ECDC4' },
-    { name: '购物', icon: '🛍️', color: '#45B7D1' },
-    { name: '娱乐', icon: '🎮', color: '#96CEB4' },
-    { name: '医疗', icon: '💊', color: '#FFEAA7' },
-    { name: '教育', icon: '📚', color: '#DDA0DD' }
+    { name: '餐饮', icon: 'sys.symbol.restaurant', color: '#FF6B6B' },
+    { name: '交通', icon: 'sys.symbol.car', color: '#4ECDC4' },
+    { name: '购物', icon: 'sys.symbol.shopping_cart', color: '#45B7D1' },
+    { name: '娱乐', icon: 'sys.symbol.game_controller', color: '#96CEB4' },
+    { name: '医疗', icon: 'sys.symbol.pill', color: '#FFEAA7' },
+    { name: '教育', icon: 'sys.symbol.book', color: '#DDA0DD' }
   ];
   
   @Builder
