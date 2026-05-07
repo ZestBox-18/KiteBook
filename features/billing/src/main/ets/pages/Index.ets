@@ -1,6 +1,5 @@
 import { hdsEffect } from '@kit.UIDesignKit';
 
-@Entry
 @ComponentV2
 export struct Index {
   @Local bloomValue: number = 0;

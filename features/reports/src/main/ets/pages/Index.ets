@@ -16,7 +16,6 @@ interface TabItem {
   icon: string;
 }
 
-@Entry
 @ComponentV2
 export struct Index {
   @Local currentTabIndex: number = 0;

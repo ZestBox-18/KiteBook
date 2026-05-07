@@ -25,7 +25,6 @@ import { SettingItem } from '../components/SettingItem';
 
 const TAG: string = '[Profile]';
 
-@Entry
 @ComponentV2
 export struct Index {
   // 页面路由栈

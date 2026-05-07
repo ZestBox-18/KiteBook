@@ -20,7 +20,6 @@ import {
   calculateBudgetProgress
 } from '../utils/HomeDataHelper';
 
-@Entry
 @ComponentV2
 export struct Index {
   @Local pageInfos: NavPathStack = new NavPathStack();
