@@ -6,7 +6,7 @@
  * @description: 主入口页面，包含底部 Tab 导航
  */
 import { hdsMaterial, HdsTabs, HdsTabsController, HdsAnimationMode } from '@kit.UIDesignKit';
-import { RouterUrlConstants, mainTabController, SystemOptions, gAppThemes, defaultAppTheme } from 'base';
+import { RouterUrlConstants, mainTabController, SystemOptions, gAppThemes } from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
 import { WindowUtil, BreakpointSystem, BreakpointConstants } from 'kite_utils';
@@ -36,7 +36,7 @@ struct Index {
     if (themeIndex >= 0 && themeIndex < gAppThemes.length) {
       ThemeControl.setDefaultTheme(gAppThemes[themeIndex]);
     } else {
-      ThemeControl.setDefaultTheme(defaultAppTheme);
+      ThemeControl.setDefaultTheme(gAppThemes[0]);
     }
   }
 

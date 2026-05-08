@@ -21,10 +21,8 @@ export struct ThemeSettings {
 
   // 主题名称列表
   private themeNames: string[] = [
-    '绿色', '红色', '蓝色', '紫色', '橙色', '中性灰',
-    '黄色', '棕色', '暗色', '青色', '靛蓝',
-    '青色', '粉色', '酸橙色', '深橙色', '琥珀色',
-    '浅青色', '深靛蓝', '石板蓝', '珊瑚色', '翡翠绿'
+    '松墨', '深海', '玄青', '砂金', '赤陶',
+    '云雾灰', '月白', '岩石', '暮紫'
   ]
 
   // 获取主题颜色
@@ -35,7 +33,7 @@ export struct ThemeSettings {
         return theme.colors.brand
       }
     }
-    return '#2FB04A'
+    return '#2B3A4A'
   }
 
   build() {
