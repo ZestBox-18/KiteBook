@@ -151,9 +151,9 @@ export struct AppearanceSettings {
             }
           }
 
-          // 外观分组
+          // 颜色模式分组
           ListItemGroup({
-            header: itemHead('外观'),
+            header: itemHead('颜色模式'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
