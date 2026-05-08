@@ -26,11 +26,20 @@ export class AppColors implements CustomColors {
 
 export class AppTheme implements CustomTheme {
   public colors: AppColors;
+  public darkColors?: AppColors;
 
   constructor(brand: string, fontPrimary: string, iconPrimary: string, iconEmphasize: string, backgroundPrimary: string,
-    compBackgroundNeutral: string) {
+    compBackgroundNeutral: string, darkBrand?: string, darkFontPrimary?: string, darkIconPrimary?: string,
+    darkIconEmphasize?: string, darkBackgroundPrimary?: string, darkCompBackgroundNeutral?: string) {
     this.colors =
       new AppColors(brand, fontPrimary, iconPrimary, iconEmphasize, backgroundPrimary, compBackgroundNeutral);
+
+    if (darkBrand !== undefined) {
+      this.darkColors =
+        new AppColors(darkBrand, darkFontPrimary || fontPrimary, darkIconPrimary || iconPrimary,
+          darkIconEmphasize || iconEmphasize, darkBackgroundPrimary || backgroundPrimary,
+          darkCompBackgroundNeutral || compBackgroundNeutral);
+    }
   }
 }
 
