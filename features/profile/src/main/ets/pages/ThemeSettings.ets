@@ -33,7 +33,7 @@ export struct ThemeSettings {
         return theme.colors.brand
       }
     }
-    return '#2B3A4A'
+    return '#5A7A8A'
   }
 
   build() {
