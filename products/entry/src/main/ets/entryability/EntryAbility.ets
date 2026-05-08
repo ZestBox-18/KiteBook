@@ -1,8 +1,8 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { AppStorageV2, window } from '@kit.ArkUI';
+import { AppStorageV2, PersistenceV2, window } from '@kit.ArkUI';
 import { GlobalContext, ImmersiveType, WindowUtil } from 'kite_utils';
-import { dbManagerInit } from 'base';
+import { dbManagerInit, SystemOptions } from 'base';
 
 
 const DOMAIN = 0x0000;
@@ -12,7 +12,23 @@ export default class EntryAbility extends UIAbility {
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     try {
-      this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
+      const options = PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
+      const darkMode = options.darkMode;
+
+      let colorMode: ConfigurationConstant.ColorMode;
+      switch (darkMode) {
+        case 'dark':
+          colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+          break;
+        case 'light':
+          colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+          break;
+        default: // 'auto'
+          colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
+          break;
+      }
+
+      this.context.getApplicationContext().setColorMode(colorMode);
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
