@@ -10,56 +10,205 @@ import { CommonConstants, mainTabController } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
+import { itemHead } from '../components/itemHead';
 
 @ComponentV2
 export struct DataExport {
   @Local pageInfos: NavPathStack = new NavPathStack()
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!
   @Local exporting: boolean = false
+  @Local exportFormat: string = 'csv'
+  @Local exportRange: string = 'all'
 
   build() {
     HdsNavDestination() {
       Column() {
-        // 导出说明
-        Column() {
-          Text('数据导出')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('app.color.text_primary'))
+        List({ space: 10 }) {
+          ListItem().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_MINI)
 
-          Text('将您的记账数据导出为 CSV 文件，可用于备份或导入其他设备。')
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ top: 8 })
+          // 导出说明
+          ListItemGroup({
+            header: itemHead('导出说明'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
+          }) {
+            ListItem() {
+              Column() {
+                Row() {
+                  SymbolGlyph($r('sys.symbol.doc_text'))
+                    .fontSize(20)
+                    .fontColor([$r('app.color.brand')])
+                    .margin({ right: 12 })
+
+                  Text('数据导出')
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .fontColor($r('app.color.text_primary'))
+                }
+                .width('100%')
+
+                Text('将您的记账数据导出为文件，可用于备份或导入其他设备。导出的数据包含账单记录、分类信息等。')
+                  .fontSize(14)
+                  .fontColor($r('app.color.text_secondary'))
+                  .margin({ top: 8 })
+                  .width('100%')
+              }
+              .width('100%')
+              .padding(16)
+              .alignItems(HorizontalAlign.Start)
+            }
+          }
+
+          // 导出格式
+          ListItemGroup({
+            header: itemHead('导出格式'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
+          }) {
+            ListItem() {
+              Row() {
+                Text('CSV 表格')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Radio({ value: 'csv', group: 'formatGroup' })
+                  .checked(this.exportFormat === 'csv')
+                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.exportFormat = 'csv'
+                    }
+                  })
+              }
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+
+            ListItem() {
+              Row() {
+                Text('JSON 数据')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Radio({ value: 'json', group: 'formatGroup' })
+                  .checked(this.exportFormat === 'json')
+                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.exportFormat = 'json'
+                    }
+                  })
+              }
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+          }
+
+          // 导出范围
+          ListItemGroup({
+            header: itemHead('导出范围'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
+          }) {
+            ListItem() {
+              Row() {
+                Text('全部数据')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Radio({ value: 'all', group: 'rangeGroup' })
+                  .checked(this.exportRange === 'all')
+                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.exportRange = 'all'
+                    }
+                  })
+              }
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+
+            ListItem() {
+              Row() {
+                Text('今年数据')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Radio({ value: 'year', group: 'rangeGroup' })
+                  .checked(this.exportRange === 'year')
+                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.exportRange = 'year'
+                    }
+                  })
+              }
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+
+            ListItem() {
+              Row() {
+                Text('本月数据')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Radio({ value: 'month', group: 'rangeGroup' })
+                  .checked(this.exportRange === 'month')
+                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .onChange((isChecked: boolean) => {
+                    if (isChecked) {
+                      this.exportRange = 'month'
+                    }
+                  })
+              }
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+          }
+
+          // 导出按钮
+          ListItem() {
+            Button(this.exporting ? '导出中...' : '导出数据')
+              .width('100%')
+              .height(48)
+              .backgroundColor($r('app.color.brand'))
+              .fontColor(Color.White)
+              .borderRadius(12)
+              .enabled(!this.exporting)
+              .onClick(() => {
+                this.exporting = true
+                // TODO: 实现导出逻辑
+                setTimeout(() => {
+                  this.exporting = false
+                }, 2000)
+              })
+          }
+          .padding({ left: 16, right: 16, top: 8 })
         }
         .width('100%')
-        .padding(20)
-        .backgroundColor($r('app.color.card_background'))
-        .borderRadius(12)
-        .margin({ left: 16, right: 16, top: 16 })
-        .alignItems(HorizontalAlign.Start)
-
-        // 导出按钮
-        Button(this.exporting ? '导出中...' : '导出数据')
-          .width('100%')
-          .height(48)
-          .backgroundColor($r('app.color.brand'))
-          .fontColor(Color.White)
-          .borderRadius(8)
-          .margin({ left: 16, right: 16, top: 24 })
-          .enabled(!this.exporting)
-          .onClick(() => {
-            this.exporting = true
-            // TODO: 实现导出逻辑
-            setTimeout(() => {
-              this.exporting = false
-            }, 2000)
-          })
+        .layoutWeight(1)
+        .padding({ left: 16, right: 16 })
       }
       .width('100%')
       .height('100%')
       .backgroundColor($r('app.color.title_bar_bg'))
-      .padding({ top: this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_MINI })
     }
     .titleBar({
       padding: {
@@ -78,17 +227,11 @@ export struct DataExport {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
-          },
+          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
               mainTitleColor: $r('app.color.text_primary'),
               subTitleColor: $r('app.color.text_secondary')
-            },
-            menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
             },
             backIconStyle: {
               backgroundColor: $r('app.color.action_bg'),
@@ -97,17 +240,11 @@ export struct DataExport {
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
-          },
+          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
               mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary'),
-            },
-            menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary')
+              subTitleColor: $r('app.color.text_secondary')
             },
             backIconStyle: {
               backgroundColor: $r('app.color.action_bg'),
