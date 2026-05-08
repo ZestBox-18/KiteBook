@@ -9,14 +9,16 @@
 import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
-import { WindowUtil } from 'kite_utils';
+import { WindowUtil, Clog } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
+import { Want, common } from '@kit.AbilityKit';
 import { UserProfile } from '../entities/UserProfile';
 import { UserEditSheet } from '../components/UserEditSheet';
 import { AppearanceSettings } from './AppearanceSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { DataExport } from './DataExport';
 import { About } from './About';
+import { Sponsorship } from './Sponsorship';
 import { itemHead } from '../components/itemHead';
 import { UserCard } from '../components/UserCard';
 import { SettingItem } from '../components/SettingItem';
@@ -40,6 +42,7 @@ export struct Index {
   @Local loginAnimationTrigger: number = 0
   @Local logoutAnimationTrigger: number = 0
   @Local loginFailedTrigger: number = 0
+  private context = getContext(this) as common.UIAbilityContext;
 
   /**
    * 页面路由表
@@ -54,6 +57,8 @@ export struct Index {
       DataExport()
     } else if (name === RouterUrlConstants.ABOUT) {
       About()
+    } else if (name === RouterUrlConstants.SPONSORSHIP) {
+      Sponsorship()
     }
   }
 
@@ -162,6 +167,41 @@ export struct Index {
                 title: '关于',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.ABOUT)
+                }
+              })
+            }
+          }
+
+          // 支持分组
+          ListItemGroup({
+            header: itemHead('支持'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
+          }) {
+            ListItem() {
+              SettingItem({
+                icon: $r('sys.symbol.hand_thumbsup_fill'),
+                title: '给个好评',
+                onItemClick: () => {
+                  const link: string = 'https://appgallery.huawei.com/app/detail?id=cn.zestbox.kitebook';
+                  const want: Want = {
+                    action: 'ohos.want.action.viewData',
+                    entities: ['entity.system.browsable'],
+                    uri: link
+                  };
+                  this.context.startAbility(want).catch((error: BusinessError) => {
+                    Clog.error(TAG, `Failed to open link: ${error.message}`);
+                  });
+                }
+              })
+            }
+
+            ListItem() {
+              SettingItem({
+                icon: $r('sys.symbol.gift_fill'),
+                title: '投喂作者',
+                onItemClick: () => {
+                  this.navigateToSubPage(RouterUrlConstants.SPONSORSHIP)
                 }
               })
             }
