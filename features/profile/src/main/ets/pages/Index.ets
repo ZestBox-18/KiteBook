@@ -13,10 +13,8 @@ import { WindowUtil } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { UserProfile } from '../entities/UserProfile';
 import { UserEditSheet } from '../components/UserEditSheet';
-import { ThemeSettings } from './ThemeSettings';
-import { FontSettings } from './FontSettings';
+import { AppearanceSettings } from './AppearanceSettings';
 import { NotificationSettings } from './NotificationSettings';
-import { DarkModeSettings } from './DarkModeSettings';
 import { DataExport } from './DataExport';
 import { About } from './About';
 import { itemHead } from '../components/itemHead';
@@ -48,14 +46,10 @@ export struct Index {
    */
   @Builder
   PagesMap(name: string, param?: object) {
-    if (name === RouterUrlConstants.THEME_SETTINGS) {
-      ThemeSettings()
-    } else if (name === RouterUrlConstants.FONT_SETTINGS) {
-      FontSettings()
+    if (name === RouterUrlConstants.APPEARANCE_SETTINGS) {
+      AppearanceSettings()
     } else if (name === RouterUrlConstants.NOTIFICATION_SETTINGS) {
       NotificationSettings()
-    } else if (name === RouterUrlConstants.DARK_MODE_SETTINGS) {
-      DarkModeSettings()
     } else if (name === RouterUrlConstants.DATA_EXPORT) {
       DataExport()
     } else if (name === RouterUrlConstants.ABOUT) {
@@ -127,20 +121,10 @@ export struct Index {
           }) {
             ListItem() {
               SettingItem({
-                icon: $r('sys.symbol.paintpalette'),
-                title: '主题设置',
+                icon: $r('sys.symbol.text_justify'),
+                title: '外观设置',
                 onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.THEME_SETTINGS)
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.textformat'),
-                title: '字体大小',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.FONT_SETTINGS)
+                  this.navigateToSubPage(RouterUrlConstants.APPEARANCE_SETTINGS)
                 }
               })
             }
@@ -151,16 +135,6 @@ export struct Index {
                 title: '通知设置',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.NOTIFICATION_SETTINGS)
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.moon'),
-                title: '深色模式',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.DARK_MODE_SETTINGS)
                 }
               })
             }
