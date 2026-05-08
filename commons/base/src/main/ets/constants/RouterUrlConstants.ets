@@ -44,10 +44,6 @@ export class RouterUrlConstants {
    */
   static readonly APPEARANCE_SETTINGS: string = 'AppearanceSettings';
   /**
-   * 字体设置
-   */
-  static readonly FONT_SETTINGS: string = 'FontSettings';
-  /**
    * 通知设置
    */
   static readonly NOTIFICATION_SETTINGS: string = 'NotificationSettings';
