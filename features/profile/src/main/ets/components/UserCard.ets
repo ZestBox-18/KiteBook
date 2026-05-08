@@ -22,6 +22,8 @@ export struct UserCard {
   @Param loginAnimationTrigger: number = 0
   // 退出登录动画触发器
   @Param logoutAnimationTrigger: number = 0
+  // 登录失败动画触发器
+  @Param loginFailedTrigger: number = 0
   // 动画状态
   @Local avatarRotateY: number = 0
   @Local currentAvatar: string = ''
@@ -69,6 +71,26 @@ export struct UserCard {
     if (!this.profile.isLoggedIn && !this.isAnimating) {
       this.playLogoutAnimation();
     }
+  }
+
+  // 监听登录失败触发器变化
+  @Monitor('loginFailedTrigger')
+  onLoginFailedTriggerChanged(): void {
+    this.stopRotationAndReset();
+  }
+
+  // 停止旋转动画并重置状态
+  private stopRotationAndReset(): void {
+    if (this.rotateInterval) {
+      clearInterval(this.rotateInterval);
+      this.rotateInterval = 0;
+    }
+    this.shouldStop = true;
+    this.avatarRotateY = 0;
+    this.angle = 0;
+    this.avatarSwitched = false;
+    this.isAnimating = false;
+    this.isWaitingForLogin = false;
   }
 
   // 开始旋转动画（等待登录成功）

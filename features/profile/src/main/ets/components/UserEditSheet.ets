@@ -21,6 +21,7 @@ export struct UserEditSheet {
   @Param onLoginStart: () => void = () => {}  // 登录开始时调用
   @Param onLoginSuccess: () => void = () => {}
   @Param onLogout: () => void = () => {}
+  @Param onLoginFailed: () => void = () => {}
   @Param uiContext: UIContext | undefined = undefined
   @Local isLoggingIn: boolean = false
   @Local ringScale: number = 0.8
@@ -214,6 +215,8 @@ export struct UserEditSheet {
       const err = error as BusinessError;
       hilog.error(0x0000, TAG, 'Login failed: %{public}d', err.code);
       this.isLoggingIn = false;
+      // 通知 UserCard 停止旋转动画
+      this.onLoginFailed();
     }
   }
 

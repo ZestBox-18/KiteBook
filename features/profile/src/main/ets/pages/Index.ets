@@ -41,6 +41,7 @@ export struct Index {
   // 动画触发器
   @Local loginAnimationTrigger: number = 0
   @Local logoutAnimationTrigger: number = 0
+  @Local loginFailedTrigger: number = 0
 
   /**
    * 页面路由表
@@ -90,6 +91,9 @@ export struct Index {
       },
       onLogout: () => {
         this.logoutAnimationTrigger++
+      },
+      onLoginFailed: () => {
+        this.loginFailedTrigger++
       }
     })
   }
@@ -110,7 +114,8 @@ export struct Index {
               },
               uiContext: this.getUIContext(),
               loginAnimationTrigger: this.loginAnimationTrigger,
-              logoutAnimationTrigger: this.logoutAnimationTrigger
+              logoutAnimationTrigger: this.logoutAnimationTrigger,
+              loginFailedTrigger: this.loginFailedTrigger
             })
           }
 
