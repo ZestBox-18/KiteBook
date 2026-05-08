@@ -265,7 +265,7 @@ export let gAppThemesDict: Map<string, CustomTheme> = new Map([
   ['青色', gAppThemeTeal],
   ['靛蓝', gAppThemeIndigo],
 
-  ['青色', gAppThemeCyan],
+  ['湖蓝', gAppThemeCyan],
   ['粉色', gAppThemePink],
   ['酸橙色', gAppThemeLime],
   ['深橙色', gAppThemeDeepOrange],
