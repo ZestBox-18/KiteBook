@@ -6,13 +6,13 @@
  * @description: 主入口页面，包含底部 Tab 导航
  */
 import { hdsMaterial, HdsTabs, HdsTabsController, HdsAnimationMode } from '@kit.UIDesignKit';
-import { RouterUrlConstants, mainTabController } from 'base';
+import { RouterUrlConstants, mainTabController, SystemOptions, gAppThemes, defaultAppTheme } from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
 import { WindowUtil, BreakpointSystem, BreakpointConstants } from 'kite_utils';
 import { Profile } from 'profile';
 import { Reports } from 'reports';
-import { AppStorageV2, CustomColors, ThemeControl } from '@kit.ArkUI';
+import { AppStorageV2, PersistenceV2, ThemeControl } from '@kit.ArkUI';
 
 const TAG: string = '[Index]';
 
@@ -29,23 +29,15 @@ struct Index {
     // 注册断点监听
     this.breakpointSystem.register();
 
-    setTimeout(() => {
-      class DefaultAppColors implements CustomColors {
-        brand: string = '#a980ff00'; // 高亮图标
-      }
+    // 应用用户选择的主题
+    const options = PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
+    const themeIndex = options.themeIndex;
 
-      class DefaultAppColors1 implements CustomColors {
-        brand: string = '#e8d20565'; // 高亮图标
-      }
-
-      class DefaultAppTheme implements CustomTheme {
-        public colors: DefaultAppColors = new DefaultAppColors()
-        public darkColors: DefaultAppColors1 = new DefaultAppColors1()
-      }
-
-      let defaultAppTheme: CustomTheme = new DefaultAppTheme();
-      ThemeControl.setDefaultTheme(defaultAppTheme)
-    }, 5000)
+    if (themeIndex >= 0 && themeIndex < gAppThemes.length) {
+      ThemeControl.setDefaultTheme(gAppThemes[themeIndex]);
+    } else {
+      ThemeControl.setDefaultTheme(defaultAppTheme);
+    }
   }
 
   aboutToDisappear(): void {
