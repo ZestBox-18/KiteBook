@@ -40,6 +40,10 @@ export class RouterUrlConstants {
    */
   static readonly THEME_SETTINGS: string = 'ThemeSettings';
   /**
+   * 外观设置
+   */
+  static readonly APPEARANCE_SETTINGS: string = 'AppearanceSettings';
+  /**
    * 字体设置
    */
   static readonly FONT_SETTINGS: string = 'FontSettings';
