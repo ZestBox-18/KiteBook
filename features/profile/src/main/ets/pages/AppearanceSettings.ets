@@ -11,6 +11,7 @@ import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
+import { ThemeColorItem } from '../components/ThemeColorItem';
 
 @ComponentV2
 export struct AppearanceSettings {
@@ -42,160 +43,79 @@ export struct AppearanceSettings {
   build() {
     HdsNavDestination() {
       Column() {
-        Column() {
-          Text('主题选择')
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ bottom: 12 })
-
-          Grid() {
-            ForEach(this.themeNames, (name: string, index: number) => {
-              GridItem() {
-                Column() {
-                  Column()
-                    .width(48)
-                    .height(48)
-                    .borderRadius(24)
-                    .backgroundColor(this.getThemeColor(index))
-
-                  Text(name)
-                    .fontSize(12)
-                    .fontColor($r('app.color.text_primary'))
-                    .margin({ top: 8 })
-
-                  if (this.optionSystem.themeIndex === index) {
-                    Text('✓')
-                      .fontSize(14)
-                      .fontColor($r('app.color.brand'))
-                      .margin({ top: 4 })
+        List({ space: 16 }) {
+          // 主题选择分组
+          ListItemGroup({
+            header: this.SectionHeader('主题选择'),
+            style: ListItemGroupStyle.NONE
+          }) {
+            ListItem() {
+              Grid() {
+                ForEach(this.themeNames, (name: string, index: number) => {
+                  GridItem() {
+                    ThemeColorItem({
+                      color: this.getThemeColor(index),
+                      name: name,
+                      isSelected: this.optionSystem.themeIndex === index,
+                      onSelect: () => {
+                        this.optionSystem.themeIndex = index
+                      }
+                    })
                   }
-                }
-                .width('100%')
-                .padding(8)
-                .onClick(() => {
-                  this.optionSystem.themeIndex = index
+                }, (name: string) => name)
+              }
+              .columnsTemplate('1fr 1fr 1fr')
+              .rowsGap(8)
+              .columnsGap(8)
+              .width('100%')
+              .padding(16)
+            }
+          }
+
+          // 字体粗细分组
+          ListItemGroup({
+            header: this.SectionHeader('字体粗细'),
+            style: ListItemGroupStyle.NONE
+          }) {
+            ForEach(this.fontWeightOptions, (option: string, index: number) => {
+              ListItem() {
+                this.OptionItem(option, this.optionSystem.fontWeight === index, () => {
+                  this.optionSystem.fontWeight = index
                 })
               }
-            }, (name: string) => name)
+            }, (option: string) => option)
           }
-          .columnsTemplate('1fr 1fr 1fr 1fr')
-          .rowsGap(8)
-          .columnsGap(8)
-          .width('100%')
-        }
-        .width('100%')
-        .padding(16)
-        .backgroundColor($r('app.color.card_background'))
-        .borderRadius(12)
-        .margin({ left: 16, right: 16, top: 16 })
 
-        Column() {
-          Text('字体粗细')
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ bottom: 12 })
-
-          ForEach(this.fontWeightOptions, (option: string, index: number) => {
-            Row() {
-              Text(option)
-                .fontSize(15)
-                .fontColor($r('app.color.text_primary'))
-
-              Blank()
-
-              if (this.optionSystem.fontWeight === index) {
-                Text('✓')
-                  .fontSize(16)
-                  .fontColor($r('app.color.brand'))
+          // 图标粗细分组
+          ListItemGroup({
+            header: this.SectionHeader('图标粗细'),
+            style: ListItemGroupStyle.NONE
+          }) {
+            ForEach(this.iconWeightOptions, (option: string, index: number) => {
+              ListItem() {
+                this.OptionItem(option, this.optionSystem.iconWeight === index, () => {
+                  this.optionSystem.iconWeight = index
+                })
               }
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor($r('app.color.title_bar_bg'))
-            .borderRadius(8)
-            .margin({ top: index === 0 ? 0 : 8 })
-            .onClick(() => {
-              this.optionSystem.fontWeight = index
-            })
-          }, (option: string) => option)
-        }
-        .width('100%')
-        .padding(16)
-        .backgroundColor($r('app.color.card_background'))
-        .borderRadius(12)
-        .margin({ left: 16, right: 16, top: 16 })
+            }, (option: string) => option)
+          }
 
-        Column() {
-          Text('图标粗细')
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ bottom: 12 })
-
-          ForEach(this.iconWeightOptions, (option: string, index: number) => {
-            Row() {
-              Text(option)
-                .fontSize(15)
-                .fontColor($r('app.color.text_primary'))
-
-              Blank()
-
-              if (this.optionSystem.iconWeight === index) {
-                Text('✓')
-                  .fontSize(16)
-                  .fontColor($r('app.color.brand'))
+          // 深色模式分组
+          ListItemGroup({
+            header: this.SectionHeader('深色模式'),
+            style: ListItemGroupStyle.NONE
+          }) {
+            ForEach(this.darkModeOptions, (mode: string, index: number) => {
+              ListItem() {
+                this.OptionItem(this.darkModeNames[index], this.optionSystem.darkMode === mode, () => {
+                  this.optionSystem.darkMode = mode
+                })
               }
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor($r('app.color.title_bar_bg'))
-            .borderRadius(8)
-            .margin({ top: index === 0 ? 0 : 8 })
-            .onClick(() => {
-              this.optionSystem.iconWeight = index
-            })
-          }, (option: string) => option)
+            }, (mode: string) => mode)
+          }
         }
         .width('100%')
-        .padding(16)
-        .backgroundColor($r('app.color.card_background'))
-        .borderRadius(12)
-        .margin({ left: 16, right: 16, top: 16 })
-
-        Column() {
-          Text('深色模式')
-            .fontSize(14)
-            .fontColor($r('app.color.text_secondary'))
-            .margin({ bottom: 12 })
-
-          ForEach(this.darkModeOptions, (mode: string, index: number) => {
-            Row() {
-              Text(this.darkModeNames[index])
-                .fontSize(15)
-                .fontColor($r('app.color.text_primary'))
-
-              Blank()
-
-              if (this.optionSystem.darkMode === mode) {
-                Text('✓')
-                  .fontSize(16)
-                  .fontColor($r('app.color.brand'))
-              }
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor($r('app.color.title_bar_bg'))
-            .borderRadius(8)
-            .margin({ top: index === 0 ? 0 : 8 })
-            .onClick(() => {
-              this.optionSystem.darkMode = mode
-            })
-          }, (mode: string) => mode)
-        }
-        .width('100%')
-        .padding(16)
-        .backgroundColor($r('app.color.card_background'))
-        .borderRadius(12)
-        .margin({ left: 16, right: 16, top: 16 })
+        .layoutWeight(1)
       }
       .width('100%')
       .height('100%')
@@ -262,6 +182,42 @@ export struct AppearanceSettings {
     .onBackPressed(() => {
       mainTabController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION);
       return false;
+    })
+  }
+
+  // 分组标题
+  @Builder
+  SectionHeader(title: string) {
+    Text(title)
+      .fontSize(14)
+      .fontColor($r('app.color.text_secondary'))
+      .width('100%')
+      .padding({ left: 20, bottom: 8 })
+  }
+
+  // 选项项
+  @Builder
+  OptionItem(label: string, isSelected: boolean, onSelect: () => void) {
+    Row() {
+      Text(label)
+        .fontSize(15)
+        .fontColor($r('app.color.text_primary'))
+
+      Blank()
+
+      if (isSelected) {
+        Text('✓')
+          .fontSize(16)
+          .fontColor($r('app.color.brand'))
+      }
+    }
+    .width('100%')
+    .padding(16)
+    .backgroundColor($r('app.color.card_background'))
+    .borderRadius(12)
+    .margin({ left: 16, right: 16 })
+    .onClick(() => {
+      onSelect()
     })
   }
 }
