@@ -18,10 +18,10 @@ export class SystemOptions {
   @Trace firstStart: boolean = true
   // 主题索引
   @Trace themeIndex: number = 0
-  // 字体粗细：0=细体, 1=常规, 2=中等, 3=粗体
-  @Trace fontWeight: number = 1
-  // 图标粗细：0=细线, 1=常规, 2=粗线
-  @Trace iconWeight: number = 1
+  // 字体粗细值：100=较细, 400=正常, 900=较粗
+  @Trace fontThickness: number = 400
+  // 图标粗细值：100=较细, 400=正常, 900=较粗
+  @Trace iconThickness: number = 400
   // 通知开关
   @Trace notificationEnabled: boolean = true
   // 深色模式：auto, light, dark
@@ -35,13 +35,13 @@ export class SystemOptions {
   updateFromData(data: SystemOptions): void {
     this.firstStart = data.firstStart
     this.themeIndex = data.themeIndex
-    this.fontWeight = data.fontWeight
-    this.iconWeight = data.iconWeight
+    this.fontThickness = data.fontThickness
+    this.iconThickness = data.iconThickness
     this.notificationEnabled = data.notificationEnabled
     this.darkMode = data.darkMode
   }
 
-  @Monitor('firstStart', 'themeIndex', 'fontWeight', 'iconWeight', 'notificationEnabled', 'darkMode')
+  @Monitor('firstStart', 'themeIndex', 'fontThickness', 'iconThickness', 'notificationEnabled', 'darkMode')
   onDataChange(monitor: IMonitor) {
     DebounceManager.getInstance().execute('SystemOptions', () => {
       PersistenceV2.save('SystemOptions')

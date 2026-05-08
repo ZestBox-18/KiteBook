@@ -12,6 +12,7 @@ import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
 import { ThemeColorItem } from '../components/ThemeColorItem';
+import { itemHead } from '../components/itemHead';
 
 @ComponentV2
 export struct AppearanceSettings {
@@ -19,35 +20,24 @@ export struct AppearanceSettings {
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
-
   private themeNames: string[] = [
     '松墨', '深海', '玄青', '砂金', '赤陶',
     '云雾灰', '月白', '岩石', '暮紫'
   ]
-
-  private fontWeightOptions: string[] = ['细体', '常规', '中等', '粗体']
-  private iconWeightOptions: string[] = ['细线', '常规', '粗线']
   private darkModeOptions: string[] = ['auto', 'light', 'dark']
   private darkModeNames: string[] = ['跟随系统', '浅色模式', '深色模式']
-
-  private getThemeColor(index: number): ResourceColor {
-    if (index >= 0 && index < gAppThemes.length) {
-      const theme = gAppThemes[index]
-      if (theme && theme.colors && theme.colors.brand) {
-        return theme.colors.brand
-      }
-    }
-    return '#5A7A8A'
-  }
 
   build() {
     HdsNavDestination() {
       Column() {
-        List({ space: 16 }) {
+        List({ space: 10 }) {
+          ListItem().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_MINI)
+
           // 主题选择分组
           ListItemGroup({
-            header: this.SectionHeader('主题选择'),
-            style: ListItemGroupStyle.NONE
+            header: itemHead('主题选择'),
+            space: 5,
+            style: ListItemGroupStyle.CARD
           }) {
             ListItem() {
               Grid() {
@@ -68,42 +58,87 @@ export struct AppearanceSettings {
               .rowsGap(8)
               .columnsGap(8)
               .width('100%')
-              .padding(16)
+              .padding({ top: 8, bottom: 8 })
             }
           }
 
           // 字体粗细分组
           ListItemGroup({
-            header: this.SectionHeader('字体粗细'),
-            style: ListItemGroupStyle.NONE
+            header: itemHead('字体粗细'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
           }) {
-            ForEach(this.fontWeightOptions, (option: string, index: number) => {
-              ListItem() {
-                this.OptionItem(option, this.optionSystem.fontWeight === index, () => {
-                  this.optionSystem.fontWeight = index
+            ListItem() {
+              Row({ space: 10 }) {
+                Text('字体粗细')
+                  .width(80)
+                  .fontColor($r('app.color.text_primary'))
+                  .fontWeight(this.optionSystem.fontThickness)
+
+                Slider({
+                  style: SliderStyle.InSet,
+                  max: 900,
+                  step: 400,
+                  min: 100,
+                  value: this.optionSystem.fontThickness
                 })
+                  .showTips(true,
+                    this.optionSystem.fontThickness == 100 ? '较细' :
+                      this.optionSystem.fontThickness < 900 ? '正常' : '较粗')
+                  .layoutWeight(1)
+                  .onChange((value: number) => {
+                    this.optionSystem.fontThickness = value
+                  })
               }
-            }, (option: string) => option)
+              .alignItems(VerticalAlign.Center)
+              .width('100%')
+              .padding(16)
+            }
           }
 
           // 图标粗细分组
           ListItemGroup({
-            header: this.SectionHeader('图标粗细'),
-            style: ListItemGroupStyle.NONE
+            header: itemHead('图标粗细'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
           }) {
-            ForEach(this.iconWeightOptions, (option: string, index: number) => {
-              ListItem() {
-                this.OptionItem(option, this.optionSystem.iconWeight === index, () => {
-                  this.optionSystem.iconWeight = index
+            ListItem() {
+              Row({ space: 10 }) {
+
+                Row() {
+                  SymbolGlyph($r('sys.symbol.paintpalette'))
+                    .fontColor([$r('app.color.text_primary')])
+                    .fontSize(28)
+                    .fontWeight(this.optionSystem.iconThickness)
+                }.width(80)
+                .justifyContent(FlexAlign.Center)
+
+                Slider({
+                  style: SliderStyle.InSet,
+                  max: 900,
+                  step: 400,
+                  min: 100,
+                  value: this.optionSystem.iconThickness
                 })
+                  .showTips(true,
+                    this.optionSystem.iconThickness == 100 ? '较细' :
+                      this.optionSystem.iconThickness < 900 ? '正常' : '较粗')
+                  .layoutWeight(1)
+                  .onChange((value: number) => {
+                    this.optionSystem.iconThickness = value
+                  })
               }
-            }, (option: string) => option)
+              .alignItems(VerticalAlign.Center)
+              .width('100%')
+              .padding(16)
+            }
           }
 
           // 深色模式分组
           ListItemGroup({
-            header: this.SectionHeader('深色模式'),
-            style: ListItemGroupStyle.NONE
+            header: itemHead('深色模式'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
           }) {
             ForEach(this.darkModeOptions, (mode: string, index: number) => {
               ListItem() {
@@ -116,11 +151,11 @@ export struct AppearanceSettings {
         }
         .width('100%')
         .layoutWeight(1)
+        .padding({ left: 16, right: 16 })
       }
       .width('100%')
       .height('100%')
       .backgroundColor($r('app.color.title_bar_bg'))
-      .padding({ top: this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_MINI })
     }
     .titleBar({
       padding: {
@@ -185,16 +220,6 @@ export struct AppearanceSettings {
     })
   }
 
-  // 分组标题
-  @Builder
-  SectionHeader(title: string) {
-    Text(title)
-      .fontSize(14)
-      .fontColor($r('app.color.text_secondary'))
-      .width('100%')
-      .padding({ left: 20, bottom: 8 })
-  }
-
   // 选项项
   @Builder
   OptionItem(label: string, isSelected: boolean, onSelect: () => void) {
@@ -213,11 +238,18 @@ export struct AppearanceSettings {
     }
     .width('100%')
     .padding(16)
-    .backgroundColor($r('app.color.card_background'))
-    .borderRadius(12)
-    .margin({ left: 16, right: 16 })
     .onClick(() => {
       onSelect()
     })
+  }
+
+  private getThemeColor(index: number): ResourceColor {
+    if (index >= 0 && index < gAppThemes.length) {
+      const theme = gAppThemes[index]
+      if (theme && theme.colors && theme.colors.brand) {
+        return theme.colors.brand
+      }
+    }
+    return '#5A7A8A'
   }
 }

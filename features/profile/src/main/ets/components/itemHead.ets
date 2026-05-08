@@ -12,6 +12,7 @@ const TAG: string = '[itemHead]';
 export function itemHead(text: string) {
   Text(text)
     .fontSize(12)
+    .fontColor($r('app.color.text_secondary'))
     .width('100%')
     .padding(5)
 }

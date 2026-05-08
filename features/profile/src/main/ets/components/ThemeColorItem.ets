@@ -17,8 +17,8 @@ export struct ThemeColorItem {
   // 是否选中
   @Param isSelected: boolean = false;
   // 点击回调
-  @Event onSelect: () => void = () => {};
-
+  @Event onSelect: () => void = () => {
+  };
   // 动画状态
   @Local circleWidth: number = 24;
   @Local circleHeight: number = 24;
@@ -45,7 +45,7 @@ export struct ThemeColorItem {
       this.circleY = 0;
       this.circleBorderRadius = 8;
       this.textColor = Color.White;
-      this.textX = 0;
+      this.textX = 10;
       this.isExpanded = true;
     } else {
       // 未选中状态：小圆圈在左侧
@@ -92,7 +92,7 @@ export struct ThemeColorItem {
     }
     .width(100)
     .height(48)
-    .borderRadius(8)
+    .borderRadius(12)
     .backgroundColor($r('app.color.card_background'))
     .clip(true)
     .onClick(() => {
