@@ -59,4 +59,8 @@ export class RouterUrlConstants {
    * 关于
    */
   static readonly ABOUT: string = 'About';
+  /**
+   * 投喂作者
+   */
+  static readonly SPONSORSHIP: string = 'Sponsorship';
 }
