@@ -50,22 +50,22 @@ struct Index {
         TabContent() {
           Home()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), RouterUrlConstants.HOME))
+        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), '首页'))
 
         TabContent() {
           Billing()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.wifi_router_fill'), RouterUrlConstants.BILLING))
+        .tabBar(new BottomTabBarStyle($r('sys.media.wifi_router_fill'), '账单'))
 
         TabContent() {
           Reports()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), RouterUrlConstants.REPORTS))
+        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), '报表'))
 
         TabContent() {
           Profile()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), RouterUrlConstants.PROFILE))
+        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), '我的'))
       }
       .barOverlap(true)
       .barPosition(BarPosition.End)
