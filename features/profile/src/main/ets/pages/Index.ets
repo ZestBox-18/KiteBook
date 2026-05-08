@@ -121,7 +121,7 @@ export struct Index {
           }) {
             ListItem() {
               SettingItem({
-                icon: $r('sys.symbol.text_justify'),
+                icon: $r('sys.symbol.paintpalette'),
                 title: '外观设置',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.APPEARANCE_SETTINGS)
