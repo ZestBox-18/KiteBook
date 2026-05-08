@@ -59,6 +59,10 @@
     {
       "name": "item_pressed",
       "value": "#2C2C2E"
+    },
+    {
+      "name": "brand",
+      "value": "#2FB04A"
     }
   ]
 }
