@@ -8,11 +8,13 @@
 
 import { SystemOptions, gAppThemes, CommonConstants, mainTabController } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
-import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
+import { AppStorageV2, LengthMetrics, curves } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
 import { ThemeColorItem } from '../components/ThemeColorItem';
 import { itemHead } from '../components/itemHead';
+import json from '@ohos.util.json';
+import { JSON } from '@kit.ArkTS';
 
 @ComponentV2
 export struct AppearanceSettings {
@@ -26,6 +28,21 @@ export struct AppearanceSettings {
   ]
   private darkModeOptions: string[] = ['auto', 'light', 'dark']
   private darkModeNames: string[] = ['跟随系统', '浅色模式', '深色模式']
+
+  private isFollowSystem(): boolean {
+    return this.optionSystem.darkMode === 'auto'
+  }
+
+  private isDarkMode(): boolean {
+    return this.optionSystem.darkMode === 'dark'
+  }
+
+  @Local colorModeExpanded: boolean = false
+  @Local iconScale: number = 1
+
+  aboutToAppear(): void {
+    this.colorModeExpanded = !this.isFollowSystem()
+  }
 
   build() {
     HdsNavDestination() {
@@ -84,7 +101,7 @@ export struct AppearanceSettings {
                 })
                   .showTips(true,
                     this.optionSystem.fontThickness == 100 ? '较细' :
-                      this.optionSystem.fontThickness < 900 ? '正常' : '较粗')
+                      this.optionSystem.fontThickness == 500 ? '正常' : '较粗')
                   .layoutWeight(1)
                   .onChange((value: number) => {
                     this.optionSystem.fontThickness = value
@@ -122,7 +139,7 @@ export struct AppearanceSettings {
                 })
                   .showTips(true,
                     this.optionSystem.iconThickness == 100 ? '较细' :
-                      this.optionSystem.iconThickness < 900 ? '正常' : '较粗')
+                      this.optionSystem.iconThickness == 500 ? '正常' : '较粗')
                   .layoutWeight(1)
                   .onChange((value: number) => {
                     this.optionSystem.iconThickness = value
@@ -134,19 +151,89 @@ export struct AppearanceSettings {
             }
           }
 
-          // 深色模式分组
+          // 外观分组
           ListItemGroup({
-            header: itemHead('深色模式'),
+            header: itemHead('外观'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
-            ForEach(this.darkModeOptions, (mode: string, index: number) => {
-              ListItem() {
-                this.OptionItem(this.darkModeNames[index], this.optionSystem.darkMode === mode, () => {
-                  this.optionSystem.darkMode = mode
-                })
+            // 跟随系统
+            ListItem() {
+              Row() {
+                SymbolGlyph(this.isFollowSystem()
+                  ? $r('sys.symbol.circle_filled_and_circle')
+                  : (this.isDarkMode() ? $r('sys.symbol.moon_1') : $r('sys.symbol.sun_min')))
+                  .fontSize(20)
+                  .fontColor([$r('app.color.text_primary')])
+                  .margin({ right: 12 })
+                  .scale({ x: this.iconScale, y: this.iconScale })
+                  .animation({ duration: 250, curve: Curve.EaseInOut })
+
+                Text('跟随系统')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Toggle({ type: ToggleType.Switch, isOn: this.isFollowSystem() })
+                  .selectedColor($r('app.color.brand'))
+                  .switchPointColor('#FFFFFF')
+                  .onChange((isOn: boolean) => {
+                    // 图标弹跳动画
+                    this.getUIContext().animateTo({ duration: 120, curve: Curve.EaseIn }, () => {
+                      this.iconScale = 0.6
+                    })
+                    setTimeout(() => {
+                      this.getUIContext().animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
+                        this.iconScale = 1
+                      })
+                    }, 120)
+
+                    // 展开/收起颜色模式
+                    this.getUIContext().animateTo({ duration: 250, curve: Curve.EaseInOut }, () => {
+                      this.colorModeExpanded = !isOn
+                    })
+                    this.optionSystem.darkMode = isOn ? 'auto' : (this.isDarkMode() ? 'dark' : 'light')
+                  })
               }
-            }, (mode: string) => mode)
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+
+            // 颜色模式
+            ListItem() {
+              Row() {
+                Text('深色模式')
+                  .fontSize(16)
+                  .fontColor($r('app.color.text_primary'))
+
+                Blank()
+
+                Toggle({ type: ToggleType.Switch, isOn: this.isDarkMode() })
+                  .selectedColor($r('app.color.brand'))
+                  .switchPointColor('#FFFFFF')
+                  .onChange((isOn: boolean) => {
+                    // 图标弹跳动画
+                    this.getUIContext().animateTo({ duration: 120, curve: Curve.EaseIn }, () => {
+                      this.iconScale = 0.6
+                    })
+                    setTimeout(() => {
+                      this.getUIContext().animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
+                        this.iconScale = 1
+                      })
+                    }, 120)
+
+                    this.optionSystem.darkMode = isOn ? 'dark' : 'light'
+                  })
+              }
+              .width('100%')
+              .height(56)
+              .padding({ left: 16, right: 16 })
+            }
+            .height(this.colorModeExpanded ? 56 : 0)
+            .clip(true)
+            .animation({ duration: 250, curve: Curve.EaseInOut })
           }
         }
         .width('100%')

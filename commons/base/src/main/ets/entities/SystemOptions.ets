@@ -18,10 +18,10 @@ export class SystemOptions {
   @Trace firstStart: boolean = true
   // 主题索引
   @Trace themeIndex: number = 0
-  // 字体粗细值：100=较细, 400=正常, 900=较粗
-  @Trace fontThickness: number = 400
-  // 图标粗细值：100=较细, 400=正常, 900=较粗
-  @Trace iconThickness: number = 400
+  // 字体粗细值：100=较细, 500=正常, 900=较粗
+  @Trace fontThickness: number = 500
+  // 图标粗细值：100=较细, 500=正常, 900=较粗
+  @Trace iconThickness: number = 500
   // 通知开关
   @Trace notificationEnabled: boolean = true
   // 深色模式：auto, light, dark
