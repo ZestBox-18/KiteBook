@@ -118,9 +118,9 @@ export struct Index {
             })
           }
 
-          // 应用设置分组
+          // 设置分组
           ListItemGroup({
-            header: itemHead('应用设置'),
+            header: itemHead('设置'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -143,30 +143,13 @@ export struct Index {
                 }
               })
             }
-          }
 
-          // 其他分组
-          ListItemGroup({
-            header: itemHead('其他'),
-            space: 1,
-            style: ListItemGroupStyle.CARD
-          }) {
             ListItem() {
               SettingItem({
                 icon: $r('sys.symbol.arrow_up_circle'),
                 title: '数据导出',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.DATA_EXPORT)
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.info_circle'),
-                title: '关于',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.ABOUT)
                 }
               })
             }
@@ -202,6 +185,23 @@ export struct Index {
                 title: '投喂作者',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.SPONSORSHIP)
+                }
+              })
+            }
+          }
+
+          // 关于分组
+          ListItemGroup({
+            header: itemHead('关于'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
+          }) {
+            ListItem() {
+              SettingItem({
+                icon: $r('sys.symbol.info_circle'),
+                title: '关于',
+                onItemClick: () => {
+                  this.navigateToSubPage(RouterUrlConstants.ABOUT)
                 }
               })
             }

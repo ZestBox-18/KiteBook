@@ -21,6 +21,8 @@ const TAG: string = '[Index]';
 @ComponentV2
 struct Index {
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   // 断点系统
   @Local breakpointSystem: BreakpointSystem =
     AppStorageV2.connect(BreakpointSystem, 'breakpointSystem', () => new BreakpointSystem())!;
@@ -29,12 +31,9 @@ struct Index {
     // 注册断点监听
     this.breakpointSystem.register();
 
-    // 应用用户选择的主题
-    const options = PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
-    const themeIndex = options.themeIndex;
 
-    if (themeIndex >= 0 && themeIndex < gAppThemes.length) {
-      ThemeControl.setDefaultTheme(gAppThemes[themeIndex]);
+    if (this.optionSystem.themeIndex >= 0 && this.optionSystem.themeIndex < gAppThemes.length) {
+      ThemeControl.setDefaultTheme(gAppThemes[this.optionSystem.themeIndex]);
     } else {
       ThemeControl.setDefaultTheme(gAppThemes[0]);
     }
