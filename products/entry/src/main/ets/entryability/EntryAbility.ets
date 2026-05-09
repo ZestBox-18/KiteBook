@@ -11,27 +11,6 @@ export default class EntryAbility extends UIAbility {
   windowUtil?: WindowUtil;
 
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    try {
-      const options = PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
-      const darkMode = options.darkMode;
-
-      let colorMode: ConfigurationConstant.ColorMode;
-      switch (darkMode) {
-        case 'dark':
-          colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
-          break;
-        case 'light':
-          colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
-          break;
-        default: // 'auto'
-          colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
-          break;
-      }
-
-      this.context.getApplicationContext().setColorMode(colorMode);
-    } catch (err) {
-      hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
-    }
     // 初始化数据库
     dbManagerInit(this.context);
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
@@ -70,6 +49,28 @@ export default class EntryAbility extends UIAbility {
       this.windowUtil!.updateWindowInfo();
       AppStorageV2.connect(WindowUtil, 'winUtil', () => this.windowUtil)
 
+      // loadContent 完成后，设置深色模式（此时 PersistenceV2 可以正常工作）
+      try {
+        const options = PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
+        const darkMode = options.darkMode;
+
+        let colorMode: ConfigurationConstant.ColorMode;
+        switch (darkMode) {
+          case 'dark':
+            colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+            break;
+          case 'light':
+            colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+            break;
+          default: // 'auto'
+            colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
+            break;
+        }
+
+        this.context.getApplicationContext().setColorMode(colorMode);
+      } catch (err) {
+        hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
+      }
     });
   }
 

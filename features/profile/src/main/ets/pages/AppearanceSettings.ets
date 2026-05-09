@@ -8,13 +8,12 @@
 
 import { SystemOptions, gAppThemes, CommonConstants, mainTabController } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
-import { AppStorageV2, LengthMetrics, curves } from '@kit.ArkUI';
+import { AppStorageV2, LengthMetrics, curves, ThemeControl } from '@kit.ArkUI';
+import { ConfigurationConstant, common } from '@kit.AbilityKit';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
 import { ThemeColorItem } from '../components/ThemeColorItem';
 import { itemHead } from '../components/itemHead';
-import json from '@ohos.util.json';
-import { JSON } from '@kit.ArkTS';
 
 @ComponentV2
 export struct AppearanceSettings {
@@ -39,9 +38,38 @@ export struct AppearanceSettings {
 
   @Local colorModeExpanded: boolean = false
   @Local iconScale: number = 1
+  private context = getContext(this) as common.UIAbilityContext;
 
   aboutToAppear(): void {
     this.colorModeExpanded = !this.isFollowSystem()
+  }
+
+  /**
+   * 应用主题（实时生效）
+   */
+  private applyTheme(index: number): void {
+    if (index >= 0 && index < gAppThemes.length) {
+      ThemeControl.setDefaultTheme(gAppThemes[index]);
+    }
+  }
+
+  /**
+   * 应用深色模式（实时生效）
+   */
+  private applyDarkMode(mode: string): void {
+    let colorMode: ConfigurationConstant.ColorMode;
+    switch (mode) {
+      case 'dark':
+        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+        break;
+      case 'light':
+        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+        break;
+      default: // 'auto'
+        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
+        break;
+    }
+    this.context.getApplicationContext().setColorMode(colorMode);
   }
 
   build() {
@@ -66,6 +94,7 @@ export struct AppearanceSettings {
                       isSelected: this.optionSystem.themeIndex === index,
                       onSelect: () => {
                         this.optionSystem.themeIndex = index
+                        this.applyTheme(index)
                       }
                     })
                   }
@@ -194,6 +223,7 @@ export struct AppearanceSettings {
                       this.colorModeExpanded = !isOn
                     })
                     this.optionSystem.darkMode = isOn ? 'auto' : (this.isDarkMode() ? 'dark' : 'light')
+                    this.applyDarkMode(this.optionSystem.darkMode)
                   })
               }
               .width('100%')
@@ -225,6 +255,7 @@ export struct AppearanceSettings {
                     }, 120)
 
                     this.optionSystem.darkMode = isOn ? 'dark' : 'light'
+                    this.applyDarkMode(this.optionSystem.darkMode)
                   })
               }
               .width('100%')
