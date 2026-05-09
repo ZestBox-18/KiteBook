@@ -6,7 +6,8 @@
  * @description: 主题颜色选择项组件
  */
 
-import { curves } from '@kit.ArkUI';
+import { curves, PersistenceV2 } from '@kit.ArkUI';
+import { SystemOptions } from 'base';
 
 @ComponentV2
 export struct ThemeColorItem {
@@ -27,7 +28,8 @@ export struct ThemeColorItem {
   @Local circleBorderRadius: number = 12;
   @Local textColor: ResourceColor = $r('app.color.text_primary');
   @Local textX: number = 44;
-  @Local isExpanded: boolean = false;
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
 
   // 监听选中状态变化
   @Monitor('isSelected')
@@ -46,7 +48,6 @@ export struct ThemeColorItem {
       this.circleBorderRadius = 8;
       this.textColor = Color.White;
       this.textX = 10;
-      this.isExpanded = true;
     } else {
       // 未选中状态：小圆圈在左侧
       this.circleWidth = 24;
@@ -56,7 +57,6 @@ export struct ThemeColorItem {
       this.circleBorderRadius = 12;
       this.textColor = $r('app.color.text_primary');
       this.textX = 44;
-      this.isExpanded = false;
     }
   }
 
@@ -83,7 +83,7 @@ export struct ThemeColorItem {
       Text(this.name)
         .fontSize(14)
         .fontColor(this.textColor)
-        .fontWeight(this.isExpanded ? FontWeight.Medium : FontWeight.Regular)
+        .fontWeight(this.optionSystem.fontThickness)
         .position({ x: this.textX, y: 17 })
         .animation({
           duration: 300,

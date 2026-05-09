@@ -163,7 +163,7 @@ export struct Index {
           }) {
             ListItem() {
               SettingItem({
-                icon: $r('sys.symbol.hand_thumbsup_fill'),
+                icon: $r('sys.symbol.hand_thumbsup'),
                 title: '给个好评',
                 onItemClick: () => {
                   const link: string = 'https://appgallery.huawei.com/app/detail?id=cn.zestbox.kitebook';
@@ -181,7 +181,7 @@ export struct Index {
 
             ListItem() {
               SettingItem({
-                icon: $r('sys.symbol.gift_fill'),
+                icon: $r('sys.symbol.gift'),
                 title: '投喂作者',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.SPONSORSHIP)

@@ -194,10 +194,12 @@ export struct AppearanceSettings {
                   .margin({ right: 12 })
                   .scale({ x: this.iconScale, y: this.iconScale })
                   .animation({ duration: 250, curve: Curve.EaseInOut })
+                  .fontWeight(this.optionSystem.iconThickness)
 
                 Text('跟随系统')
                   .fontSize(16)
                   .fontColor($r('app.color.text_primary'))
+                  .fontWeight(this.optionSystem.fontThickness)
 
                 Blank()
 
@@ -234,6 +236,7 @@ export struct AppearanceSettings {
                 Text('深色模式')
                   .fontSize(16)
                   .fontColor($r('app.color.text_primary'))
+                  .fontWeight(this.optionSystem.fontThickness)
 
                 Blank()
 

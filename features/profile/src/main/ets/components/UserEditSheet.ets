@@ -10,19 +10,24 @@ import { UserProfile } from '../entities/UserProfile';
 import { authentication } from '@kit.AccountKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { curves, AppStorageV2 } from '@kit.ArkUI';
-import { AppThemeState } from 'base';
+import { curves, AppStorageV2, PersistenceV2 } from '@kit.ArkUI';
+import { AppThemeState, SystemOptions } from 'base';
 
 const TAG = '[UserEditSheet]';
 
 @ComponentV2
 export struct UserEditSheet {
   @Param profile: UserProfile = new UserProfile()
-  @Param onClose: () => void = () => {}
-  @Param onLoginStart: () => void = () => {}  // 登录开始时调用
-  @Param onLoginSuccess: () => void = () => {}
-  @Param onLogout: () => void = () => {}
-  @Param onLoginFailed: () => void = () => {}
+  @Param onClose: () => void = () => {
+  }
+  @Param onLoginStart: () => void = () => {
+  } // 登录开始时调用
+  @Param onLoginSuccess: () => void = () => {
+  }
+  @Param onLogout: () => void = () => {
+  }
+  @Param onLoginFailed: () => void = () => {
+  }
   @Param uiContext: UIContext | undefined = undefined
   @Local isLoggingIn: boolean = false
   @Local ringScale: number = 0.8
@@ -35,6 +40,9 @@ export struct UserEditSheet {
   // 主题颜色
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
+  // 系统设置
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   // 用户名动画状态
   @Local oldTextOpacity: number = 1
   @Local oldTextTranslateX: number = 0
@@ -271,7 +279,7 @@ export struct UserEditSheet {
         if (this.currentNickname) {
           Text(this.currentNickname)
             .fontSize(16)
-            .fontWeight(FontWeight.Medium)
+            .fontWeight(this.optionSystem.fontThickness)
             .fontColor($r('app.color.text_primary'))
             .opacity(this.newTextOpacity)
             .translate({ x: this.newTextTranslateX })
@@ -293,9 +301,11 @@ export struct UserEditSheet {
                 SymbolGlyph($r('sys.symbol.person'))
                   .fontSize(20)
                   .fontColor([Color.White])
+                  .fontWeight(this.optionSystem.iconThickness)
                 Text('华为账号登录')
                   .fontSize(16)
                   .fontColor(Color.White)
+                  .fontWeight(this.optionSystem.fontThickness)
               }
             }
             .width('100%')
@@ -317,9 +327,11 @@ export struct UserEditSheet {
                 SymbolGlyph($r('sys.symbol.arrow_clockwise'))
                   .fontSize(18)
                   .fontColor([Color.White])
+                  .fontWeight(this.optionSystem.iconThickness)
                 Text('更新头像和昵称')
                   .fontSize(15)
                   .fontColor(Color.White)
+                  .fontWeight(this.optionSystem.fontThickness)
               }
             }
             .width('100%')
@@ -345,9 +357,11 @@ export struct UserEditSheet {
                 SymbolGlyph($r('sys.symbol.arrow_right_circle'))
                   .fontSize(18)
                   .fontColor([$r('app.color.text_secondary')])
+                  .fontWeight(this.optionSystem.iconThickness)
                 Text('退出登录')
                   .fontSize(15)
                   .fontColor($r('app.color.text_secondary'))
+                  .fontWeight(this.optionSystem.fontThickness)
               }
             }
             .width('100%')
