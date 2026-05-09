@@ -6,8 +6,9 @@
  * @description: 数据导出页面
  */
 
-import { CommonConstants, mainTabController, AppThemeState } from 'base';
+import { CommonConstants, mainTabController, AppThemeState, SystemOptions } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
+import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
 import { itemHead } from '../components/itemHead';
@@ -16,6 +17,8 @@ import { itemHead } from '../components/itemHead';
 export struct DataExport {
   @Local pageInfos: NavPathStack = new NavPathStack()
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   @Local exporting: boolean = false
   @Local exportFormat: string = 'csv'
   @Local exportRange: string = 'all'
@@ -40,18 +43,20 @@ export struct DataExport {
                 Row() {
                   SymbolGlyph($r('sys.symbol.doc_text'))
                     .fontSize(20)
+                    .fontWeight(this.optionSystem.iconThickness)
                     .fontColor([this.themeState.brand])
                     .margin({ right: 12 })
 
                   Text('数据导出')
                     .fontSize(16)
-                    .fontWeight(FontWeight.Medium)
+                    .fontWeight(this.optionSystem.fontThickness)
                     .fontColor($r('app.color.text_primary'))
                 }
                 .width('100%')
 
                 Text('将您的记账数据导出为文件，可用于备份或导入其他设备。导出的数据包含账单记录、分类信息等。')
                   .fontSize(14)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 8 })
                   .width('100%')
@@ -72,6 +77,7 @@ export struct DataExport {
               Row() {
                 Text('CSV 表格')
                   .fontSize(16)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
 
                 Blank()
@@ -94,6 +100,7 @@ export struct DataExport {
               Row() {
                 Text('JSON 数据')
                   .fontSize(16)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
 
                 Blank()
@@ -123,6 +130,7 @@ export struct DataExport {
               Row() {
                 Text('全部数据')
                   .fontSize(16)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
 
                 Blank()
@@ -145,6 +153,7 @@ export struct DataExport {
               Row() {
                 Text('今年数据')
                   .fontSize(16)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
 
                 Blank()
@@ -167,13 +176,14 @@ export struct DataExport {
               Row() {
                 Text('本月数据')
                   .fontSize(16)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
 
                 Blank()
 
                 Radio({ value: 'month', group: 'rangeGroup' })
                   .checked(this.exportRange === 'month')
-                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .radioStyle({ checkedBackgroundColor: this.themeState.brand })
                   .onChange((isChecked: boolean) => {
                     if (isChecked) {
                       this.exportRange = 'month'
@@ -192,6 +202,7 @@ export struct DataExport {
               .width('100%')
               .height(48)
               .backgroundColor(this.themeState.brand)
+              .fontWeight(this.optionSystem.fontThickness)
               .fontColor(Color.White)
               .borderRadius(12)
               .enabled(!this.exporting)

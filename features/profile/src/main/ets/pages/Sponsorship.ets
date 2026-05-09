@@ -6,15 +6,18 @@
  * @description: 投喂作者页面
  */
 
-import { CommonConstants, mainTabController } from 'base';
+import { CommonConstants, mainTabController, SystemOptions } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
+import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { WindowUtil } from 'kite_utils';
 
 @ComponentV2
 export struct Sponsorship {
   @Local pageInfos: NavPathStack = new NavPathStack()
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
 
   build() {
     HdsNavDestination() {
@@ -23,12 +26,13 @@ export struct Sponsorship {
           Column() {
             Text('感谢你的投喂与支持')
               .fontSize(18)
-              .fontWeight(FontWeight.Medium)
+              .fontWeight(this.optionSystem.fontThickness)
               .fontColor($r('app.color.text_primary'))
 
             Text('每一份鼓励都是我持续更新的动力。你可以左右滑动选择支付宝或微信。')
               .fontSize(13)
               .lineHeight(18)
+              .fontWeight(this.optionSystem.fontThickness)
               .fontColor($r('app.color.text_secondary'))
               .margin({ top: 8 })
           }
@@ -117,7 +121,7 @@ export struct Sponsorship {
     Column() {
       Text(title)
         .fontSize(16)
-        .fontWeight(FontWeight.Medium)
+        .fontWeight(this.optionSystem.fontThickness)
         .fontColor($r('app.color.text_primary'))
         .margin({ bottom: 12 })
 

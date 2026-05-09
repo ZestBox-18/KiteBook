@@ -6,9 +6,10 @@
  * @description: 关于页面
  */
 
-import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState } from 'base';
+import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState, SystemOptions } from 'base';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
+import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { WindowUtil, Clog } from 'kite_utils';
 import { Want, common } from '@kit.AbilityKit';
 import { pasteboard } from '@kit.BasicServicesKit';
@@ -21,6 +22,8 @@ const TAG: string = '[About]';
 export struct About {
   @Local pageInfos: NavPathStack = new NavPathStack()
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   private context = getContext(this) as common.UIAbilityContext;
   // 主题颜色
   @Local themeState: AppThemeState =
@@ -77,12 +80,13 @@ export struct About {
 
                 Text('纸鸢账本')
                   .fontSize(18)
-                  .fontWeight(FontWeight.Medium)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
                   .margin({ top: 12 })
 
                 Text('v1.0.0')
                   .fontSize(14)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 4 })
               }
@@ -113,6 +117,7 @@ export struct About {
           ListItem() {
             Text('粤ICP备2024282649号-2A')
               .fontSize(12)
+              .fontWeight(this.optionSystem.fontThickness)
               .fontColor($r('app.color.text_secondary'))
               .width('100%')
               .textAlign(TextAlign.Center)
@@ -195,17 +200,20 @@ export struct About {
     Row() {
       SymbolGlyph(icon)
         .fontSize(20)
+        .fontWeight(this.optionSystem.iconThickness)
         .fontColor([this.themeState.brand])
         .margin({ right: 12 })
 
       Text(text)
         .fontSize(16)
+        .fontWeight(this.optionSystem.fontThickness)
         .fontColor($r('app.color.text_primary'))
 
       Blank()
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(14)
+        .fontWeight(this.optionSystem.iconThickness)
         .fontColor([$r('app.color.text_secondary')])
     }
     .width('100%')
@@ -221,17 +229,20 @@ export struct About {
     Row() {
       SymbolGlyph(icon)
         .fontSize(20)
+        .fontWeight(this.optionSystem.iconThickness)
         .fontColor([this.themeState.brand])
         .margin({ right: 12 })
 
       Text(label)
         .fontSize(16)
+        .fontWeight(this.optionSystem.fontThickness)
         .fontColor($r('app.color.text_primary'))
 
       Blank()
 
       Text(value)
         .fontSize(14)
+        .fontWeight(this.optionSystem.fontThickness)
         .fontColor($r('app.color.text_secondary'))
         .maxLines(1)
         .gesture(

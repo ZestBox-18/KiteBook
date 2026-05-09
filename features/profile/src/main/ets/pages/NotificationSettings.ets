@@ -49,11 +49,13 @@ export struct NotificationSettings {
               Row() {
                 SymbolGlyph($r('sys.symbol.bell_fill'))
                   .fontSize(20)
+                  .fontWeight(this.optionSystem.iconThickness)
                   .fontColor([$r('app.color.text_primary')])
                   .margin({ right: 12 })
 
                 Text('消息通知')
                   .fontSize(16)
+                  .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_primary'))
 
                 Blank()
@@ -222,16 +224,19 @@ export struct NotificationSettings {
       Row() {
         SymbolGlyph(icon)
           .fontSize(20)
+          .fontWeight(this.optionSystem.iconThickness)
           .fontColor([$r('app.color.text_primary')])
           .margin({ right: 12 })
 
         Column() {
           Text(title)
             .fontSize(16)
+            .fontWeight(this.optionSystem.fontThickness)
             .fontColor($r('app.color.text_primary'))
 
           Text(subtitle)
             .fontSize(12)
+            .fontWeight(this.optionSystem.fontThickness)
             .fontColor($r('app.color.text_secondary'))
             .margin({ top: 2 })
         }
