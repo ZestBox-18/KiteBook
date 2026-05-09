@@ -6,7 +6,7 @@
  * @description: 数据导出页面
  */
 
-import { CommonConstants, mainTabController } from 'base';
+import { CommonConstants, mainTabController, AppThemeState } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
@@ -19,6 +19,9 @@ export struct DataExport {
   @Local exporting: boolean = false
   @Local exportFormat: string = 'csv'
   @Local exportRange: string = 'all'
+  // 主题颜色
+  @Local themeState: AppThemeState =
+    AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
 
   build() {
     HdsNavDestination() {
@@ -37,7 +40,7 @@ export struct DataExport {
                 Row() {
                   SymbolGlyph($r('sys.symbol.doc_text'))
                     .fontSize(20)
-                    .fontColor([$r('app.color.brand')])
+                    .fontColor([this.themeState.brand])
                     .margin({ right: 12 })
 
                   Text('数据导出')
@@ -75,7 +78,7 @@ export struct DataExport {
 
                 Radio({ value: 'csv', group: 'formatGroup' })
                   .checked(this.exportFormat === 'csv')
-                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .radioStyle({ checkedBackgroundColor: this.themeState.brand })
                   .onChange((isChecked: boolean) => {
                     if (isChecked) {
                       this.exportFormat = 'csv'
@@ -97,7 +100,7 @@ export struct DataExport {
 
                 Radio({ value: 'json', group: 'formatGroup' })
                   .checked(this.exportFormat === 'json')
-                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .radioStyle({ checkedBackgroundColor: this.themeState.brand })
                   .onChange((isChecked: boolean) => {
                     if (isChecked) {
                       this.exportFormat = 'json'
@@ -126,7 +129,7 @@ export struct DataExport {
 
                 Radio({ value: 'all', group: 'rangeGroup' })
                   .checked(this.exportRange === 'all')
-                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .radioStyle({ checkedBackgroundColor: this.themeState.brand })
                   .onChange((isChecked: boolean) => {
                     if (isChecked) {
                       this.exportRange = 'all'
@@ -148,7 +151,7 @@ export struct DataExport {
 
                 Radio({ value: 'year', group: 'rangeGroup' })
                   .checked(this.exportRange === 'year')
-                  .radioStyle({ checkedBackgroundColor: $r('app.color.brand') })
+                  .radioStyle({ checkedBackgroundColor: this.themeState.brand })
                   .onChange((isChecked: boolean) => {
                     if (isChecked) {
                       this.exportRange = 'year'
@@ -188,7 +191,7 @@ export struct DataExport {
             Button(this.exporting ? '导出中...' : '导出数据')
               .width('100%')
               .height(48)
-              .backgroundColor($r('app.color.brand'))
+              .backgroundColor(this.themeState.brand)
               .fontColor(Color.White)
               .borderRadius(12)
               .enabled(!this.exporting)

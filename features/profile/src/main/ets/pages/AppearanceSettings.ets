@@ -6,7 +6,7 @@
  * @description: 外观设置页面
  */
 
-import { SystemOptions, gAppThemes, CommonConstants, mainTabController } from 'base';
+import { SystemOptions, gAppThemes, gAppThemeNames, CommonConstants, mainTabController, AppThemeState } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { AppStorageV2, LengthMetrics, curves, ThemeControl } from '@kit.ArkUI';
 import { ConfigurationConstant, common } from '@kit.AbilityKit';
@@ -21,12 +21,9 @@ export struct AppearanceSettings {
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
-  private themeNames: string[] = [
-    '松墨', '深海', '玄青', '砂金', '赤陶',
-    '云雾灰', '月白', '岩石', '暮紫'
-  ]
-  private darkModeOptions: string[] = ['auto', 'light', 'dark']
-  private darkModeNames: string[] = ['跟随系统', '浅色模式', '深色模式']
+  // 主题颜色
+  @Local themeState: AppThemeState =
+    AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
 
   private isFollowSystem(): boolean {
     return this.optionSystem.darkMode === 'auto'
@@ -86,7 +83,7 @@ export struct AppearanceSettings {
           }) {
             ListItem() {
               Grid() {
-                ForEach(this.themeNames, (name: string, index: number) => {
+                ForEach(gAppThemeNames, (name: string, index: number) => {
                   GridItem() {
                     ThemeColorItem({
                       color: this.getThemeColor(index),
@@ -205,7 +202,7 @@ export struct AppearanceSettings {
                 Blank()
 
                 Toggle({ type: ToggleType.Switch, isOn: this.isFollowSystem() })
-                  .selectedColor($r('app.color.brand'))
+                  .selectedColor(this.themeState.brand)
                   .switchPointColor('#FFFFFF')
                   .onChange((isOn: boolean) => {
                     // 图标弹跳动画
@@ -241,7 +238,7 @@ export struct AppearanceSettings {
                 Blank()
 
                 Toggle({ type: ToggleType.Switch, isOn: this.isDarkMode() })
-                  .selectedColor($r('app.color.brand'))
+                  .selectedColor(this.themeState.brand)
                   .switchPointColor('#FFFFFF')
                   .onChange((isOn: boolean) => {
                     // 图标弹跳动画
@@ -351,7 +348,7 @@ export struct AppearanceSettings {
       if (isSelected) {
         Text('✓')
           .fontSize(16)
-          .fontColor($r('app.color.brand'))
+          .fontColor(this.themeState.brand)
       }
     }
     .width('100%')

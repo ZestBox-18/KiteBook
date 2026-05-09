@@ -7,7 +7,9 @@
  */
 
 import { UserProfile } from '../entities/UserProfile';
+import { SystemOptions } from 'base';
 import { curves } from '@kit.ArkUI';
+import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
 @ComponentV2
 export struct UserCard {
@@ -18,6 +20,9 @@ export struct UserCard {
   }
   // UI上下文
   @Param uiContext: UIContext | undefined = undefined
+  // 系统设置
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   // 登录成功动画触发器（每次变化时触发动画）
   @Param loginAnimationTrigger: number = 0
   // 退出登录动画触发器
@@ -298,7 +303,7 @@ export struct UserCard {
           // 旧文字："点击登录"
           Text('点击登录')
             .fontSize(16)
-            .fontWeight(FontWeight.Medium)
+            .fontWeight(this.optionSystem.fontThickness)
             .fontColor($r('app.color.text_primary'))
             .opacity(this.oldTextOpacity)
             .translate({ x: this.oldTextTranslateX })
@@ -308,7 +313,7 @@ export struct UserCard {
           if (this.currentNickname) {
             Text(this.currentNickname)
               .fontSize(16)
-              .fontWeight(FontWeight.Medium)
+              .fontWeight(this.optionSystem.fontThickness)
               .fontColor($r('app.color.text_primary'))
               .opacity(this.newTextOpacity)
               .translate({ x: this.newTextTranslateX })
@@ -330,6 +335,7 @@ export struct UserCard {
       // 箭头
       SymbolGlyph($r("sys.symbol.chevron_right"))
         .fontSize(18)
+        .fontWeight(this.optionSystem.iconThickness)
         .fontColor([$r('app.color.text_secondary')])
     }
     .width('100%')

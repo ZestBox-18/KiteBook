@@ -6,7 +6,7 @@
  * @description: 通知设置页面
  */
 
-import { SystemOptions, CommonConstants, mainTabController } from 'base';
+import { SystemOptions, CommonConstants, mainTabController, AppThemeState } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
@@ -19,6 +19,9 @@ export struct NotificationSettings {
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!
+  // 主题颜色
+  @Local themeState: AppThemeState =
+    AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
 
   @Local billReminder: boolean = true
   @Local budgetAlert: boolean = true
@@ -56,7 +59,7 @@ export struct NotificationSettings {
                 Blank()
 
                 Toggle({ type: ToggleType.Switch, isOn: this.optionSystem.notificationEnabled })
-                  .selectedColor($r('app.color.brand'))
+                  .selectedColor(this.themeState.brand)
                   .switchPointColor('#FFFFFF')
                   .onChange((isOn: boolean) => {
                     this.getUIContext().animateTo({ duration: 250, curve: Curve.EaseInOut }, () => {
@@ -79,7 +82,7 @@ export struct NotificationSettings {
           }) {
             ListItem() {
               Column() {
-                this.NotificationItemInner(
+                this.NotificationItem(
                   '账单提醒',
                   '账单到期、还款日提醒',
                   $r('sys.symbol.creditcard'),
@@ -95,7 +98,7 @@ export struct NotificationSettings {
                   .opacity(0.2)
                   .padding({ left: 48 })
 
-                this.NotificationItemInner(
+                this.NotificationItem(
                   '预算预警',
                   '预算超支时发送提醒',
                   $r('sys.symbol.exclamationmark_triangle'),
@@ -111,7 +114,7 @@ export struct NotificationSettings {
                   .opacity(0.2)
                   .padding({ left: 48 })
 
-                this.NotificationItemInner(
+                this.NotificationItem(
                   '每日记账',
                   '每天提醒记账',
                   $r('sys.symbol.calendar'),
@@ -127,7 +130,7 @@ export struct NotificationSettings {
                   .opacity(0.2)
                   .padding({ left: 48 })
 
-                this.NotificationItemInner(
+                this.NotificationItem(
                   '周报月报',
                   '定期发送收支统计',
                   $r('sys.symbol.list_bullet'),
@@ -237,7 +240,7 @@ export struct NotificationSettings {
         Blank()
 
         Toggle({ type: ToggleType.Switch, isOn: isOn })
-          .selectedColor($r('app.color.brand'))
+          .selectedColor(this.themeState.brand)
           .switchPointColor('#FFFFFF')
           .onChange((isOn: boolean) => {
             onChange(isOn)
@@ -247,45 +250,5 @@ export struct NotificationSettings {
       .height(64)
       .padding({ left: 16, right: 16 })
     }
-  }
-
-  @Builder
-  NotificationItemInner(
-    title: string,
-    subtitle: string,
-    icon: Resource,
-    isOn: boolean,
-    onChange: (isOn: boolean) => void
-  ) {
-    Row() {
-      SymbolGlyph(icon)
-        .fontSize(20)
-        .fontColor([$r('app.color.text_primary')])
-        .margin({ right: 12 })
-
-      Column() {
-        Text(title)
-          .fontSize(16)
-          .fontColor($r('app.color.text_primary'))
-
-        Text(subtitle)
-          .fontSize(12)
-          .fontColor($r('app.color.text_secondary'))
-          .margin({ top: 2 })
-      }
-      .alignItems(HorizontalAlign.Start)
-
-      Blank()
-
-      Toggle({ type: ToggleType.Switch, isOn: isOn })
-        .selectedColor($r('app.color.brand'))
-        .switchPointColor('#FFFFFF')
-        .onChange((isOn: boolean) => {
-          onChange(isOn)
-        })
-    }
-    .width('100%')
-    .height(64)
-    .padding({ left: 16, right: 16 })
   }
 }

@@ -6,12 +6,13 @@
  * @description: 关于页面
  */
 
-import { CommonConstants, RouterUrlConstants, mainTabController } from 'base';
-import { AppStorageV2, LengthMetrics, promptAction } from '@kit.ArkUI';
+import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState } from 'base';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
+import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { WindowUtil, Clog } from 'kite_utils';
+import { Want, common } from '@kit.AbilityKit';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { common, Want } from '@kit.AbilityKit';
+import { promptAction } from '@kit.ArkUI';
 import { itemHead } from '../components/itemHead';
 
 const TAG: string = '[About]';
@@ -19,10 +20,13 @@ const TAG: string = '[About]';
 @ComponentV2
 export struct About {
   @Local pageInfos: NavPathStack = new NavPathStack()
-  @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!
-
-  private readonly qqGroupId: string = '983571479'
+  @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
   private context = getContext(this) as common.UIAbilityContext;
+  // 主题颜色
+  @Local themeState: AppThemeState =
+    AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
+  // QQ 群号
+  private qqGroupId: string = '123456789'
 
   private copyToClipboard(text: string): void {
     try {
@@ -39,7 +43,8 @@ export struct About {
   }
 
   private joinQQGroup(): void {
-    const uri = `mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${this.qqGroupId}&card_type=group&source=qrcode`;
+    const uri =
+      `mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${this.qqGroupId}&card_type=group&source=qrcode`;
     try {
       this.context.startAbility({ uri }).catch(() => {
         this.copyToClipboard(this.qqGroupId);
@@ -190,7 +195,7 @@ export struct About {
     Row() {
       SymbolGlyph(icon)
         .fontSize(20)
-        .fontColor([$r('app.color.brand')])
+        .fontColor([this.themeState.brand])
         .margin({ right: 12 })
 
       Text(text)
@@ -216,7 +221,7 @@ export struct About {
     Row() {
       SymbolGlyph(icon)
         .fontSize(20)
-        .fontColor([$r('app.color.brand')])
+        .fontColor([this.themeState.brand])
         .margin({ right: 12 })
 
       Text(label)

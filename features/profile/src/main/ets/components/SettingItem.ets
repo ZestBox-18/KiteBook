@@ -6,13 +6,10 @@
  * @description: 设置列表项组件
  */
 
-// 样式扩展
-@Extend(Text)
-function SettingItemTitleStyles() {
-  .fontSize(16)
-  .fontColor($r('app.color.text_primary'))
-}
+import { SystemOptions } from 'base';
+import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
+// 样式扩展
 @Extend(Row)
 function SettingItemRowStyles() {
   .justifyContent(FlexAlign.SpaceBetween)
@@ -33,6 +30,9 @@ export struct SettingItem {
   @Event onItemClick: () => void = () => {}
   // 按压状态
   @Local isPressed: boolean = false
+  // 系统设置
+  @Local optionSystem: SystemOptions =
+    PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
 
   build() {
     Row() {
@@ -40,15 +40,19 @@ export struct SettingItem {
       Row({ space: 12 }) {
         SymbolGlyph(this.icon)
           .fontSize(20)
+          .fontWeight(this.optionSystem.iconThickness)
           .fontColor([$r('app.color.text_primary')])
 
         Text(this.title)
-          .SettingItemTitleStyles()
+          .fontSize(16)
+          .fontWeight(this.optionSystem.fontThickness)
+          .fontColor($r('app.color.text_primary'))
       }
 
       // 右侧箭头
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(20)
+        .fontWeight(this.optionSystem.iconThickness)
         .fontColor([$r('app.color.text_primary')])
     }
     .SettingItemRowStyles()

@@ -10,7 +10,8 @@ import { UserProfile } from '../entities/UserProfile';
 import { authentication } from '@kit.AccountKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { curves } from '@kit.ArkUI';
+import { curves, AppStorageV2 } from '@kit.ArkUI';
+import { AppThemeState } from 'base';
 
 const TAG = '[UserEditSheet]';
 
@@ -31,20 +32,21 @@ export struct UserEditSheet {
   @Local currentNickname: string = ''
   // 是否登录成功
   @Local loginSuccess: boolean = false
-
+  // 主题颜色
+  @Local themeState: AppThemeState =
+    AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
   // 用户名动画状态
   @Local oldTextOpacity: number = 1
   @Local oldTextTranslateX: number = 0
   @Local newTextOpacity: number = 0
   @Local newTextTranslateX: number = 30
-
   // 按钮动画状态
-  @Local loginBtnOpacity: number = 1      // 华为登录按钮透明度
-  @Local loginBtnScale: number = 1        // 华为登录按钮缩放
-  @Local updateBtnOpacity: number = 0     // 更新按钮透明度
-  @Local updateBtnScale: number = 0       // 更新按钮缩放
-  @Local logoutBtnOpacity: number = 0     // 退出按钮透明度
-  @Local logoutBtnScale: number = 0       // 退出按钮缩放
+  @Local loginBtnOpacity: number = 1 // 华为登录按钮透明度
+  @Local loginBtnScale: number = 1 // 华为登录按钮缩放
+  @Local updateBtnOpacity: number = 0 // 更新按钮透明度
+  @Local updateBtnScale: number = 0 // 更新按钮缩放
+  @Local logoutBtnOpacity: number = 0 // 退出按钮透明度
+  @Local logoutBtnScale: number = 0 // 退出按钮缩放
 
   aboutToAppear() {
     if (this.profile.isLoggedIn) {
@@ -82,14 +84,16 @@ export struct UserEditSheet {
 
     const rotateSpeed = 8;
     const updateRotate = () => {
-      if (shouldStop) return;
-      
+      if (shouldStop) {
+        return;
+      }
+
       angle += rotateSpeed;
       if (angle >= 360) {
         angle = angle - 360;
       }
       this.avatarRotateY = angle;
-      
+
       if (!avatarSwitched && angle >= 85 && angle <= 95 && newAvatar) {
         this.currentAvatar = newAvatar;
         this.currentNickname = newNickname;
@@ -111,7 +115,7 @@ export struct UserEditSheet {
 
       newAvatar = credential.avatarUri || '';
       newNickname = credential.nickName || '用户';
-      
+
       this.profile.nickname = newNickname;
       this.profile.avatar = newAvatar;
       this.profile.openId = credential.openID || '';
@@ -195,14 +199,14 @@ export struct UserEditSheet {
           this.ringScale = 1.2;
         });
       }, 100);
-      
+
       setTimeout(() => {
         this.uiContext?.animateTo({ curve: Curve.EaseOut, duration: 400 }, () => {
           this.ringOpacity = 0;
           this.ringScale = 1.5;
         });
       }, 600);
-      
+
       setTimeout(() => {
         this.isLoggingIn = false;
         this.ringScale = 0.8;
@@ -229,7 +233,7 @@ export struct UserEditSheet {
           .width(100)
           .height(100)
           .borderRadius(50)
-          .border({ width: 2, color: $r('app.color.brand') })
+          .border({ width: 2, color: this.themeState.brand })
           .opacity(this.ringOpacity)
           .scale({ x: this.ringScale, y: this.ringScale })
           .animation({ curve: curves.springMotion(0.5, 0.8) })
@@ -296,7 +300,7 @@ export struct UserEditSheet {
             }
             .width('100%')
             .height(44)
-            .backgroundColor('#C7000B')
+            .backgroundColor($r('app.color.huawei_account_red'))
             .borderRadius(22)
             .onClick(() => this.updateUserInfo())
           }
@@ -320,7 +324,7 @@ export struct UserEditSheet {
             }
             .width('100%')
             .height(44)
-            .backgroundColor($r('app.color.brand'))
+            .backgroundColor(this.themeState.brand)
             .borderRadius(22)
             .onClick(() => this.updateUserInfo())
           }
