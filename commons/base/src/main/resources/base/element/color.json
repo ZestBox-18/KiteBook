@@ -54,7 +54,7 @@
     },
     {
       "name": "brand",
-      "value": "#2FB04A"
+      "value": "#4BB3FF"
     },
     {
       "name": "title_bar_bg",
@@ -63,6 +63,30 @@
     {
       "name": "item_pressed",
       "value": "#E8E8E8"
+    },
+    {
+      "name": "income",
+      "value": "#10B981"
+    },
+    {
+      "name": "expense",
+      "value": "#EF4444"
+    },
+    {
+      "name": "warning",
+      "value": "#F59E0B"
+    },
+    {
+      "name": "shadow_color",
+      "value": "#000000"
+    },
+    {
+      "name": "loading_progress_color",
+      "value": "#2FB04A"
+    },
+    {
+      "name": "huawei_account_red",
+      "value": "#C7000B"
     }
   ]
 }
