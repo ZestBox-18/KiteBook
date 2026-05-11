@@ -12,7 +12,7 @@ import { Home } from 'home';
 import { WindowUtil, BreakpointSystem, BreakpointConstants } from 'kite_utils';
 import { Profile } from 'profile';
 import { Reports } from 'reports';
-import { AppStorageV2, PersistenceV2, ThemeControl, Theme } from '@kit.ArkUI';
+import { AppStorageV2, PersistenceV2, ThemeControl, Theme, SymbolGlyphModifier } from '@kit.ArkUI';
 
 const TAG: string = '[Index]';
 
@@ -60,28 +60,60 @@ struct Index {
     this.themeState.compDivider = theme.colors.compDivider as ResourceStr;
   }
 
+  // 创建带主题色的 TabBarSymbol
+  private createTabBarSymbol(icon: Resource): TabBarSymbol {
+    return {
+      normal: new SymbolGlyphModifier(icon)
+        .fontColor(['#99182431'])
+        .renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
+        .fontSize(24)
+        .fontWeight(this.optionSystem.iconThickness),
+      selected: new SymbolGlyphModifier(icon)
+        .fontColor([this.themeState.brand])
+        .renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
+        .fontSize(24)
+        .fontWeight(this.optionSystem.iconThickness)
+    };
+  }
+
   build() {
     Column() {
       HdsTabs({ controller: mainTabController }) {
         TabContent() {
           Home()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), '首页'))
+        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.house')), '首页')
+          .labelStyle({
+            selectedColor: this.themeState.brand,
+            unselectedColor: '#99182431'
+          }))
 
         TabContent() {
           Billing()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.wifi_router_fill'), '账单'))
+        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.creditcard')), '账单')
+          .labelStyle({
+            selectedColor: this.themeState.brand,
+            unselectedColor: '#99182431'
+          }))
 
         TabContent() {
           Reports()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), '报表'))
+        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.list_bullet')), '报表')
+          .labelStyle({
+            selectedColor: this.themeState.brand,
+            unselectedColor: '#99182431'
+          }))
 
         TabContent() {
           Profile()
         }
-        .tabBar(new BottomTabBarStyle($r('sys.media.ohos_ic_public_clock'), '我的'))
+        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.person')), '我的')
+          .labelStyle({
+            selectedColor: this.themeState.brand,
+            unselectedColor: '#99182431'
+          }))
       }
       .barOverlap(true)
       .barPosition(BarPosition.End)
