@@ -64,7 +64,7 @@ struct Index {
   private createTabBarSymbol(icon: Resource): TabBarSymbol {
     return {
       normal: new SymbolGlyphModifier(icon)
-        .fontColor(['#99182431'])
+        .fontColor([this.themeState.iconSecondary])
         .renderingStrategy(SymbolRenderingStrategy.MULTIPLE_OPACITY)
         .fontSize(24)
         .fontWeight(this.optionSystem.iconThickness),
@@ -85,7 +85,7 @@ struct Index {
         .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.house')), '首页')
           .labelStyle({
             selectedColor: this.themeState.brand,
-            unselectedColor: '#99182431'
+            unselectedColor: this.themeState.fontSecondary
           }))
 
         TabContent() {
@@ -94,7 +94,7 @@ struct Index {
         .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.creditcard')), '账单')
           .labelStyle({
             selectedColor: this.themeState.brand,
-            unselectedColor: '#99182431'
+            unselectedColor: this.themeState.fontSecondary
           }))
 
         TabContent() {
@@ -103,7 +103,7 @@ struct Index {
         .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.list_bullet')), '报表')
           .labelStyle({
             selectedColor: this.themeState.brand,
-            unselectedColor: '#99182431'
+            unselectedColor: this.themeState.fontSecondary
           }))
 
         TabContent() {
@@ -112,7 +112,7 @@ struct Index {
         .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.person')), '我的')
           .labelStyle({
             selectedColor: this.themeState.brand,
-            unselectedColor: '#99182431'
+            unselectedColor: this.themeState.fontSecondary
           }))
       }
       .barOverlap(true)
