@@ -109,8 +109,6 @@ export struct About {
             this.AboutItem('QQ 群聊', this.qqGroupId, $r('sys.symbol.person_3'), () => {
               this.joinQQGroup();
             })
-
-            this.AboutItem('开发者', 'ZestBox', $r('sys.symbol.person'))
           }
 
           // 备案号
