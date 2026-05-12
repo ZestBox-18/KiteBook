@@ -2,8 +2,10 @@ import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '
 import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
 import { Assets, Ordinary } from 'record';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
-import { WindowUtil, HdsMiniBarButton } from 'kite_utils';
+import { WindowUtil } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
+
+const TAG: string = '[HomeIndex]';
 
 @Entry
 @ComponentV2
@@ -47,24 +49,14 @@ export struct Index {
       Scroll(this.scrollerForScroll) {
         Column() {
           Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
-          Button('123')
-          Button('3333')
-            .fontColor($r('sys.color.font_on_primary'))
-          HdsMiniBarButton({
-            barWidth: 100,
-            barHeight: 40,
-            onButtonClick: () => {
-              console.log("测试");
-            }
-          }) {
-            Text("你好")
-              .fontSize(16)
-          }
-
+          // TODO: 首页内容区域
         }
-        .height('200%')
         .width('100%')
       }
+      .width('100%')
+      .height('100%')
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
@@ -73,26 +65,20 @@ export struct Index {
     .titleBar({
       style: {
         scrollEffectOpts: {
-          // 从6.1.0(23)开始， 新增IMMERSIVE_GRADIENT_BLUR类型，标题文字和图标样式从白色到黑色线性过渡。
           enableScrollEffect: true,
           scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR,
           blurEffectiveStartOffset: LengthMetrics.vp(0),
           blurEffectiveEndOffset: LengthMetrics.vp(20)
         },
-        // 从6.1.0(23)开始，支持材质相关属性。
-        // 推荐与ScrollEffectType.IMMERSIVE_GRADIENT_BLUR（推荐沉浸式图文类的场景使用） 或 ScrollEffectType.GRADIENT_BLUR（推荐非沉浸式列表类的场景使用）搭配使用。
         systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.ADAPTIVE,
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          // 内容区滚动前初始样式设置
           backgroundStyle: {
-            // 标题栏背板样式设置
             backgroundColor: $r('app.color.title_bar_bg'),
           },
           contentStyle: {
-            // 标题栏内容区样式设置，包括标题区域，菜单区域，返回按钮区域
             titleStyle: {
               mainTitleColor: $r('app.color.text_primary'),
               subTitleColor: $r('app.color.text_secondary')
@@ -106,11 +92,9 @@ export struct Index {
               backgroundColor: $r('app.color.action_bg'),
               iconColor: $r('app.color.text_primary')
             },
-
           }
         },
         scrollEffectStyle: {
-          // 内容区滚动超过blurEffectiveEndOffset后样式设置
           backgroundStyle: {
             backgroundColor: $r('app.color.title_bar_bg'),
           },
@@ -153,4 +137,3 @@ export struct Index {
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
   }
 }
-
