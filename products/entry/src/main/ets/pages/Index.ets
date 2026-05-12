@@ -6,13 +6,14 @@
  * @description: 主入口页面，包含底部 Tab 导航
  */
 import { hdsMaterial, HdsTabs, HdsTabsController, HdsAnimationMode } from '@kit.UIDesignKit';
-import { RouterUrlConstants, mainTabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
+import { RouterUrlConstants, mainTabController, fabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
 import { WindowUtil, BreakpointSystem, BreakpointConstants } from 'kite_utils';
 import { Profile } from 'profile';
 import { Reports } from 'reports';
 import { AppStorageV2, PersistenceV2, ThemeControl, Theme, SymbolGlyphModifier } from '@kit.ArkUI';
+import { DraggableFab } from '../components/DraggableFab';
 
 const TAG: string = '[Index]';
 
@@ -76,8 +77,17 @@ struct Index {
     };
   }
 
+  /**
+   * 打开记账半模态窗
+   * TODO: 等待 billing 模块开发完成后实现
+   */
+  private openBillingModal(): void {
+    console.log(TAG, '打开记账半模态窗 - 待实现');
+    // TODO: 打开 billing 模块的半模态窗
+  }
+
   build() {
-    Column() {
+    Stack({ alignContent: Alignment.BottomEnd }) {
       HdsTabs({ controller: mainTabController }) {
         TabContent() {
           Home()
@@ -125,7 +135,30 @@ struct Index {
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
         },
         thermoCtrl: true,
+        lightColor: this.themeState.brand as ResourceColor
       })
+      .onChange((index: number) => {
+        // 个人中心页面（索引3）隐藏悬浮按钮，其他页面显示
+        if (index === 3) {
+          fabController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+        } else {
+          fabController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+        }
+      })
+      .width('100%')
+      .height('100%')
+
+      // 悬浮记账按钮 - 固定在右下角，比 TabBar 高一点
+      DraggableFab({
+        optionSystem: this.optionSystem,
+        themeState: this.themeState,
+        onFabClick: () => {
+          this.openBillingModal();
+        }
+      })
+        .margin({ bottom: 100, right: 24 })
     }
+    .width('100%')
+    .height('100%')
   }
 }
