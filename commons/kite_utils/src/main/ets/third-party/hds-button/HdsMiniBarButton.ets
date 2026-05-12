@@ -1,22 +1,22 @@
 /**
  * Copyright 2024 hds_button Contributors
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * Original source: https://gitcode.com/SummerKaze/HdsButton_Component
  */
 
-import { hdsMaterial, HdsTabs } from '@kit.UIDesignKit';
+import { hdsMaterial, HdsTabs, HdsTabsController } from '@kit.UIDesignKit';
 
 /**
  * HdsMiniBarButton 浮动迷你栏按钮组件
@@ -24,6 +24,13 @@ import { hdsMaterial, HdsTabs } from '@kit.UIDesignKit';
  */
 @ComponentV2
 export struct HdsMiniBarButton {
+  // ==================== 控制器参数 ====================
+
+  /**
+   * 外部控制器，用于控制显示/隐藏动画
+   * @default undefined - 使用内部默认控制器
+   */
+  @Param controller: HdsTabsController | undefined = undefined;
   // ==================== 尺寸参数 ====================
 
   /**
@@ -31,25 +38,21 @@ export struct HdsMiniBarButton {
    * @default 50
    */
   @Param barWidth: number = 50;
-
   /**
    * 按钮栏高度
    * @default 50
    */
   @Param barHeight: number = 50;
-
   /**
    * 容器内边距（防止光效被裁切）
    * @default 8
    */
   @Param contentPadding: number = 8;
-
   /**
    * 容器尺寸，优先使用此值，未设置时自动计算
    * @default undefined
    */
   @Param containerSize: SizeOptions | undefined = undefined;
-
   // ==================== 图标参数 ====================
 
   /**
@@ -57,19 +60,16 @@ export struct HdsMiniBarButton {
    * @default $r('sys.symbol.plus')
    */
   @Param iconResource: Resource = $r('sys.symbol.plus');
-
   /**
    * 图标大小
    * @default 27
    */
   @Param iconSize: number = 27;
-
   /**
    * 图标颜色数组（支持渐变效果）
    * @default [Color.Gray]
    */
   @Param iconColor: ResourceColor[] = [Color.Gray];
-
   // ==================== 浮动样式参数 ====================
 
   /**
@@ -77,25 +77,31 @@ export struct HdsMiniBarButton {
    * @default Color.Transparent
    */
   @Param maskColor: ResourceColor = Color.Transparent;
-
   /**
    * 按钮栏底部边距
    * @default 8
    */
   @Param barBottomMargin: number = 8;
-
   /**
    * 材质类型（沉浸式效果）
    * @default hdsMaterial.MaterialType.IMMERSIVE
    */
   @Param materialType: hdsMaterial.MaterialType = hdsMaterial.MaterialType.IMMERSIVE;
-
   /**
    * 材质级别
    * @default hdsMaterial.MaterialLevel.ADAPTIVE
    */
   @Param materialLevel: hdsMaterial.MaterialLevel = hdsMaterial.MaterialLevel.ADAPTIVE;
-
+  /**
+   * 是否启用热力控制效果
+   * @default false
+   */
+  @Param thermoCtrl: boolean = false;
+  /**
+   * 主题光效颜色
+   * @default undefined
+   */
+  @Param lightColor: ResourceColor | undefined = undefined;
   // ==================== 布局参数 ====================
 
   /**
@@ -103,13 +109,11 @@ export struct HdsMiniBarButton {
    * @default BarPosition.End
    */
   @Param barPosition: BarPosition = BarPosition.End;
-
   /**
    * 按钮栏是否与内容重叠
    * @default true
    */
   @Param barOverlap: boolean = true;
-
   // ==================== 事件回调 ====================
 
   /**
@@ -137,7 +141,20 @@ export struct HdsMiniBarButton {
    */
   @BuilderParam buttonContent: () => void = this.defaultButtonBuilder;
 
+  // ==================== 私有属性 ====================
+
+  // 内部默认控制器（当外部未传入时使用）
+  private defaultController: HdsTabsController = new HdsTabsController();
+
   // ==================== 私有方法 ====================
+
+  /**
+   * 获取实际使用的控制器
+   * 优先使用外部传入的控制器，否则使用内部默认控制器
+   */
+  private getController(): HdsTabsController {
+    return this.controller !== undefined ? this.controller : this.defaultController;
+  }
 
   /**
    * 计算容器尺寸
@@ -162,7 +179,7 @@ export struct HdsMiniBarButton {
    */
   build() {
     Row() {
-      HdsTabs() {
+      HdsTabs({ controller: this.getController() }) {
         TabContent()
           .tabBar(this.buttonContent())
       }
@@ -179,7 +196,9 @@ export struct HdsMiniBarButton {
         systemMaterialEffect: {
           materialType: this.materialType,
           materialLevel: this.materialLevel
-        }
+        },
+        thermoCtrl: this.thermoCtrl,
+        lightColor: this.lightColor
       })
       .onTabBarClick(() => {
         if (this.onButtonClick) {
