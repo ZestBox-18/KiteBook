@@ -1,4 +1,14 @@
-# kite_utils 使用文档
+# kite_utils 模块文档
+
+`kite_utils` 是一个面向 HarmonyOS ArkTS 项目的通用工具库，当前提供以下能力：
+
+- Network 网络请求封装
+- relationalStore 关系型数据库管理与升级
+- Clog 日志打印与日志落盘
+- BreakPoint / BreakpointSystem 响应式断点工具
+- WindowUtil 窗口信息与沉浸式能力
+- GlobalContext 全局上下文管理
+- 常用UI组件
 
 ## 目录
 
@@ -24,12 +34,28 @@
   - [最佳实践](#最佳实践-1)
 - [BreakPoint 断点工具类](#breakpoint-断点工具类)
   - [使用示例](#使用示例-3)
+- [模块说明](#模块说明)
+- [WindowUtil 窗口工具](#windowutil-窗口工具)
+- [GlobalContext 全局上下文](#globalcontext-全局上下文)
+- [UI 组件](#ui-组件)
 
 ## 安装
 
 ```bash
 ohpm install kite_utils
 ```
+
+## 模块说明
+
+当前模块版本：`1.0.13`
+
+适用场景：
+
+- 为 HarmonyOS ArkTS 项目统一网络请求入口
+- 为业务模块提供关系型数据库版本管理能力
+- 提供日志记录、日志导出与问题排查基础能力
+- 提供多设备断点响应、窗口安全区和沉浸式相关支持
+- 提供全局上下文、颜色选择器和常用 UI 组件
 
 ## Network 网络请求工具
 
@@ -1225,3 +1251,25 @@ import { BreakPoint, Clog } from "kite_utils";
 }).getValue('sm'))
 //……
 ```
+
+## WindowUtil 窗口工具
+
+`WindowUtil` 用于统一管理窗口信息，支持安全区、键盘高度、沉浸式模式等场景，适合页面布局避让和窗口状态监听。
+
+常见能力包括：
+
+- 获取顶部和底部安全区信息
+- 获取键盘高度变化
+- 设置窗口沉浸式模式
+- 提供统一的窗口信息对象
+
+## GlobalContext 全局上下文
+
+`GlobalContext` 用于在模块内部统一管理和获取全局上下文，适合在工具类或非组件代码中共享上下文对象。
+
+## UI 组件
+
+模块当前内置以下常用 UI 组件能力：
+
+- `HSBColorPicker` / `ColorSlider`：颜色选择器相关组件与工具方法
+- `HdsMiniBarButton`：浮动迷你栏按钮组件
