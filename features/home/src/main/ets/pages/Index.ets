@@ -241,6 +241,7 @@ export struct Index {
       }
       .index(this.swiperIndex)
       .autoPlay(false)
+      .clip(false)
       .indicator(Indicator.dot()
         .color(this.themeState.compDivider)
         .selectedColor(this.themeState.brand))
