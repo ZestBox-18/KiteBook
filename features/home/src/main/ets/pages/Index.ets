@@ -25,8 +25,8 @@ import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
 const TAG: string = '[HomeIndex]';
 const CARD_COUNT: number = 3;
-const MIN_SCALE: number = 0.75;
-const MAX_ROTATE: number = 8; // 最大旋转角度
+const MIN_SCALE: number = 0.8;
+const MAX_ROTATE: number = 5; // 减小旋转角度
 
 // Swiper 页面枚举
 enum SwiperPage {
@@ -106,12 +106,17 @@ export struct Index {
    */
   private formatDateTitle(dateStr: string): string {
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    const todayStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate()
+      .toString()
+      .padStart(2, '0')}`;
     if (dateStr === todayStr) {
       return '今天';
     }
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const yesterdayStr = `${yesterday.getFullYear()}-${(yesterday.getMonth() + 1).toString().padStart(2, '0')}-${yesterday.getDate().toString().padStart(2, '0')}`;
+    const yesterdayStr =
+      `${yesterday.getFullYear()}-${(yesterday.getMonth() + 1).toString().padStart(2, '0')}-${yesterday.getDate()
+        .toString()
+        .padStart(2, '0')}`;
     if (dateStr === yesterdayStr) {
       return '昨天';
     }
@@ -218,7 +223,8 @@ export struct Index {
             content: {
               icon: $r('sys.symbol.house'),
               label: 'logo',
-              action: () => {},
+              action: () => {
+              },
             }
           }]
         },
@@ -239,14 +245,14 @@ export struct Index {
         this.IncomeExpenseCard()
         this.AssetCard()
       }
+      .prevMargin(10)
+      .nextMargin(10)
       .index(this.swiperIndex)
       .autoPlay(false)
-      .clip(false)
       .indicator(Indicator.dot()
         .color(this.themeState.compDivider)
         .selectedColor(this.themeState.brand))
       .itemSpace(16)
-      .margin({ left: 16, right: 16 })
       .customContentTransition({
         timeout: 1000,
         transition: (proxy: SwiperContentTransitionProxy) => {
@@ -300,6 +306,7 @@ export struct Index {
             .fontWeight(FontWeight.Medium)
             .fontColor('#FFFFFFCC')
         }
+
         Text(this.getCurrentMonth())
           .fontSize(13)
           .fontColor('#FFFFFF60')
@@ -358,10 +365,17 @@ export struct Index {
         .margin({ top: 8 })
       }
       .width('100%')
+      .padding({
+        top: 16,
+        bottom: 12,
+        left: 24,
+        right: 24
+      })
     }
     .width('100%')
     .height(180)
     .padding(24)
+    .margin({ left: 16, right: 16 })
     .borderRadius(20)
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[0], y: this.scaleList[0] })
@@ -387,6 +401,7 @@ export struct Index {
             .fontWeight(FontWeight.Medium)
             .fontColor('#FFFFFFCC')
         }
+
         Text(this.getCurrentMonth())
           .fontSize(13)
           .fontColor('#FFFFFF60')
@@ -460,6 +475,7 @@ export struct Index {
     .width('100%')
     .height(180)
     .padding(24)
+    .margin({ left: 16, right: 16 })
     .borderRadius(20)
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[1], y: this.scaleList[1] })
@@ -514,6 +530,7 @@ export struct Index {
     .width('100%')
     .height(180)
     .padding(24)
+    .margin({ left: 16, right: 16 })
     .borderRadius(20)
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[2], y: this.scaleList[2] })
@@ -563,6 +580,7 @@ export struct Index {
                     `-¥${group.totalExpense.toFixed(2)}`
                   )
                 }
+
                 ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.EXPENSE), (bill: BillBean) => {
                   ListItem() {
                     this.BillItem(bill)
@@ -612,6 +630,7 @@ export struct Index {
                   this.formatGroupSummary(group)
                 )
               }
+
               ForEach(group.bills, (bill: BillBean) => {
                 ListItem() {
                   this.BillItem(bill)
@@ -661,6 +680,7 @@ export struct Index {
                     `+¥${group.totalIncome.toFixed(2)}`
                   )
                 }
+
                 ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.INCOME), (bill: BillBean) => {
                   ListItem() {
                     this.BillItem(bill)
@@ -719,7 +739,12 @@ export struct Index {
     }
     .width('100%')
     .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16, top: 20, bottom: 12 })
+    .padding({
+      left: 16,
+      right: 16,
+      top: 20,
+      bottom: 12
+    })
   }
 
   /**
@@ -738,7 +763,12 @@ export struct Index {
     }
     .width('100%')
     .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+    .padding({
+      left: 16,
+      right: 16,
+      top: 12,
+      bottom: 8
+    })
     .backgroundColor($r('app.color.start_window_background'))
   }
 
