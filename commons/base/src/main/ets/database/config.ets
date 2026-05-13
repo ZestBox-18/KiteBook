@@ -1,5 +1,7 @@
-import { DatabaseUpgradeSql, dbManager, initDatabaseConfig } from 'kite_utils';
+import { DatabaseUpgradeSql, dbManager, initDatabaseConfig, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
+
+const TAG: string = '[DatabaseConfig]';
 
 /**
  * 数据库升级脚本配置
@@ -71,6 +73,19 @@ export function dbManagerInit(context: Context): void {
     },
     version: 2,
     upgradeSqls: upgradeSqls
+  });
+
+  // 设置数据库回调
+  dbManager.setCallbacks({
+    onDatabaseInitialized: async (): Promise<void> => {
+      Clog.info(TAG, '数据库首次创建完成');
+    },
+    onDatabaseUpgraded: async (fromVersion: number, toVersion: number): Promise<void> => {
+      Clog.info(TAG, `数据库升级完成: ${fromVersion} -> ${toVersion}`);
+    },
+    onDatabaseVersionConsistent: async (version: number): Promise<void> => {
+      Clog.info(TAG, `数据库版本一致: ${version}`);
+    }
   });
 
   dbManager.init(context);

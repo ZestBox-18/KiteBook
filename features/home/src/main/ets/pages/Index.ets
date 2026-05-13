@@ -1,11 +1,38 @@
+/**
+ * Copyright (C), 2025-05-13
+ * @author ZestBox
+ * @date 2025/05/13
+ * @version 1.0
+ * @description: 首页 - 使用 customContentTransition 实现拖拽实时动画
+ */
+
 import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
-import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
+import {
+  CommonConstants,
+  RouterUrlConstants,
+  SystemOptions,
+  AppThemeState,
+  BillManager,
+  BillGroup,
+  BillBean,
+  BillTypeEnum,
+  mainTabController
+} from 'base';
 import { Assets, Ordinary } from 'record';
-import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
-import { WindowUtil } from 'kite_utils';
+import { AppStorageV2, LengthMetrics, SymbolGlyphModifier, curves } from '@kit.ArkUI';
+import { WindowUtil, Clog } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
 const TAG: string = '[HomeIndex]';
+const CARD_COUNT: number = 3;
+const MIN_SCALE: number = 0.85;
+
+// Swiper 页面枚举
+enum SwiperPage {
+  BUDGET = 0,
+  INCOME = 1,
+  ASSET = 2
+}
 
 @Entry
 @ComponentV2
@@ -13,15 +40,23 @@ export struct Index {
   // 页面路由栈
   @Local pageInfos: NavPathStack = new NavPathStack();
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
+  @Local themeState: AppThemeState = AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!;
   private scrollerForScroll: Scroller = new Scroller();
   // 用户设置项
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
+  // 账单数据
+  @Local billGroups: BillGroup[] = [];
+  // Swiper 状态
+  @Local swiperIndex: number = 0;
+  // 自定义动画状态
+  @Local opacityList: number[] = [1, 1, 1];
+  @Local scaleList: number[] = [1, 1, 1];
+  @Local translateList: number[] = [0, 0, 0];
+  @Local zIndexList: number[] = [0, 0, 0];
 
   /**
    * 页面路由表
-   * @param name 路由名
-   * @param param 携带方法体
    */
   @Builder
   PagesMap(name: string, param?: object) {
@@ -34,29 +69,85 @@ export struct Index {
   }
 
   /**
-   * 导航到子页面（隐藏 Tab 栏）
+   * 导航到子页面
    */
   private navigateToSubPage(name: string): void {
     mainTabController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION);
     this.pageInfos.pushPath({ name: name });
   }
 
+  /**
+   * 加载账单数据
+   */
+  private async loadBillData(): Promise<void> {
+    try {
+      this.billGroups = await BillManager.getRecentBills(3);
+    } catch (err) {
+      Clog.error(TAG, '加载账单数据失败', err);
+    }
+  }
+
+  /**
+   * 删除账单
+   */
+  private async deleteBill(billId: number): Promise<void> {
+    try {
+      await BillManager.deleteBill(billId);
+      await this.loadBillData();
+    } catch (err) {
+      Clog.error(TAG, '删除账单失败', err);
+    }
+  }
+
+  /**
+   * 格式化日期标题
+   */
+  private formatDateTitle(dateStr: string): string {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    if (dateStr === todayStr) {
+      return '今天';
+    }
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = `${yesterday.getFullYear()}-${(yesterday.getMonth() + 1).toString().padStart(2, '0')}-${yesterday.getDate().toString().padStart(2, '0')}`;
+    if (dateStr === yesterdayStr) {
+      return '昨天';
+    }
+    return dateStr;
+  }
+
+  /**
+   * 获取当前月份
+   */
+  private getCurrentMonth(): string {
+    const now = new Date();
+    return `${now.getMonth() + 1}月`;
+  }
+
   aboutToAppear() {
+    this.loadBillData();
   }
 
   build() {
     HdsNavigation(this.pageInfos) {
-      Scroll(this.scrollerForScroll) {
-        Column() {
-          Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
-          // TODO: 首页内容区域
+      Column() {
+        // 顶部安全区
+        Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
+
+        // Swiper 卡片区域
+        this.SwiperSection()
+
+        // 根据当前页面显示不同的列表
+        if (this.swiperIndex === SwiperPage.BUDGET) {
+          this.BudgetListSection()
+        } else if (this.swiperIndex === SwiperPage.INCOME) {
+          this.IncomeListSection()
+        } else if (this.swiperIndex === SwiperPage.ASSET) {
+          this.AssetListSection()
         }
-        .width('100%')
       }
       .width('100%')
-      .height('100%')
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.Spring)
+      .backgroundColor($r('app.color.start_window_background'))
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
@@ -76,41 +167,41 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
+            backgroundColor: $r('app.color.start_window_background'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: this.themeState.fontPrimary,
+              subTitleColor: this.themeState.fontSecondary
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: this.themeState.compBackgroundNeutral,
+              textColor: this.themeState.fontSecondary,
+              iconColor: this.themeState.iconPrimary
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: this.themeState.compBackgroundNeutral,
+              iconColor: this.themeState.iconPrimary
             },
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
+            backgroundColor: $r('app.color.start_window_background'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary'),
+              mainTitleColor: this.themeState.fontPrimary,
+              subTitleColor: this.themeState.fontSecondary,
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: this.themeState.compBackgroundNeutral,
+              textColor: this.themeState.fontSecondary,
+              iconColor: this.themeState.iconPrimary
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: this.themeState.compBackgroundNeutral,
+              iconColor: this.themeState.iconPrimary
             }
           }
         }
@@ -125,15 +216,614 @@ export struct Index {
             content: {
               icon: $r('sys.symbol.house'),
               label: 'logo',
-              action: () => {
-              },
+              action: () => {},
             }
           }]
         },
       },
       avoidLayoutSafeArea: true
     })
-    .bindToScrollable([this.scrollerForScroll])
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+  }
+
+  /**
+   * Swiper 区域 - 使用 customContentTransition 实现拖拽实时动画
+   */
+  @Builder
+  SwiperSection() {
+    Column() {
+      Swiper() {
+        this.BudgetCard()
+        this.IncomeExpenseCard()
+        this.AssetCard()
+      }
+      .index(this.swiperIndex)
+      .autoPlay(false)
+      .indicator(Indicator.dot()
+        .color(this.themeState.compDivider)
+        .selectedColor(this.themeState.brand))
+      .itemSpace(16)
+      .margin({ left: 16, right: 16 })
+      .customContentTransition({
+        timeout: 1000,
+        transition: (proxy: SwiperContentTransitionProxy) => {
+          // 从第0页滑到第1页时：
+          // 第0页：selectedIndex=0, index=0, position 从 0 变为 -1
+          // 第1页：selectedIndex=0, index=1, position 从 1 变为 0
+
+          if (proxy.index === proxy.selectedIndex) {
+            // 当前页面（正在被滑走）：position 从 0 变为 -1
+            // progress = |position|，从 0 变为 1
+            const progress = Math.min(Math.abs(proxy.position), 1);
+            this.scaleList[proxy.index] = 1 - (1 - MIN_SCALE) * progress;
+            this.opacityList[proxy.index] = 1 - 0.4 * progress;
+            this.zIndexList[proxy.index] = 1;
+          } else {
+            // 目标页面（正在滑入）：position 从 1 变为 0
+            // progress = 1 - position，从 0 变为 1
+            const progress = 1 - Math.min(Math.abs(proxy.position), 1);
+            this.scaleList[proxy.index] = MIN_SCALE + (1 - MIN_SCALE) * progress;
+            this.opacityList[proxy.index] = 0.6 + 0.4 * progress;
+            this.zIndexList[proxy.index] = 0;
+          }
+        }
+      })
+      .onChange((index: number) => {
+        this.swiperIndex = index;
+        // 延迟重置状态，避免瞬间跳变
+        setTimeout(() => {
+          for (let i = 0; i < CARD_COUNT; i++) {
+            this.scaleList[i] = 1;
+            this.opacityList[i] = 1;
+            this.zIndexList[i] = 0;
+          }
+        }, 50);
+      })
+    }
+    .width('100%')
+    .padding({ top: 16, bottom: 12 })
+  }
+
+  /**
+   * 预算卡片
+   */
+  @Builder
+  BudgetCard() {
+    Column() {
+      // 卡片头部
+      Row() {
+        Row({ space: 8 }) {
+          SymbolGlyph($r('sys.symbol.creditcard'))
+            .fontSize(18)
+            .fontColor(['#FFFFFF90'])
+          Text('本月预算')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#FFFFFFCC')
+        }
+        Text(this.getCurrentMonth())
+          .fontSize(13)
+          .fontColor('#FFFFFF60')
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .margin({ bottom: 20 })
+
+      // 预算金额
+      Column() {
+        Row({ space: 4 }) {
+          Text('¥')
+            .fontSize(18)
+            .fontColor('#FFFFFF90')
+          Text('2,580')
+            .fontSize(36)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#FFFFFF')
+        }
+        .alignItems(VerticalAlign.Bottom)
+
+        Text('总预算 ¥4,000')
+          .fontSize(13)
+          .fontColor('#FFFFFF60')
+          .margin({ top: 4 })
+      }
+      .alignItems(HorizontalAlign.Start)
+      .margin({ bottom: 16 })
+
+      // 进度条
+      Column() {
+        Stack({ alignContent: Alignment.Start }) {
+          Row()
+            .width('100%')
+            .height(8)
+            .borderRadius(4)
+            .backgroundColor('#FFFFFF15')
+          Row()
+            .width('65%')
+            .height(8)
+            .borderRadius(4)
+            .backgroundColor('#FFFFFF')
+        }
+        .width('100%')
+
+        Row() {
+          Text('已使用 65%')
+            .fontSize(12)
+            .fontColor('#FFFFFF70')
+          Text('剩余 ¥1,420')
+            .fontSize(12)
+            .fontColor('#FFFFFFA0')
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.SpaceBetween)
+        .margin({ top: 8 })
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .height(180)
+    .padding(24)
+    .borderRadius(20)
+    .backgroundColor(this.themeState.brand)
+    .scale({ x: this.scaleList[0], y: this.scaleList[0] })
+    .opacity(this.opacityList[0])
+    .zIndex(this.zIndexList[0])
+  }
+
+  /**
+   * 收支卡片
+   */
+  @Builder
+  IncomeExpenseCard() {
+    Column() {
+      // 卡片头部
+      Row() {
+        Row({ space: 8 }) {
+          SymbolGlyph($r('sys.symbol.arrow_left_arrow_right'))
+            .fontSize(18)
+            .fontColor(['#FFFFFF90'])
+          Text('本月收支')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#FFFFFFCC')
+        }
+        Text(this.getCurrentMonth())
+          .fontSize(13)
+          .fontColor('#FFFFFF60')
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .margin({ bottom: 24 })
+
+      Row() {
+        // 收入
+        Column() {
+          Row({ space: 6 }) {
+            SymbolGlyph($r('sys.symbol.arrow_down'))
+              .fontSize(12)
+              .fontColor(['#6EE7B7'])
+            Text('收入')
+              .fontSize(13)
+              .fontColor('#FFFFFF70')
+          }
+          .margin({ bottom: 8 })
+
+          Row({ space: 2 }) {
+            Text('¥')
+              .fontSize(14)
+              .fontColor('#FFFFFF90')
+            Text('15,128')
+              .fontSize(28)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#FFFFFF')
+          }
+          .alignItems(VerticalAlign.Bottom)
+        }
+        .alignItems(HorizontalAlign.Start)
+        .layoutWeight(1)
+
+        // 分隔线
+        Column()
+          .width(1)
+          .height(50)
+          .backgroundColor('#FFFFFF15')
+
+        // 支出
+        Column() {
+          Row({ space: 6 }) {
+            SymbolGlyph($r('sys.symbol.arrow_up'))
+              .fontSize(12)
+              .fontColor(['#FCA5A5'])
+            Text('支出')
+              .fontSize(13)
+              .fontColor('#FFFFFF70')
+          }
+          .margin({ bottom: 8 })
+
+          Row({ space: 2 }) {
+            Text('¥')
+              .fontSize(14)
+              .fontColor('#FFFFFF90')
+            Text('2,580')
+              .fontSize(28)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#FFFFFF')
+          }
+          .alignItems(VerticalAlign.Bottom)
+        }
+        .alignItems(HorizontalAlign.End)
+        .layoutWeight(1)
+      }
+      .width('100%')
+      .padding({ left: 8, right: 8 })
+    }
+    .width('100%')
+    .height(180)
+    .padding(24)
+    .borderRadius(20)
+    .backgroundColor(this.themeState.iconPrimary)
+    .scale({ x: this.scaleList[1], y: this.scaleList[1] })
+    .opacity(this.opacityList[1])
+    .zIndex(this.zIndexList[1])
+  }
+
+  /**
+   * 资产卡片
+   */
+  @Builder
+  AssetCard() {
+    Column() {
+      // 卡片头部
+      Row() {
+        Row({ space: 8 }) {
+          SymbolGlyph($r('sys.symbol.creditcard'))
+            .fontSize(18)
+            .fontColor(['#FFFFFF90'])
+          Text('总资产')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#FFFFFFCC')
+        }
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .margin({ bottom: 16 })
+
+      Row({ space: 4 }) {
+        Text('¥')
+          .fontSize(18)
+          .fontColor('#FFFFFF90')
+        Text('128,560')
+          .fontSize(36)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#FFFFFF')
+      }
+      .alignItems(VerticalAlign.Bottom)
+      .margin({ bottom: 20 })
+
+      Row() {
+        this.AssetItem('现金', '¥15,600')
+        this.AssetItem('银行卡', '¥89,200')
+        this.AssetItem('其他', '¥23,760')
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
+      .padding({ left: 4, right: 4 })
+    }
+    .width('100%')
+    .height(180)
+    .padding(24)
+    .borderRadius(20)
+    .backgroundColor(this.themeState.iconEmphasize)
+    .scale({ x: this.scaleList[2], y: this.scaleList[2] })
+    .opacity(this.opacityList[2])
+    .zIndex(this.zIndexList[2])
+  }
+
+  /**
+   * 资产项目
+   */
+  @Builder
+  AssetItem(label: string, amount: string) {
+    Column() {
+      Text(label)
+        .fontSize(12)
+        .fontColor('#FFFFFF50')
+      Text(amount)
+        .fontSize(15)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#FFFFFFB0')
+        .margin({ top: 4 })
+    }
+    .alignItems(HorizontalAlign.Center)
+  }
+
+  /**
+   * 预算列表区域
+   */
+  @Builder
+  BudgetListSection() {
+    Column() {
+      this.SectionHeader('预算支出明细', '查看全部', () => {
+        this.navigateToSubPage(RouterUrlConstants.ORDINARY);
+      })
+
+      if (this.billGroups.length === 0) {
+        this.EmptyState('暂无预算支出记录')
+      } else {
+        List() {
+          ForEach(this.billGroups, (group: BillGroup) => {
+            if (group.totalExpense > 0) {
+              ListItemGroup() {
+                ListItem() {
+                  this.DateGroupHeader(
+                    this.formatDateTitle(group.date),
+                    `-¥${group.totalExpense.toFixed(2)}`
+                  )
+                }
+                ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.EXPENSE), (bill: BillBean) => {
+                  ListItem() {
+                    this.BillItem(bill)
+                  }
+                  .swipeAction({
+                    end: this.DeleteSwipeButton(bill.id)
+                  })
+                })
+              }
+              .divider({
+                strokeWidth: 0.5,
+                color: this.themeState.compDivider,
+                startMargin: 52,
+                endMargin: 16
+              })
+            }
+          })
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+      }
+    }
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  /**
+   * 收支列表区域
+   */
+  @Builder
+  IncomeListSection() {
+    Column() {
+      this.SectionHeader('收支明细', '查看全部', () => {
+        this.navigateToSubPage(RouterUrlConstants.ORDINARY);
+      })
+
+      if (this.billGroups.length === 0) {
+        this.EmptyState('暂无收支记录')
+      } else {
+        List() {
+          ForEach(this.billGroups, (group: BillGroup) => {
+            ListItemGroup() {
+              ListItem() {
+                this.DateGroupHeader(
+                  this.formatDateTitle(group.date),
+                  this.formatGroupSummary(group)
+                )
+              }
+              ForEach(group.bills, (bill: BillBean) => {
+                ListItem() {
+                  this.BillItem(bill)
+                }
+                .swipeAction({
+                  end: this.DeleteSwipeButton(bill.id)
+                })
+              })
+            }
+            .divider({
+              strokeWidth: 0.5,
+              color: this.themeState.compDivider,
+              startMargin: 52,
+              endMargin: 16
+            })
+          })
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+      }
+    }
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  /**
+   * 资产列表区域
+   */
+  @Builder
+  AssetListSection() {
+    Column() {
+      this.SectionHeader('资产变动', '查看全部', () => {
+        this.navigateToSubPage(RouterUrlConstants.ASSETS);
+      })
+
+      if (this.billGroups.length === 0) {
+        this.EmptyState('暂无资产变动记录')
+      } else {
+        List() {
+          ForEach(this.billGroups, (group: BillGroup) => {
+            if (group.totalIncome > 0) {
+              ListItemGroup() {
+                ListItem() {
+                  this.DateGroupHeader(
+                    this.formatDateTitle(group.date),
+                    `+¥${group.totalIncome.toFixed(2)}`
+                  )
+                }
+                ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.INCOME), (bill: BillBean) => {
+                  ListItem() {
+                    this.BillItem(bill)
+                  }
+                  .swipeAction({
+                    end: this.DeleteSwipeButton(bill.id)
+                  })
+                })
+              }
+              .divider({
+                strokeWidth: 0.5,
+                color: this.themeState.compDivider,
+                startMargin: 52,
+                endMargin: 16
+              })
+            }
+          })
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+      }
+    }
+    .width('100%')
+    .layoutWeight(1)
+  }
+
+  /**
+   * 格式化分组摘要
+   */
+  private formatGroupSummary(group: BillGroup): string {
+    const parts: string[] = [];
+    if (group.totalIncome > 0) {
+      parts.push(`收 ¥${group.totalIncome.toFixed(2)}`);
+    }
+    if (group.totalExpense > 0) {
+      parts.push(`支 ¥${group.totalExpense.toFixed(2)}`);
+    }
+    return parts.join(' ');
+  }
+
+  /**
+   * 区域标题
+   */
+  @Builder
+  SectionHeader(title: string, action: string, onClick: () => void) {
+    Row() {
+      Text(title)
+        .fontSize(17)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.fontPrimary)
+      Text(action)
+        .fontSize(14)
+        .fontColor(this.themeState.brand)
+        .onClick(onClick)
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.SpaceBetween)
+    .padding({ left: 16, right: 16, top: 20, bottom: 12 })
+  }
+
+  /**
+   * 日期分组头
+   */
+  @Builder
+  DateGroupHeader(date: string, summary: string) {
+    Row() {
+      Text(date)
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.fontSecondary)
+      Text(summary)
+        .fontSize(13)
+        .fontColor(this.themeState.fontSecondary)
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.SpaceBetween)
+    .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+    .backgroundColor($r('app.color.start_window_background'))
+  }
+
+  /**
+   * 空状态
+   */
+  @Builder
+  EmptyState(text: string) {
+    Column() {
+      SymbolGlyph($r('sys.symbol.doc_text'))
+        .fontSize(48)
+        .fontColor([this.themeState.iconSecondary])
+      Text(text)
+        .fontSize(15)
+        .fontColor(this.themeState.fontSecondary)
+        .margin({ top: 12 })
+    }
+    .width('100%')
+    .height(200)
+    .justifyContent(FlexAlign.Center)
+  }
+
+  /**
+   * 账单项
+   */
+  @Builder
+  BillItem(bill: BillBean) {
+    Row() {
+      SymbolGlyph(bill.getCategoryIcon())
+        .fontSize(20)
+        .fontColor([bill.type === BillTypeEnum.EXPENSE ? '#EF4444' : '#10B981'])
+        .width(36)
+        .height(36)
+        .borderRadius(8)
+        .backgroundColor(bill.type === BillTypeEnum.EXPENSE ? '#FEE2E2' : '#D1FAE5')
+        .padding(8)
+
+      Column() {
+        Text(bill.category)
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.themeState.fontPrimary)
+        if (bill.remark.length > 0) {
+          Text(bill.remark)
+            .fontSize(13)
+            .fontColor(this.themeState.fontSecondary)
+            .margin({ top: 2 })
+        }
+      }
+      .alignItems(HorizontalAlign.Start)
+      .margin({ left: 12 })
+      .layoutWeight(1)
+
+      Column() {
+        Text(bill.formatAmount())
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(bill.type === BillTypeEnum.EXPENSE ? '#EF4444' : '#10B981')
+        Text(bill.getTimeString())
+          .fontSize(12)
+          .fontColor(this.themeState.fontSecondary)
+          .margin({ top: 2 })
+      }
+      .alignItems(HorizontalAlign.End)
+    }
+    .width('100%')
+    .height(60)
+    .padding({ left: 16, right: 16 })
+    .backgroundColor(this.themeState.compBackgroundPrimary)
+  }
+
+  /**
+   * 删除滑动按钮
+   */
+  @Builder
+  DeleteSwipeButton(billId: number) {
+    Button() {
+      SymbolGlyph($r('sys.symbol.trash'))
+        .fontSize(20)
+        .fontColor(['#FFFFFF'])
+    }
+    .width(64)
+    .height(60)
+    .backgroundColor('#EF4444')
+    .borderRadius(0)
+    .onClick(() => {
+      this.deleteBill(billId);
+    })
   }
 }
