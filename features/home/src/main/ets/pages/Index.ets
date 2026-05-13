@@ -25,7 +25,8 @@ import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 
 const TAG: string = '[HomeIndex]';
 const CARD_COUNT: number = 3;
-const MIN_SCALE: number = 0.85;
+const MIN_SCALE: number = 0.75;
+const MAX_ROTATE: number = 8; // 最大旋转角度
 
 // Swiper 页面枚举
 enum SwiperPage {
@@ -54,6 +55,7 @@ export struct Index {
   @Local scaleList: number[] = [1, 1, 1];
   @Local translateList: number[] = [0, 0, 0];
   @Local zIndexList: number[] = [0, 0, 0];
+  @Local rotateList: number[] = [0, 0, 0];
 
   /**
    * 页面路由表
@@ -247,34 +249,30 @@ export struct Index {
       .customContentTransition({
         timeout: 1000,
         transition: (proxy: SwiperContentTransitionProxy) => {
-          // 从第0页滑到第1页时：
-          // 第0页：selectedIndex=0, index=0, position 从 0 变为 -1
-          // 第1页：selectedIndex=0, index=1, position 从 1 变为 0
-
           if (proxy.index === proxy.selectedIndex) {
-            // 当前页面（正在被滑走）：position 从 0 变为 -1
-            // progress = |position|，从 0 变为 1
+            // 当前页面（正在被滑走）
             const progress = Math.min(Math.abs(proxy.position), 1);
             this.scaleList[proxy.index] = 1 - (1 - MIN_SCALE) * progress;
-            this.opacityList[proxy.index] = 1 - 0.4 * progress;
+            this.opacityList[proxy.index] = 1 - 0.6 * progress;
+            this.rotateList[proxy.index] = MAX_ROTATE * progress * (proxy.position < 0 ? -1 : 1);
             this.zIndexList[proxy.index] = 1;
           } else {
-            // 目标页面（正在滑入）：position 从 1 变为 0
-            // progress = 1 - position，从 0 变为 1
+            // 目标页面（正在滑入）
             const progress = 1 - Math.min(Math.abs(proxy.position), 1);
             this.scaleList[proxy.index] = MIN_SCALE + (1 - MIN_SCALE) * progress;
-            this.opacityList[proxy.index] = 0.6 + 0.4 * progress;
+            this.opacityList[proxy.index] = 0.4 + 0.6 * progress;
+            this.rotateList[proxy.index] = MAX_ROTATE * (1 - progress) * (proxy.position < 0 ? 1 : -1);
             this.zIndexList[proxy.index] = 0;
           }
         }
       })
       .onChange((index: number) => {
         this.swiperIndex = index;
-        // 延迟重置状态，避免瞬间跳变
         setTimeout(() => {
           for (let i = 0; i < CARD_COUNT; i++) {
             this.scaleList[i] = 1;
             this.opacityList[i] = 1;
+            this.rotateList[i] = 0;
             this.zIndexList[i] = 0;
           }
         }, 50);
@@ -367,6 +365,7 @@ export struct Index {
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[0], y: this.scaleList[0] })
     .opacity(this.opacityList[0])
+    .rotate({ z: 1, angle: this.rotateList[0] })
     .zIndex(this.zIndexList[0])
   }
 
@@ -464,6 +463,7 @@ export struct Index {
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[1], y: this.scaleList[1] })
     .opacity(this.opacityList[1])
+    .rotate({ z: 1, angle: this.rotateList[1] })
     .zIndex(this.zIndexList[1])
   }
 
@@ -517,6 +517,7 @@ export struct Index {
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[2], y: this.scaleList[2] })
     .opacity(this.opacityList[2])
+    .rotate({ z: 1, angle: this.rotateList[2] })
     .zIndex(this.zIndexList[2])
   }
 
