@@ -56,6 +56,9 @@ export struct Index {
   @Local translateList: number[] = [0, 0, 0];
   @Local zIndexList: number[] = [0, 0, 0];
   @Local rotateList: number[] = [0, 0, 0];
+  // 指示器控制器
+  private indicatorController: IndicatorComponentController = new IndicatorComponentController();
+  private swiperController: SwiperController = new SwiperController();
 
   /**
    * 页面路由表
@@ -240,18 +243,16 @@ export struct Index {
   @Builder
   SwiperSection() {
     Column() {
-      Swiper() {
+      Swiper(this.swiperController) {
         this.BudgetCard()
         this.IncomeExpenseCard()
         this.AssetCard()
       }
-      .prevMargin(10)
-      .nextMargin(10)
+      .prevMargin(6)
+      .nextMargin(6)
       .index(this.swiperIndex)
       .autoPlay(false)
-      .indicator(Indicator.dot()
-        .color(this.themeState.compDivider)
-        .selectedColor(this.themeState.brand))
+      .indicator(this.indicatorController)
       .itemSpace(16)
       .customContentTransition({
         timeout: 1000,
@@ -284,9 +285,22 @@ export struct Index {
           }
         }, 50);
       })
+
+      // 自定义指示器
+      IndicatorComponent(this.indicatorController)
+        .initialIndex(0)
+        .style(
+          new DotIndicator()
+            .itemWidth(8)
+            .itemHeight(8)
+            .selectedItemWidth(16)
+            .selectedItemHeight(8)
+            .color(this.themeState.compDivider)
+            .selectedColor(this.themeState.brand))
+        .loop(false)
+        .count(CARD_COUNT)
     }
     .width('100%')
-    .padding({ top: 16, bottom: 12 })
   }
 
   /**
@@ -375,7 +389,7 @@ export struct Index {
     .width('100%')
     .height(180)
     .padding(24)
-    .margin({ left: 16, right: 16 })
+    .margin({ left: 8, right: 8 })
     .borderRadius(20)
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[0], y: this.scaleList[0] })
@@ -475,7 +489,7 @@ export struct Index {
     .width('100%')
     .height(180)
     .padding(24)
-    .margin({ left: 16, right: 16 })
+    .margin({ left: 8, right: 8 })
     .borderRadius(20)
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[1], y: this.scaleList[1] })
@@ -530,7 +544,7 @@ export struct Index {
     .width('100%')
     .height(180)
     .padding(24)
-    .margin({ left: 16, right: 16 })
+    .margin({ left: 8, right: 8 })
     .borderRadius(20)
     .backgroundColor(this.themeState.brand)
     .scale({ x: this.scaleList[2], y: this.scaleList[2] })
