@@ -140,7 +140,6 @@ export struct HdsMiniBarButton {
    * 默认使用图标构建函数，可通过尾随闭包自定义内容
    */
   @BuilderParam buttonContent: () => void = this.defaultButtonBuilder;
-
   // ==================== 私有属性 ====================
 
   // 内部默认控制器（当外部未传入时使用）
