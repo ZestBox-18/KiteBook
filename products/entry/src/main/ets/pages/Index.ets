@@ -129,7 +129,7 @@ struct Index {
       .barPosition(BarPosition.End)
       .vertical(false)
       .barFloatingStyle({
-        barBottomMargin: 28,
+        barBottomMargin: this.winUtil.mainWindowInfo.navIndicatorHeight,
         systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.IMMERSIVE,
           materialLevel: hdsMaterial.MaterialLevel.EXQUISITE

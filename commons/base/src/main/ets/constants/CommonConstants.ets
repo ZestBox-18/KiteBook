@@ -29,9 +29,9 @@ export class CommonConstants {
    */
   static readonly TITLE_BAR_HEIGHT_FREE: number = 138;
   /**
-   * Tab标签蒙版高度
+   * Tabs的高度
    */
-  static readonly TAB_MASK_HEIGHT: number = 80;
+  static readonly TAB_HEIGHT: number = 56;
   /**
    * HdsNavDestination 标题栏高度
    * HdsNavDestinationTitleMode.MINI: 标题栏高度 56vp

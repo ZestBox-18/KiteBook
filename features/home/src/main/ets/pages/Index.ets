@@ -625,13 +625,6 @@ export struct Index {
   @Builder
   ContentSection() {
     List({ space: 10 }) {
-      // 顶部安全区占位
-      ListItem() {
-        Column() {
-          Blank()
-        }
-        .height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
-      }
 
       // Swiper 卡片区域
       ListItem() {
@@ -676,6 +669,8 @@ export struct Index {
     }
     .width('100%')
     .height('100%')
+    .contentStartOffset(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
+    .contentEndOffset(this.winUtil.mainWindowInfo.navIndicatorHeight + CommonConstants.TAB_HEIGHT + 8)
     .scrollBar(BarState.Off)
     .edgeEffect(EdgeEffect.Spring)
   }
