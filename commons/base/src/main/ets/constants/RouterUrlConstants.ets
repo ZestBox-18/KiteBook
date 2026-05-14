@@ -63,4 +63,8 @@ export class RouterUrlConstants {
    * 投喂作者
    */
   static readonly SPONSORSHIP: string = 'Sponsorship';
+  /**
+   * 测试页面
+   */
+  static readonly TEST_PAGE: string = 'TestPage';
 }

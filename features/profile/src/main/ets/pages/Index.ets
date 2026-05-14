@@ -19,6 +19,7 @@ import { NotificationSettings } from './NotificationSettings';
 import { DataExport } from './DataExport';
 import { About } from './About';
 import { Sponsorship } from './Sponsorship';
+import { TestPage } from './TestPage';
 import { itemHead } from '../components/itemHead';
 import { UserCard } from '../components/UserCard';
 import { SettingItem } from '../components/SettingItem';
@@ -59,6 +60,8 @@ export struct Index {
       About()
     } else if (name === RouterUrlConstants.SPONSORSHIP) {
       Sponsorship()
+    } else if (name === RouterUrlConstants.TEST_PAGE) {
+      TestPage()
     }
   }
 

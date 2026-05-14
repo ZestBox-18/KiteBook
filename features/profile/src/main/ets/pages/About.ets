@@ -89,6 +89,12 @@ export struct About {
                   .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_secondary'))
                   .margin({ top: 4 })
+                  .gesture(
+                    LongPressGesture()
+                      .onAction(() => {
+                        this.pageInfos.pushPath({ name: RouterUrlConstants.TEST_PAGE });
+                      })
+                  )
               }
               .width('100%')
               .padding(24)
