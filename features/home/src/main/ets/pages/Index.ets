@@ -26,8 +26,7 @@ import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 const TAG: string = '[HomeIndex]';
 const CARD_COUNT: number = 3;
 const MIN_SCALE: number = 0.85;
-const DRAG_DISTANCE: number = 30;
-const CONTENT_DRAG_RATIO: number = 0.3;
+const MAX_ROTATE: number = 5; // 最大旋转角度
 const GRADIENT_DELAY: number = 80;
 
 @Entry
@@ -48,10 +47,8 @@ export struct Index {
   // 卡片动画状态
   @Local opacityList: number[] = [1, 1, 1];
   @Local scaleList: number[] = [1, 1, 1];
-  @Local translateList: number[] = [0, 0, 0];
+  @Local rotateList: number[] = [0, 0, 0];
   @Local zIndexList: number[] = [0, 0, 0];
-  // 内容区拖拽跟随偏移
-  @Local contentDragOffset: number = 0;
   // SectionHeader 文字切换动画状态
   @Local headerOldOpacity: number = 1;
   @Local headerOldTranslateX: number = 0;
@@ -87,8 +84,12 @@ export struct Index {
    * 获取 SectionHeader 标题
    */
   private getHeaderTitle(index: number): string {
-    if (index === 0) return '预算支出明细';
-    if (index === 1) return '收支明细';
+    if (index === 0) {
+      return '预算支出明细';
+    }
+    if (index === 1) {
+      return '收支明细';
+    }
     return '资产变动';
   }
 
@@ -96,8 +97,12 @@ export struct Index {
    * 获取 SectionHeader 跳转路由
    */
   private getHeaderRoute(index: number): string {
-    if (index === 0) return RouterUrlConstants.ORDINARY;
-    if (index === 1) return RouterUrlConstants.ORDINARY;
+    if (index === 0) {
+      return RouterUrlConstants.ORDINARY;
+    }
+    if (index === 1) {
+      return RouterUrlConstants.ORDINARY;
+    }
     return RouterUrlConstants.ASSETS;
   }
 
@@ -183,21 +188,12 @@ export struct Index {
 
   build() {
     HdsNavigation(this.pageInfos) {
-      Column() {
-        // 顶部安全区
-        Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
-
-        // Swiper 卡片区域
-        this.SwiperSection()
-
-        // 联动内容区域
-        this.ContentSection()
-      }
-      .width('100%')
-      .backgroundColor($r('app.color.start_window_background'))
+      // 联动内容区域（包含安全区、Swiper 和列表）
+      this.ContentSection()
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
+    .backgroundColor($r('app.color.start_window_background'))
     .mode(NavigationMode.Stack)
     .navDestination(this.PagesMap)
     .titleBar({
@@ -296,28 +292,24 @@ export struct Index {
         transition: (proxy: SwiperContentTransitionProxy) => {
           const pageDistance: number = Math.abs(proxy.position);
           if (proxy.index === proxy.selectedIndex) {
-            // 当前页面（正在被滑走）- 跟随手指移动，同时缩小变透明
+            // 当前页面（正在被滑走）- 跟随手指倾斜，同时缩小变透明
             const progress = Math.min(pageDistance, 1);
             this.opacityList[proxy.index] = 1 - 0.5 * progress;
             this.scaleList[proxy.index] = 1 - (1 - MIN_SCALE) * progress;
-            this.translateList[proxy.index] = proxy.position * DRAG_DISTANCE;
+            this.rotateList[proxy.index] = MAX_ROTATE * progress * (proxy.position < 0 ? -1 : 1);
             this.zIndexList[proxy.index] = 1;
-            // 内容区跟随
-            this.contentDragOffset = proxy.position * DRAG_DISTANCE * CONTENT_DRAG_RATIO;
           } else if (pageDistance < 1) {
             // 目标页面（正在滑入）- 从缩小恢复，从透明恢复
             const progress = 1 - pageDistance;
             this.opacityList[proxy.index] = 0.5 + 0.5 * progress;
             this.scaleList[proxy.index] = MIN_SCALE + (1 - MIN_SCALE) * progress;
-            this.translateList[proxy.index] = proxy.position < 0
-              ? -(1 - progress) * DRAG_DISTANCE
-              : (1 - progress) * DRAG_DISTANCE;
+            this.rotateList[proxy.index] = MAX_ROTATE * (1 - progress) * (proxy.position < 0 ? 1 : -1);
             this.zIndexList[proxy.index] = 0;
           } else {
             // 非当前页且非目标页 - 隐藏
             this.opacityList[proxy.index] = 0;
             this.scaleList[proxy.index] = MIN_SCALE;
-            this.translateList[proxy.index] = 0;
+            this.rotateList[proxy.index] = 0;
             this.zIndexList[proxy.index] = 0;
           }
         }
@@ -335,10 +327,9 @@ export struct Index {
           for (let i = 0; i < CARD_COUNT; i++) {
             this.opacityList[i] = 1;
             this.scaleList[i] = 1;
-            this.translateList[i] = 0;
+            this.rotateList[i] = 0;
             this.zIndexList[i] = 0;
           }
-          this.contentDragOffset = 0;
         });
       })
 
@@ -450,7 +441,7 @@ export struct Index {
     .backgroundColor(this.themeState.brand)
     .opacity(this.opacityList[0])
     .scale({ x: this.scaleList[0], y: this.scaleList[0] })
-    .translate({ x: this.translateList[0] })
+    .rotate({ z: 1, angle: this.rotateList[0] })
     .zIndex(this.zIndexList[0])
   }
 
@@ -550,7 +541,7 @@ export struct Index {
     .backgroundColor(this.themeState.brand)
     .opacity(this.opacityList[1])
     .scale({ x: this.scaleList[1], y: this.scaleList[1] })
-    .translate({ x: this.translateList[1] })
+    .rotate({ z: 1, angle: this.rotateList[1] })
     .zIndex(this.zIndexList[1])
   }
 
@@ -605,7 +596,7 @@ export struct Index {
     .backgroundColor(this.themeState.brand)
     .opacity(this.opacityList[2])
     .scale({ x: this.scaleList[2], y: this.scaleList[2] })
-    .translate({ x: this.translateList[2] })
+    .rotate({ z: 1, angle: this.rotateList[2] })
     .zIndex(this.zIndexList[2])
   }
 
@@ -628,129 +619,89 @@ export struct Index {
   }
 
   /**
-   * 联动内容区域 - SectionHeader 固定，列表内容跟随拖拽
+   * 联动内容区域 - 安全区、Swiper 和列表一起滚动
    */
   @Builder
   ContentSection() {
-    Column() {
-      // 固定的 SectionHeader，使用 Stack 实现文字切换动画
-      Stack() {
-        // 旧文字
+    List() {
+      // 顶部安全区占位
+      ListItem() {
         Column() {
-          this.SectionHeader(this.getHeaderTitle(this.prevSwiperIndex), '查看全部', () => {
-            this.navigateToSubPage(this.getHeaderRoute(this.prevSwiperIndex));
-          })
+          Blank()
         }
-        .opacity(this.headerOldOpacity)
-        .translate({ x: this.headerOldTranslateX })
-        .animation({ curve: curves.springMotion(0.6, 0.9) })
-
-        // 新文字
-        Column() {
-          this.SectionHeader(this.getHeaderTitle(this.swiperIndex), '查看全部', () => {
-            this.navigateToSubPage(this.getHeaderRoute(this.swiperIndex));
-          })
-        }
-        .opacity(this.headerNewOpacity)
-        .translate({ x: this.headerNewTranslateX })
-        .animation({ curve: curves.springMotion(0.6, 0.9) })
+        .height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
       }
-      .width('100%')
-      .height(60)
 
-      // 列表内容跟随拖拽
-      Column() {
-        if (this.swiperIndex === 0) {
-          this.BudgetListContent()
-        } else if (this.swiperIndex === 1) {
-          this.IncomeListContent()
-        } else {
-          this.AssetListContent()
-        }
+      // Swiper 卡片区域
+      ListItem() {
+        this.SwiperSection()
       }
-      .width('100%')
-      .layoutWeight(1)
-      .translate({ x: this.contentDragOffset })
-      .transition(TransitionEffect.OPACITY)
-    }
-    .width('100%')
-    .layoutWeight(1)
-  }
+      .padding({ top: 8, bottom: 8 })
 
-  /**
-   * 预算列表内容（不含 SectionHeader）
-   */
-  @Builder
-  BudgetListContent() {
-    Column() {
-      if (this.billGroups.length === 0) {
-        this.EmptyState('暂无预算支出记录')
-      } else {
-        List() {
-          ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
-            if (group.totalExpense > 0) {
-              ListItemGroup() {
-                ListItem() {
-                  this.DateGroupHeader(
-                    this.formatDateTitle(group.date),
-                    `-¥${group.totalExpense.toFixed(2)}`
-                  )
-                }
+      // SectionHeader
+      ListItem() {
+        Stack() {
+          // 旧文字
+          Column() {
+            this.SectionHeader(this.getHeaderTitle(this.prevSwiperIndex), '查看全部', () => {
+              this.navigateToSubPage(this.getHeaderRoute(this.prevSwiperIndex));
+            })
+          }
+          .opacity(this.headerOldOpacity)
+          .translate({ x: this.headerOldTranslateX })
+          .animation({ curve: curves.springMotion(0.6, 0.9) })
 
-                ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.EXPENSE), (bill: BillBean, billIndex: number) => {
-                  ListItem() {
-                    this.BillItem(bill)
-                  }
-                  .opacity(1)
-                  .translate({ x: 0 })
-                  .animation({
-                    duration: 300,
-                    delay: (groupIndex * 3 + billIndex) * GRADIENT_DELAY,
-                    curve: curves.springMotion(0.6, 0.9)
-                  })
-                  .swipeAction({
-                    end: this.DeleteSwipeButton(bill.id)
-                  })
-                })
-              }
-              .divider({
-                strokeWidth: 0.5,
-                color: this.themeState.compDivider,
-                startMargin: 52,
-                endMargin: 16
-              })
-            }
-          })
+          // 新文字
+          Column() {
+            this.SectionHeader(this.getHeaderTitle(this.swiperIndex), '查看全部', () => {
+              this.navigateToSubPage(this.getHeaderRoute(this.swiperIndex));
+            })
+          }
+          .opacity(this.headerNewOpacity)
+          .translate({ x: this.headerNewTranslateX })
+          .animation({ curve: curves.springMotion(0.6, 0.9) })
         }
         .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
+        .height(60)
+      }
+
+      // 列表内容
+      if (this.swiperIndex === 0) {
+        this.BudgetListItems()
+      } else if (this.swiperIndex === 1) {
+        this.IncomeListItems()
+      } else {
+        this.AssetListItems()
       }
     }
     .width('100%')
-    .layoutWeight(1)
+    .height('100%')
+    .scrollBar(BarState.Off)
+    .edgeEffect(EdgeEffect.Spring)
   }
 
   /**
-   * 收支列表内容（不含 SectionHeader）
+   * 预算列表项（直接返回 ListItemGroup）
    */
   @Builder
-  IncomeListContent() {
-    Column() {
-      if (this.billGroups.length === 0) {
-        this.EmptyState('暂无收支记录')
-      } else {
-        List() {
-          ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
-            ListItemGroup() {
-              ListItem() {
-                this.DateGroupHeader(
-                  this.formatDateTitle(group.date),
-                  this.formatGroupSummary(group)
-                )
-              }
+  BudgetListItems() {
+    if (this.billGroups.length === 0) {
+      ListItem() {
+        this.EmptyState('暂无预算支出记录')
+      }
+    } else {
+      ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
+        if (group.totalExpense > 0) {
+          ListItemGroup() {
+            ListItem() {
+              this.DateGroupHeader(
+                this.formatDateTitle(group.date),
+                `-¥${group.totalExpense.toFixed(2)}`
+              )
+            }
 
-              ForEach(group.bills, (bill: BillBean, billIndex: number) => {
+            ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.EXPENSE),
+              (bill: BillBean, billIndex: number) => {
                 ListItem() {
                   this.BillItem(bill)
                 }
@@ -765,76 +716,109 @@ export struct Index {
                   end: this.DeleteSwipeButton(bill.id)
                 })
               })
-            }
-            .divider({
-              strokeWidth: 0.5,
-              color: this.themeState.compDivider,
-              startMargin: 52,
-              endMargin: 16
-            })
+          }
+          .divider({
+            strokeWidth: 0.5,
+            color: this.themeState.compDivider,
+            startMargin: 52,
+            endMargin: 16
           })
         }
-        .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-      }
+      })
     }
-    .width('100%')
-    .layoutWeight(1)
   }
 
   /**
-   * 资产列表内容（不含 SectionHeader）
+   * 收支列表项（直接返回 ListItemGroup）
    */
   @Builder
-  AssetListContent() {
-    Column() {
-      if (this.billGroups.length === 0) {
-        this.EmptyState('暂无资产变动记录')
-      } else {
-        List() {
-          ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
-            if (group.totalIncome > 0) {
-              ListItemGroup() {
-                ListItem() {
-                  this.DateGroupHeader(
-                    this.formatDateTitle(group.date),
-                    `+¥${group.totalIncome.toFixed(2)}`
-                  )
-                }
+  IncomeListItems() {
+    if (this.billGroups.length === 0) {
+      ListItem() {
+        this.EmptyState('暂无收支记录')
+      }
+    } else {
+      ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
+        ListItemGroup() {
+          ListItem() {
+            this.DateGroupHeader(
+              this.formatDateTitle(group.date),
+              this.formatGroupSummary(group)
+            )
+          }
 
-                ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.INCOME), (bill: BillBean, billIndex: number) => {
-                  ListItem() {
-                    this.BillItem(bill)
-                  }
-                  .opacity(1)
-                  .translate({ x: 0 })
-                  .animation({
-                    duration: 300,
-                    delay: (groupIndex * 3 + billIndex) * GRADIENT_DELAY,
-                    curve: curves.springMotion(0.6, 0.9)
-                  })
-                  .swipeAction({
-                    end: this.DeleteSwipeButton(bill.id)
-                  })
-                })
-              }
-              .divider({
-                strokeWidth: 0.5,
-                color: this.themeState.compDivider,
-                startMargin: 52,
-                endMargin: 16
-              })
+          ForEach(group.bills, (bill: BillBean, billIndex: number) => {
+            ListItem() {
+              this.BillItem(bill)
             }
+            .opacity(1)
+            .translate({ x: 0 })
+            .animation({
+              duration: 300,
+              delay: (groupIndex * 3 + billIndex) * GRADIENT_DELAY,
+              curve: curves.springMotion(0.6, 0.9)
+            })
+            .swipeAction({
+              end: this.DeleteSwipeButton(bill.id)
+            })
           })
         }
-        .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-      }
+        .divider({
+          strokeWidth: 0.5,
+          color: this.themeState.compDivider,
+          startMargin: 52,
+          endMargin: 16
+        })
+      })
     }
-    .width('100%')
-    .layoutWeight(1)
+  }
+
+  /**
+   * 资产列表项（直接返回 ListItemGroup）
+   */
+  @Builder
+  AssetListItems() {
+    if (this.billGroups.length === 0) {
+      ListItem() {
+        this.EmptyState('暂无资产变动记录')
+      }
+    } else {
+      ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
+        if (group.totalIncome > 0) {
+          ListItemGroup() {
+            ListItem() {
+              this.DateGroupHeader(
+                this.formatDateTitle(group.date),
+                `+¥${group.totalIncome.toFixed(2)}`
+              )
+            }
+
+            ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.INCOME),
+              (bill: BillBean, billIndex: number) => {
+                ListItem() {
+                  this.BillItem(bill)
+                }
+                .opacity(1)
+                .translate({ x: 0 })
+                .animation({
+                  duration: 300,
+                  delay: (groupIndex * 3 + billIndex) * GRADIENT_DELAY,
+                  curve: curves.springMotion(0.6, 0.9)
+                })
+                .swipeAction({
+                  end: this.DeleteSwipeButton(bill.id)
+                })
+              })
+          }
+          .divider({
+            strokeWidth: 0.5,
+            color: this.themeState.compDivider,
+            startMargin: 52,
+            endMargin: 16
+          })
+        }
+      })
+    }
   }
 
   /**
