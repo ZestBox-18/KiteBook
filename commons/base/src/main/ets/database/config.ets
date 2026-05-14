@@ -4,16 +4,16 @@ import { relationalStore } from '@kit.ArkData';
 const TAG: string = '[DatabaseConfig]';
 
 /**
- * 数据库升级脚本配置
- * 注意：确保升级路径的连续性，每个版本都要有对应的升级脚本
+ * 初始化数据库管理器
+ * @param context 应用上下文
  */
-const upgradeSqls: DatabaseUpgradeSql[] = [
-  {
-    fromVersion: 1,
-    toVersion: 2,
-    sql: [
+export function dbManagerInit(context: Context): void {
+  initDatabaseConfig({
+    dbName: 'KiteBook_db',
+    SecurityLevel: relationalStore.SecurityLevel.S3,
+    dbSql: {
       // 账单表
-      `CREATE TABLE IF NOT EXISTS bills (
+      "bills": `CREATE TABLE IF NOT EXISTS bills (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL,
         category TEXT NOT NULL,
@@ -24,9 +24,8 @@ const upgradeSqls: DatabaseUpgradeSql[] = [
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )`,
-      
       // 分类预算表
-      `CREATE TABLE IF NOT EXISTS budgets (
+      "budgets": `CREATE TABLE IF NOT EXISTS budgets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         category TEXT NOT NULL,
         amount REAL NOT NULL,
@@ -34,9 +33,8 @@ const upgradeSqls: DatabaseUpgradeSql[] = [
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )`,
-      
       // 账户余额表
-      `CREATE TABLE IF NOT EXISTS accounts (
+      "accounts": `CREATE TABLE IF NOT EXISTS accounts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         balance REAL NOT NULL,
@@ -45,34 +43,12 @@ const upgradeSqls: DatabaseUpgradeSql[] = [
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )`,
-      
       // 创建索引
-      `CREATE INDEX IF NOT EXISTS idx_bills_date ON bills(date)`,
-      `CREATE INDEX IF NOT EXISTS idx_bills_category ON bills(category)`,
-      `CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month)`
-    ]
-  }
-];
-
-/**
- * 初始化数据库管理器
- * @param context 应用上下文
- */
-export function dbManagerInit(context: Context): void {
-  initDatabaseConfig({
-    dbName: 'KiteBook_db',
-    SecurityLevel: relationalStore.SecurityLevel.S3,
-    dbSql: {
-      "test": `CREATE TABLE IF NOT EXISTS history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
-        content TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        device TEXT NOT NULL
-      );`
+      "idx_bills_date": `CREATE INDEX IF NOT EXISTS idx_bills_date ON bills(date)`,
+      "idx_bills_category": `CREATE INDEX IF NOT EXISTS idx_bills_category ON bills(category)`,
+      "idx_budgets_month": `CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month)`
     },
-    version: 2,
-    upgradeSqls: upgradeSqls
+    version: 1
   });
 
   // 设置数据库回调
