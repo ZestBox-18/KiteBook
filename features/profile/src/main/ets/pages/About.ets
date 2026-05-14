@@ -6,7 +6,7 @@
  * @description: 关于页面
  */
 
-import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState, SystemOptions } from 'base';
+import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState, SystemOptions, GroupHeader } from 'base';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
@@ -14,7 +14,6 @@ import { WindowUtil, Clog } from 'kite_utils';
 import { Want, common } from '@kit.AbilityKit';
 import { pasteboard } from '@kit.BasicServicesKit';
 import { promptAction } from '@kit.ArkUI';
-import { itemHead } from '../components/itemHead';
 
 const TAG: string = '[About]';
 
@@ -67,7 +66,7 @@ export struct About {
 
           // 应用信息
           ListItemGroup({
-            header: itemHead('应用信息'),
+            header: GroupHeader('应用信息'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -104,7 +103,7 @@ export struct About {
 
           // 关于
           ListItemGroup({
-            header: itemHead('关于'),
+            header: GroupHeader('关于'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {

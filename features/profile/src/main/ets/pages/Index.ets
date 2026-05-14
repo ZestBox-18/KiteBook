@@ -7,7 +7,7 @@
  */
 
 import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
-import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController } from 'base';
+import { CommonConstants, RouterUrlConstants, SystemOptions, mainTabController, GroupHeader } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { WindowUtil, Clog } from 'kite_utils';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
@@ -20,7 +20,6 @@ import { DataExport } from './DataExport';
 import { About } from './About';
 import { Sponsorship } from './Sponsorship';
 import { TestPage } from './TestPage';
-import { itemHead } from '../components/itemHead';
 import { UserCard } from '../components/UserCard';
 import { SettingItem } from '../components/SettingItem';
 
@@ -123,7 +122,7 @@ export struct Index {
 
           // 设置分组
           ListItemGroup({
-            header: itemHead('设置'),
+            header: GroupHeader('设置'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -160,7 +159,7 @@ export struct Index {
 
           // 支持分组
           ListItemGroup({
-            header: itemHead('支持'),
+            header: GroupHeader('支持'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -195,7 +194,7 @@ export struct Index {
 
           // 关于分组
           ListItemGroup({
-            header: itemHead('关于'),
+            header: GroupHeader('关于'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {

@@ -16,7 +16,8 @@ import {
   BillGroup,
   BillBean,
   BillTypeEnum,
-  mainTabController
+  mainTabController,
+  GroupHeader
 } from 'base';
 import { Assets, Ordinary } from 'record';
 import { AppStorageV2, LengthMetrics, SymbolGlyphModifier, curves } from '@kit.ArkUI';
@@ -623,7 +624,7 @@ export struct Index {
    */
   @Builder
   ContentSection() {
-    List() {
+    List({ space: 10 }) {
       // 顶部安全区占位
       ListItem() {
         Column() {
@@ -636,7 +637,6 @@ export struct Index {
       ListItem() {
         this.SwiperSection()
       }
-      .padding({ top: 8, bottom: 8 })
 
       // SectionHeader
       ListItem() {
@@ -692,14 +692,10 @@ export struct Index {
     } else {
       ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
         if (group.totalExpense > 0) {
-          ListItemGroup() {
-            ListItem() {
-              this.DateGroupHeader(
-                this.formatDateTitle(group.date),
-                `-¥${group.totalExpense.toFixed(2)}`
-              )
-            }
-
+          ListItemGroup({
+            header: GroupHeader(this.formatDateTitle(group.date), `-¥${group.totalExpense.toFixed(2)}`),
+            style: ListItemGroupStyle.CARD
+          }) {
             ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.EXPENSE),
               (bill: BillBean, billIndex: number) => {
                 ListItem() {
@@ -739,14 +735,10 @@ export struct Index {
       }
     } else {
       ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
-        ListItemGroup() {
-          ListItem() {
-            this.DateGroupHeader(
-              this.formatDateTitle(group.date),
-              this.formatGroupSummary(group)
-            )
-          }
-
+        ListItemGroup({
+          header: GroupHeader(this.formatDateTitle(group.date), this.formatGroupSummary(group)),
+          style: ListItemGroupStyle.CARD
+        }) {
           ForEach(group.bills, (bill: BillBean, billIndex: number) => {
             ListItem() {
               this.BillItem(bill)
@@ -785,14 +777,10 @@ export struct Index {
     } else {
       ForEach(this.billGroups, (group: BillGroup, groupIndex: number) => {
         if (group.totalIncome > 0) {
-          ListItemGroup() {
-            ListItem() {
-              this.DateGroupHeader(
-                this.formatDateTitle(group.date),
-                `+¥${group.totalIncome.toFixed(2)}`
-              )
-            }
-
+          ListItemGroup({
+            header: GroupHeader(this.formatDateTitle(group.date), `+¥${group.totalIncome.toFixed(2)}`),
+            style: ListItemGroupStyle.CARD
+          }) {
             ForEach(group.bills.filter((b: BillBean) => b.type === BillTypeEnum.INCOME),
               (bill: BillBean, billIndex: number) => {
                 ListItem() {
@@ -858,31 +846,6 @@ export struct Index {
       top: 20,
       bottom: 12
     })
-  }
-
-  /**
-   * 日期分组头
-   */
-  @Builder
-  DateGroupHeader(date: string, summary: string) {
-    Row() {
-      Text(date)
-        .fontSize(14)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.themeState.fontSecondary)
-      Text(summary)
-        .fontSize(13)
-        .fontColor(this.themeState.fontSecondary)
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.SpaceBetween)
-    .padding({
-      left: 16,
-      right: 16,
-      top: 12,
-      bottom: 8
-    })
-    .backgroundColor($r('app.color.start_window_background'))
   }
 
   /**

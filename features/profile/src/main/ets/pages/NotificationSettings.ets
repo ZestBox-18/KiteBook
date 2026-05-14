@@ -6,12 +6,11 @@
  * @description: 通知设置页面
  */
 
-import { SystemOptions, CommonConstants, mainTabController, AppThemeState } from 'base';
+import { SystemOptions, CommonConstants, mainTabController, AppThemeState, GroupHeader } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
-import { itemHead } from '../components/itemHead';
 
 @ComponentV2
 export struct NotificationSettings {
@@ -41,7 +40,7 @@ export struct NotificationSettings {
 
           // 通知总开关
           ListItemGroup({
-            header: itemHead('通知开关'),
+            header: GroupHeader('通知开关'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -78,7 +77,7 @@ export struct NotificationSettings {
 
           // 通知类型
           ListItemGroup({
-            header: itemHead('通知类型'),
+            header: GroupHeader('通知类型'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {

@@ -6,12 +6,11 @@
  * @description: 数据导出页面
  */
 
-import { CommonConstants, mainTabController, AppThemeState, SystemOptions } from 'base';
+import { CommonConstants, mainTabController, AppThemeState, SystemOptions, GroupHeader } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
-import { itemHead } from '../components/itemHead';
 
 @ComponentV2
 export struct DataExport {
@@ -34,7 +33,7 @@ export struct DataExport {
 
           // 导出说明
           ListItemGroup({
-            header: itemHead('导出说明'),
+            header: GroupHeader('导出说明'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -69,7 +68,7 @@ export struct DataExport {
 
           // 导出格式
           ListItemGroup({
-            header: itemHead('导出格式'),
+            header: GroupHeader('导出格式'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -122,7 +121,7 @@ export struct DataExport {
 
           // 导出范围
           ListItemGroup({
-            header: itemHead('导出范围'),
+            header: GroupHeader('导出范围'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {

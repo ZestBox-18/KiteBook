@@ -6,14 +6,13 @@
  * @description: 外观设置页面
  */
 
-import { SystemOptions, gAppThemes, gAppThemeNames, CommonConstants, mainTabController, AppThemeState } from 'base';
+import { SystemOptions, gAppThemes, gAppThemeNames, CommonConstants, mainTabController, AppThemeState, GroupHeader } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { AppStorageV2, LengthMetrics, curves, ThemeControl } from '@kit.ArkUI';
 import { ConfigurationConstant, common } from '@kit.AbilityKit';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
 import { ThemeColorItem } from '../components/ThemeColorItem';
-import { itemHead } from '../components/itemHead';
 
 @ComponentV2
 export struct AppearanceSettings {
@@ -77,7 +76,7 @@ export struct AppearanceSettings {
 
           // 主题选择分组
           ListItemGroup({
-            header: itemHead('主题选择'),
+            header: GroupHeader('主题选择'),
             space: 5,
             style: ListItemGroupStyle.CARD
           }) {
@@ -107,7 +106,7 @@ export struct AppearanceSettings {
 
           // 字体粗细分组
           ListItemGroup({
-            header: itemHead('字体粗细'),
+            header: GroupHeader('字体粗细'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -141,7 +140,7 @@ export struct AppearanceSettings {
 
           // 图标粗细分组
           ListItemGroup({
-            header: itemHead('图标粗细'),
+            header: GroupHeader('图标粗细'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
@@ -179,7 +178,7 @@ export struct AppearanceSettings {
 
           // 颜色模式分组
           ListItemGroup({
-            header: itemHead('颜色模式'),
+            header: GroupHeader('颜色模式'),
             space: 1,
             style: ListItemGroupStyle.CARD
           }) {
