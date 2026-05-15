@@ -211,41 +211,39 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.start_window_background'),
+            backgroundColor: $r('app.color.title_bar_bg'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: this.themeState.fontPrimary,
-              subTitleColor: this.themeState.fontSecondary
+              mainTitleColor: $r('app.color.text_primary'),
+              subTitleColor: $r('app.color.text_secondary')
             },
             menuStyle: {
-              backgroundColor: this.themeState.compBackgroundNeutral,
-              textColor: this.themeState.fontSecondary,
-              iconColor: this.themeState.iconPrimary
+              backgroundColor: $r('app.color.action_bg'),
+              iconColor: $r('app.color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: this.themeState.compBackgroundNeutral,
-              iconColor: this.themeState.iconPrimary
+              backgroundColor: $r('app.color.action_bg'),
+              iconColor: $r('app.color.text_primary')
             },
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.start_window_background'),
+            backgroundColor: $r('app.color.title_bar_bg'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: this.themeState.fontPrimary,
-              subTitleColor: this.themeState.fontSecondary,
+              mainTitleColor: $r('app.color.text_primary'),
+              subTitleColor: $r('app.color.text_secondary'),
             },
             menuStyle: {
-              backgroundColor: this.themeState.compBackgroundNeutral,
-              textColor: this.themeState.fontSecondary,
-              iconColor: this.themeState.iconPrimary
+              backgroundColor: $r('app.color.action_bg'),
+              textColor: $r('app.color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: this.themeState.compBackgroundNeutral,
-              iconColor: this.themeState.iconPrimary
+              backgroundColor: $r('app.color.action_bg'),
+              iconColor: $r('app.color.text_primary')
             }
           }
         }
