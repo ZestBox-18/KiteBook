@@ -337,6 +337,18 @@ export struct Index {
     return `${resultParts.join(',')}.${decimalPart}`;
   }
 
+  private getSwiperViewportWidth(): number {
+    const windowWidthPx: number = this.winUtil.mainWindowInfo.windowSize.width;
+    if (windowWidthPx <= 0) {
+      return 360;
+    }
+    return this.getUIContext().px2vp(windowWidthPx);
+  }
+
+  private isCompactSwiperLayout(): boolean {
+    return this.getSwiperViewportWidth() < 380;
+  }
+
   aboutToAppear(): void {
     this.loadBillData();
   }
@@ -522,77 +534,89 @@ export struct Index {
   @Builder
   BudgetCard() {
     Column() {
-      Row() {
-        Row({ space: 8 }) {
-          SymbolGlyph($r('sys.symbol.creditcard'))
-            .fontSize(18)
-            .fontColor(['#FFFFFF90'])
-          Text('本月预算')
-            .fontSize(15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#FFFFFFCC')
-        }
+      this.SwiperCardHeader($r('sys.symbol.creditcard'), '本月预算', this.getCurrentMonth())
 
-        Text(this.getCurrentMonth())
-          .fontSize(13)
-          .fontColor('#FFFFFF70')
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceBetween)
-
-      Row({ space: 14 }) {
+      Row({ space: this.isCompactSwiperLayout() ? 10 : 16 }) {
         Stack({ alignContent: Alignment.Center }) {
           Progress({
             value: this.getBudgetProgressValue(),
             total: DEFAULT_MONTH_BUDGET,
             type: ProgressType.Ring
           })
-            .width(96)
-            .height(96)
-            .color('#FFFFFF')
-            .backgroundColor('#FFFFFF20')
-            .style({ strokeWidth: 10 })
+            .width(this.isCompactSwiperLayout() ? 102 : 122)
+            .height(this.isCompactSwiperLayout() ? 102 : 122)
+            .color(this.themeState.brand)
+            .backgroundColor('#EDE6DA')
+            .style({ strokeWidth: this.isCompactSwiperLayout() ? 10 : 12 })
 
           Column({ space: 2 }) {
             Text(`${Math.floor(this.getBudgetUsagePercent())}%`)
-              .fontSize(20)
+              .fontSize(this.isCompactSwiperLayout() ? 20 : 24)
               .fontWeight(FontWeight.Bold)
-              .fontColor('#FFFFFF')
+              .fontColor(this.themeState.fontPrimary)
             Text('已使用')
-              .fontSize(10)
-              .fontColor('#FFFFFF90')
+              .fontSize(this.isCompactSwiperLayout() ? 9 : 10)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.themeState.fontSecondary)
           }
+          .alignItems(HorizontalAlign.Center)
         }
+        .width(this.isCompactSwiperLayout() ? 112 : 138)
+        .height(this.isCompactSwiperLayout() ? 112 : 138)
 
-        Column({ space: 10 }) {
-          this.SummaryMetric('剩余日均', this.getAmountText(this.getDailyBudgetRemaining(), false))
-          this.SummaryMetric('预算剩余', this.getAmountText(this.getBudgetRemaining(), false))
-          this.SummaryMetric('总预算', this.getAmountText(DEFAULT_MONTH_BUDGET, false))
+        Column({ space: this.isCompactSwiperLayout() ? 10 : 12 }) {
+          this.BudgetFigureMetric('剩余日均', this.getAmountText(this.getDailyBudgetRemaining(), false),
+            this.isCompactSwiperLayout())
+          this.BudgetFigureMetric('预算剩余', this.getAmountText(this.getBudgetRemaining(), false),
+            this.isCompactSwiperLayout())
+          this.BudgetFigureMetric('总预算', this.getAmountText(DEFAULT_MONTH_BUDGET, false),
+            this.isCompactSwiperLayout())
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
+        .padding({ left: this.isCompactSwiperLayout() ? 8 : 22, right: this.isCompactSwiperLayout() ? 0 : 6 })
       }
       .width('100%')
-      .margin({ top: 16 })
+      .alignItems(VerticalAlign.Center)
+      .margin({ top: this.isCompactSwiperLayout() ? 10 : 14 })
 
       Row() {
         Text(`本月已支出 ${this.getAmountText(this.getMonthlyExpense(), false)}`)
-          .fontSize(12)
-          .fontColor('#FFFFFF95')
+          .fontSize(this.isCompactSwiperLayout() ? 12 : 13)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.themeState.fontSecondary)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
         Text(`剩余 ${this.getRemainingDaysOfMonth()} 天`)
-          .fontSize(12)
-          .fontColor('#FFFFFF70')
+          .fontSize(this.isCompactSwiperLayout() ? 12 : 13)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.themeState.brand)
       }
       .width('100%')
+      .padding({
+        left: this.isCompactSwiperLayout() ? 12 : 16,
+        right: this.isCompactSwiperLayout() ? 12 : 16,
+        top: 12,
+        bottom: 12
+      })
+      .backgroundColor('#FBF8F3')
+      .borderRadius(14)
+      .border({ width: 1, color: '#F1E8DA' })
       .justifyContent(FlexAlign.SpaceBetween)
-      .margin({ top: 16 })
+      .margin({ top: this.isCompactSwiperLayout() ? 10 : 0 })
     }
     .width('100%')
     .height(HOME_SWIPER_CARD_HEIGHT)
-    .padding({ left: 20, right: 20, top: 20, bottom: 20 })
+    .padding({
+      left: this.isCompactSwiperLayout() ? 14 : 20,
+      right: this.isCompactSwiperLayout() ? 14 : 20,
+      top: this.isCompactSwiperLayout() ? 14 : 16,
+      bottom: this.isCompactSwiperLayout() ? 12 : 8
+    })
     .margin({ left: 8, right: 8 })
-    .borderRadius(20)
-    .backgroundColor(this.themeState.brand)
+    .borderRadius(24)
+    .backgroundColor(this.themeState.compBackgroundPrimary)
+    .border({ width: 1, color: '#EEE6DA' })
     .opacity(this.opacityList[0])
     .scale({ x: this.scaleList[0], y: this.scaleList[0] })
     .rotate({ z: 1, angle: this.rotateList[0] })
@@ -603,43 +627,45 @@ export struct Index {
   IncomeExpenseCard() {
     Column() {
       Row() {
-        Row({ space: 8 }) {
-          SymbolGlyph($r('sys.symbol.arrow_left_arrow_right'))
-            .fontSize(18)
-            .fontColor(['#FFFFFF90'])
-          Text('本月收支')
-            .fontSize(15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#FFFFFFCC')
+        Row() {
+          this.SwiperCardHeader($r('sys.symbol.arrow_left_arrow_right'), '本月收支', '')
         }
-
-        Row({ space: 12 }) {
-          Text(this.getCurrentMonth())
-            .fontSize(13)
-            .fontColor('#FFFFFF70')
-          this.VisibilityToggle(this.hideIncomeExpenseAmount, () => {
-            this.hideIncomeExpenseAmount = !this.hideIncomeExpenseAmount;
-          })
-        }
+        .layoutWeight(1)
+        this.VisibilityToggle(this.hideIncomeExpenseAmount, () => {
+          this.hideIncomeExpenseAmount = !this.hideIncomeExpenseAmount;
+        })
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceBetween)
+      .alignItems(VerticalAlign.Center)
 
-      Column({ space: 12 }) {
-        this.CompactMetric('本月支出', this.getAmountText(this.getMonthlyExpense(), this.hideIncomeExpenseAmount))
-        this.CompactMetric('本月收入', this.getAmountText(this.getMonthlyIncome(), this.hideIncomeExpenseAmount))
-        this.CompactMetric('月结余', this.getSignedAmountText(this.getMonthlyBalance(), this.hideIncomeExpenseAmount))
+      Row() {
+        this.IncomeExpenseBlock($r('sys.symbol.arrow_down'), '#F15B4E', '本月支出',
+          this.getAmountText(this.getMonthlyExpense(), this.hideIncomeExpenseAmount), false, this.isCompactSwiperLayout())
+        this.MetricDivider(this.isCompactSwiperLayout())
+        this.IncomeExpenseBlock($r('sys.symbol.arrow_up'), '#45B36B', '本月收入',
+          this.getAmountText(this.getMonthlyIncome(), this.hideIncomeExpenseAmount), false, this.isCompactSwiperLayout())
+        this.MetricDivider(this.isCompactSwiperLayout())
+        this.IncomeExpenseBlock($r('sys.symbol.clock'), this.themeState.brand as string, '月结余',
+          this.getSignedAmountText(this.getMonthlyBalance(), this.hideIncomeExpenseAmount), true,
+          this.isCompactSwiperLayout())
       }
       .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .margin({ top: 20 })
+      .alignItems(VerticalAlign.Center)
+      .margin({ top: this.isCompactSwiperLayout() ? 14 : 18, bottom: this.isCompactSwiperLayout() ? 2 : 6 })
     }
     .width('100%')
     .height(HOME_SWIPER_CARD_HEIGHT)
-    .padding({ left: 20, right: 20, top: 20, bottom: 20 })
+    .padding({
+      left: this.isCompactSwiperLayout() ? 14 : 20,
+      right: this.isCompactSwiperLayout() ? 14 : 20,
+      top: this.isCompactSwiperLayout() ? 16 : 18,
+      bottom: this.isCompactSwiperLayout() ? 14 : 18
+    })
     .margin({ left: 8, right: 8 })
-    .borderRadius(20)
-    .backgroundColor(this.themeState.brand)
+    .borderRadius(24)
+    .backgroundColor(this.themeState.compBackgroundPrimary)
+    .border({ width: 1, color: '#EEE6DA' })
     .opacity(this.opacityList[1])
     .scale({ x: this.scaleList[1], y: this.scaleList[1] })
     .rotate({ z: 1, angle: this.rotateList[1] })
@@ -650,43 +676,76 @@ export struct Index {
   AssetCard() {
     Column() {
       Row() {
-        Row({ space: 8 }) {
-          SymbolGlyph($r('sys.symbol.list_bullet'))
-            .fontSize(18)
-            .fontColor(['#FFFFFF90'])
-          Text('资产概览')
-            .fontSize(15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor('#FFFFFFCC')
+        Row() {
+          this.SwiperCardHeader($r('sys.symbol.list_bullet'), '资产概览', '')
         }
-
+        .layoutWeight(1)
         this.VisibilityToggle(this.hideAssetAmount, () => {
           this.hideAssetAmount = !this.hideAssetAmount;
         })
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceBetween)
+      .alignItems(VerticalAlign.Center)
 
-      Column({ space: 16 }) {
-        this.BigMetric('净资产', this.getAmountText(this.getNetAssets(), this.hideAssetAmount))
+      Row({ space: this.isCompactSwiperLayout() ? 8 : 14 }) {
+        Column() {
+          Column({ space: 10 }) {
+            Text('净资产')
+              .fontSize(this.isCompactSwiperLayout() ? 12 : 13)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.themeState.brand)
+            Text(this.getAmountText(this.getNetAssets(), this.hideAssetAmount))
+              .fontSize(this.isCompactSwiperLayout() ? 24 : 29)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(this.themeState.fontPrimary)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
 
-        Row() {
-          this.AssetOverviewItem('总资产', this.getAmountText(this.getTotalAssets(), this.hideAssetAmount))
-          this.AssetOverviewItem('总负债', this.getAmountText(this.getTotalLiabilities(), this.hideAssetAmount))
+          Column()
+            .width('86%')
+            .height(1)
+            .backgroundColor('#E8DCCA')
+            .margin({ top: 16, bottom: 14 })
+
+          Row() {
+            this.AssetStatMetric('总资产', this.getAmountText(this.getTotalAssets(), this.hideAssetAmount),
+              this.isCompactSwiperLayout())
+            this.AssetBottomDivider(this.isCompactSwiperLayout())
+            this.AssetStatMetric('总负债', this.getAmountText(this.getTotalLiabilities(), this.hideAssetAmount),
+              this.isCompactSwiperLayout())
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
         }
-        .width('100%')
-        .justifyContent(FlexAlign.SpaceBetween)
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+        .margin({ top: this.isCompactSwiperLayout() ? 14 : 18 })
+
+        Image($r('app.media.Assets01'))
+          .width(this.isCompactSwiperLayout() ? 118 : 150)
+          .height(this.isCompactSwiperLayout() ? 118 : 150)
+          .objectFit(ImageFit.Contain)
+          .margin({ top: this.isCompactSwiperLayout() ? 30 : 18 })
       }
       .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .margin({ top: 22 })
+      .alignItems(VerticalAlign.Top)
     }
     .width('100%')
     .height(HOME_SWIPER_CARD_HEIGHT)
-    .padding(24)
+    .padding({
+      left: this.isCompactSwiperLayout() ? 14 : 20,
+      right: this.isCompactSwiperLayout() ? 14 : 18,
+      top: this.isCompactSwiperLayout() ? 16 : 18,
+      bottom: this.isCompactSwiperLayout() ? 16 : 18
+    })
     .margin({ left: 8, right: 8 })
-    .borderRadius(20)
-    .backgroundColor(this.themeState.brand)
+    .borderRadius(24)
+    .backgroundColor(this.themeState.compBackgroundPrimary)
+    .border({ width: 1, color: '#EEE6DA' })
     .opacity(this.opacityList[2])
     .scale({ x: this.scaleList[2], y: this.scaleList[2] })
     .rotate({ z: 1, angle: this.rotateList[2] })
@@ -694,15 +753,40 @@ export struct Index {
   }
 
   @Builder
-  SummaryMetric(label: string, value: string) {
+  SwiperCardHeader(icon: Resource, title: string, suffix: string) {
+    Row() {
+      Row({ space: 10 }) {
+        SymbolGlyph(icon)
+          .fontSize(18)
+          .fontColor([this.themeState.brand as ResourceColor])
+        Text(title)
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(this.themeState.fontPrimary)
+      }
+      if (suffix !== '') {
+        Text(suffix)
+          .fontSize(13)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(this.themeState.brand)
+      }
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.SpaceBetween)
+    .alignItems(VerticalAlign.Center)
+  }
+
+  @Builder
+  BudgetFigureMetric(label: string, value: string, compactLayout: boolean = false) {
     Column({ space: 4 }) {
       Text(label)
-        .fontSize(12)
-        .fontColor('#FFFFFF75')
-      Text(value)
-        .fontSize(16)
+        .fontSize(compactLayout ? 11 : 12)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#FFFFFF')
+        .fontColor(this.themeState.brand)
+      Text(value)
+        .fontSize(compactLayout ? 14 : 17)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(this.themeState.fontPrimary)
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
     }
@@ -710,47 +794,67 @@ export struct Index {
   }
 
   @Builder
-  BigMetric(label: string, value: string) {
-    Column({ space: 6 }) {
-      Text(label)
-        .fontSize(13)
-        .fontColor('#FFFFFF85')
-      Text(value)
-        .fontSize(28)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#FFFFFF')
-    }
-    .alignItems(HorizontalAlign.Start)
-  }
+  IncomeExpenseBlock(icon: Resource, tone: string, label: string, value: string, accent: boolean,
+    compactLayout: boolean = false) {
+    Column({ space: 10 }) {
+      Row() {
+        SymbolGlyph(icon)
+          .fontSize(compactLayout ? 20 : 22)
+          .fontColor([tone])
+      }
+      .width(compactLayout ? 40 : 44)
+      .height(compactLayout ? 40 : 44)
+      .justifyContent(FlexAlign.Center)
+      .borderRadius(compactLayout ? 20 : 22)
+      .border({ width: 1.8, color: tone })
 
-  @Builder
-  CompactMetric(label: string, value: string) {
-    Column({ space: 2 }) {
       Text(label)
-        .fontSize(12)
-        .fontColor('#FFFFFF85')
+        .fontSize(compactLayout ? 12 : 13)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.fontSecondary)
       Text(value)
-        .fontSize(20)
+        .fontSize(compactLayout ? (accent ? 16 : 15) : (accent ? 19 : 18))
         .fontWeight(FontWeight.Bold)
-        .fontColor('#FFFFFF')
+        .fontColor(accent ? this.themeState.brand : this.themeState.fontPrimary)
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
     }
-    .alignItems(HorizontalAlign.Start)
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Center)
   }
 
   @Builder
-  AssetOverviewItem(label: string, value: string) {
+  MetricDivider(compactLayout: boolean = false) {
+    Column()
+      .width(1)
+      .height(compactLayout ? 72 : 84)
+      .backgroundColor('#ECE2D3')
+  }
+
+  @Builder
+  AssetBottomDivider(compactLayout: boolean = false) {
+    Column()
+      .width(1)
+      .height(compactLayout ? 46 : 54)
+      .backgroundColor('#ECE2D3')
+      .margin({ left: 12, right: 12 })
+  }
+
+  @Builder
+  AssetStatMetric(label: string, value: string, compactLayout: boolean = false) {
     Column({ space: 6 }) {
       Text(label)
-        .fontSize(12)
-        .fontColor('#FFFFFF75')
-      Text(value)
-        .fontSize(18)
+        .fontSize(compactLayout ? 12 : 13)
         .fontWeight(FontWeight.Medium)
-        .fontColor('#FFFFFF')
+        .fontColor(this.themeState.fontSecondary)
+      Text(value)
+        .fontSize(compactLayout ? 14 : 16)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(this.themeState.fontPrimary)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
     }
-    .width('48%')
+    .layoutWeight(1)
     .alignItems(HorizontalAlign.Start)
   }
 
@@ -759,13 +863,14 @@ export struct Index {
     Button() {
       SymbolGlyph(hidden ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
         .fontSize(16)
-        .fontColor(['#FFFFFFCC'])
+        .fontColor([this.themeState.fontPrimary as ResourceColor])
     }
-    .width(32)
-    .height(32)
+    .width(34)
+    .height(34)
     .padding(0)
-    .backgroundColor('#FFFFFF14')
-    .borderRadius(16)
+    .backgroundColor('#FCFAF6')
+    .border({ width: 1, color: '#EEE4D8' })
+    .borderRadius(17)
     .onClick(() => {
       onToggle();
     })
