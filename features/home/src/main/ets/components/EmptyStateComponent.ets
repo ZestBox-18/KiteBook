@@ -13,6 +13,9 @@ export struct EmptyStateComponent {
   @Param text: string = '';
   @Param themeState: AppThemeState = new AppThemeState();
 
+  /**
+   * 构建首页列表空状态占位视图。
+   */
   build() {
     Column() {
       SymbolGlyph($r('sys.symbol.doc_text'))

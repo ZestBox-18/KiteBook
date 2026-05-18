@@ -11,6 +11,9 @@ export struct DeleteSwipeButtonComponent {
   @Event onDelete: () => void = () => {
   };
 
+  /**
+   * 构建列表右滑删除按钮。
+   */
   build() {
     Button() {
       SymbolGlyph($r('sys.symbol.trash'))

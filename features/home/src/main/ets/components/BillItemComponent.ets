@@ -13,6 +13,9 @@ export struct BillItemComponent {
   @Param bill: BillBean = new BillBean();
   @Param themeState: AppThemeState = new AppThemeState();
 
+  /**
+   * 构建单个账单列表项，展示分类、备注、金额和时间。
+   */
   build() {
     Row() {
       SymbolGlyph(this.bill.getCategoryIcon())

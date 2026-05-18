@@ -16,6 +16,9 @@ export struct SectionHeaderComponent {
   };
   @Param themeState: AppThemeState = new AppThemeState();
 
+  /**
+   * 构建列表区标题栏，展示标题和右侧操作入口。
+   */
   build() {
     Row() {
       Text(this.title)

@@ -20,41 +20,31 @@ import {
 import { Assets, Ordinary } from 'record';
 import { AppStorageV2, curves, LengthMetrics, PersistenceV2 } from '@kit.ArkUI';
 import { Clog, WindowUtil } from 'kite_utils';
-import { BillItemComponent } from '../components/BillItemComponent';
-import { EmptyStateComponent } from '../components/EmptyStateComponent';
-import { SectionHeaderComponent } from '../components/SectionHeaderComponent';
-import { DeleteSwipeButtonComponent } from '../components/DeleteSwipeButtonComponent';
+import {
+  AssetAccountListSectionComponent,
+  AssetOverviewCardComponent,
+  BudgetOverviewCardComponent,
+  IncomeExpenseCardComponent,
+  SectionHeaderComponent,
+  WeeklyBillListSectionComponent
+} from '../components/index';
+import {
+  AssetAccountBean,
+  BillSortTypeEnum,
+  HomeAssetSummary,
+  HomeHeaderState,
+  HomeMonthlySummary,
+  HomeWeeklyDisplayState
+} from '../viewmodels/index';
+import { HomeIndexCalculator } from '../utils/index';
 
 const TAG: string = '[HomeIndex]';
 const CARD_COUNT: number = 3;
 const MIN_SCALE: number = 0.85;
 const MAX_ROTATE: number = 5;
-const GRADIENT_DELAY: number = 80;
 const DEFAULT_MONTH_BUDGET: number = 4000;
 const HOME_SWIPER_CARD_HEIGHT: number = 236;
 const HOME_SWIPER_SECTION_HEIGHT: number = 274;
-
-class AssetAccountBean {
-  name: string = '';
-  subtitle: string = '';
-  amount: number = 0;
-  icon: Resource = $r('sys.symbol.creditcard');
-  isLiability: boolean = false;
-
-  constructor(name: string, subtitle: string, amount: number, icon: Resource, isLiability: boolean) {
-    this.name = name;
-    this.subtitle = subtitle;
-    this.amount = amount;
-    this.icon = icon;
-    this.isLiability = isLiability;
-  }
-}
-
-enum BillSortTypeEnum {
-  DATE_DESC = 'date_desc',
-  DAY_TOTAL_DESC = 'day_total_desc',
-  AMOUNT_DESC = 'amount_desc'
-}
 
 @Entry
 @ComponentV2
@@ -74,6 +64,23 @@ export struct Index {
   @Local billSortType: BillSortTypeEnum = BillSortTypeEnum.DATE_DESC;
   @Local hideIncomeExpenseAmount: boolean = false;
   @Local hideAssetAmount: boolean = false;
+  @Local currentMonthText: string = '';
+  @Local monthlyExpense: number = 0;
+  @Local monthlyIncome: number = 0;
+  @Local monthlyBalance: number = 0;
+  @Local budgetRemaining: number = DEFAULT_MONTH_BUDGET;
+  @Local remainingDaysOfMonth: number = 1;
+  @Local dailyBudgetRemaining: number = DEFAULT_MONTH_BUDGET;
+  @Local budgetProgressValue: number = 0;
+  @Local budgetUsagePercent: number = 0;
+  @Local totalAssets: number = 0;
+  @Local totalLiabilities: number = 0;
+  @Local netAssets: number = 0;
+  @Local sortedWeekBills: BillBean[] = [];
+  @Local sortedWeekBillGroups: BillGroup[] = [];
+  @Local headerTitle: string = '本周账单';
+  @Local headerAction: string = '按日总额排序';
+  @Local billSortModeText: string = '按时间倒序';
 
   private indicatorController: IndicatorComponentController = new IndicatorComponentController();
   private swiperController: SwiperController = new SwiperController();
@@ -86,6 +93,9 @@ export struct Index {
   ];
 
   @Builder
+  /**
+   * 根据导航路由名映射到首页可跳转的子页面。
+   */
   PagesMap(name: string) {
     if (name === RouterUrlConstants.ORDINARY) {
       Ordinary()
@@ -95,56 +105,53 @@ export struct Index {
     }
   }
 
-  @Builder
-  DeleteSwipeBuilder(billId: number) {
-    DeleteSwipeButtonComponent({ onDelete: () => this.deleteBill(billId) })
-  }
-
+  /**
+   * 进入首页子页面前先收起底部 Tab，保持过渡一致。
+   */
   private navigateToSubPage(name: string): void {
     mainTabController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION);
     this.pageInfos.pushPath({ name: name });
   }
 
-  private getHeaderTitle(): string {
-    return this.swiperIndex === 2 ? '资产账户' : '本周账单';
+  /**
+   * 根据当前卡片和排序模式刷新列表区标题文案。
+   */
+  private updateHeaderState(): void {
+    const headerState: HomeHeaderState = HomeIndexCalculator.buildHeaderState(this.swiperIndex, this.billSortType);
+    this.headerTitle = headerState.title;
+    this.headerAction = headerState.action;
   }
 
-  private getHeaderAction(): string {
-    if (this.swiperIndex === 2) {
-      return '管理资产';
-    }
-    if (this.billSortType === BillSortTypeEnum.DATE_DESC) {
-      return '按日总额排序';
-    }
-    if (this.billSortType === BillSortTypeEnum.DAY_TOTAL_DESC) {
-      return '按金额排序';
-    }
-    return '按时间排序';
-  }
-
+  /**
+   * 处理列表区右上角操作，资产卡进入资产页，其余卡切换排序方式。
+   */
   private handleHeaderAction(): void {
     if (this.swiperIndex === 2) {
       this.navigateToSubPage(RouterUrlConstants.ASSETS);
       return;
     }
-    if (this.billSortType === BillSortTypeEnum.DATE_DESC) {
-      this.billSortType = BillSortTypeEnum.DAY_TOTAL_DESC;
-    } else if (this.billSortType === BillSortTypeEnum.DAY_TOTAL_DESC) {
-      this.billSortType = BillSortTypeEnum.AMOUNT_DESC;
-    } else {
-      this.billSortType = BillSortTypeEnum.DATE_DESC;
-    }
+    this.billSortType = HomeIndexCalculator.getNextBillSortType(this.billSortType);
   }
 
+  /**
+   * 并行加载周账单与月账单数据，减少首页首屏等待。
+   */
   private async loadBillData(): Promise<void> {
     try {
-      this.weekBillGroups = await BillManager.getRecentBills(7);
-      this.monthBillGroups = await BillManager.getRecentBills(31);
+      const billResult: [BillGroup[], BillGroup[]] = await Promise.all([
+        BillManager.getRecentBills(7),
+        BillManager.getRecentBills(31)
+      ]);
+      this.weekBillGroups = billResult[0];
+      this.monthBillGroups = billResult[1];
     } catch (err) {
       Clog.error(TAG, '加载账单数据失败', err);
     }
   }
 
+  /**
+   * 删除账单后重新拉取首页账单数据，确保统计区和列表区同步。
+   */
   private async deleteBill(billId: number): Promise<void> {
     try {
       await BillManager.deleteBill(billId);
@@ -154,138 +161,23 @@ export struct Index {
     }
   }
 
-  private getCurrentMonth(): string {
-    const now = new Date();
-    return `${now.getMonth() + 1}月`;
-  }
-
-  private getMonthlyExpense(): number {
-    let totalExpense: number = 0;
-    this.monthBillGroups.forEach((group: BillGroup) => {
-      totalExpense += group.totalExpense;
-    });
-    return totalExpense;
-  }
-
-  private getMonthlyIncome(): number {
-    let totalIncome: number = 0;
-    this.monthBillGroups.forEach((group: BillGroup) => {
-      totalIncome += group.totalIncome;
-    });
-    return totalIncome;
-  }
-
-  private getMonthlyBalance(): number {
-    return this.getMonthlyIncome() - this.getMonthlyExpense();
-  }
-
-  private getBudgetRemaining(): number {
-    const remaining: number = DEFAULT_MONTH_BUDGET - this.getMonthlyExpense();
-    return remaining > 0 ? remaining : 0;
-  }
-
-  private getRemainingDaysOfMonth(): number {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const remainingDays = lastDay - now.getDate() + 1;
-    return remainingDays > 0 ? remainingDays : 1;
-  }
-
+  /**
+   * 将日期文案委托给计算器，统一首页日期显示规则。
+   */
   private formatDateTitle(dateStr: string): string {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate()
-      .toString()
-      .padStart(2, '0')}`;
-    if (dateStr === todayStr) {
-      return '今天';
-    }
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const yesterdayStr =
-      `${yesterday.getFullYear()}-${(yesterday.getMonth() + 1).toString().padStart(2, '0')}-${yesterday.getDate()
-        .toString()
-        .padStart(2, '0')}`;
-    if (dateStr === yesterdayStr) {
-      return '昨天';
-    }
-    return dateStr;
+    return HomeIndexCalculator.formatDateTitle(dateStr);
   }
 
-  private getDailyBudgetRemaining(): number {
-    return this.getBudgetRemaining() / this.getRemainingDaysOfMonth();
-  }
-
-  private getBudgetProgressValue(): number {
-    const expense: number = this.getMonthlyExpense();
-    return expense > DEFAULT_MONTH_BUDGET ? DEFAULT_MONTH_BUDGET : expense;
-  }
-
-  private getBudgetUsagePercent(): number {
-    if (DEFAULT_MONTH_BUDGET <= 0) {
-      return 0;
-    }
-    return Math.min(100, this.getBudgetProgressValue() / DEFAULT_MONTH_BUDGET * 100);
-  }
-
-  private getTotalAssets(): number {
-    let totalAssets: number = 0;
-    this.assetAccounts.forEach((item: AssetAccountBean) => {
-      if (!item.isLiability) {
-        totalAssets += item.amount;
-      }
-    });
-    return totalAssets;
-  }
-
-  private getTotalLiabilities(): number {
-    let totalLiabilities: number = 0;
-    this.assetAccounts.forEach((item: AssetAccountBean) => {
-      if (item.isLiability) {
-        totalLiabilities += item.amount;
-      }
-    });
-    return totalLiabilities;
-  }
-
-  private getNetAssets(): number {
-    return this.getTotalAssets() - this.getTotalLiabilities();
-  }
-
-  private getSortedWeekBills(): BillBean[] {
-    const billList: BillBean[] = [];
-    this.weekBillGroups.forEach((group: BillGroup) => {
-      group.bills.forEach((bill: BillBean) => {
-        billList.push(bill);
-      });
-    });
-
-    if (this.billSortType === BillSortTypeEnum.AMOUNT_DESC) {
-      billList.sort((first: BillBean, second: BillBean) => second.amount - first.amount);
-      return billList;
-    }
-
-    billList.sort((first: BillBean, second: BillBean) => second.date - first.date);
-    return billList;
-  }
-
-  private getSortedWeekBillGroups(): BillGroup[] {
-    const groupList: BillGroup[] = [];
-    this.weekBillGroups.forEach((group: BillGroup) => {
-      groupList.push(group);
-    });
-
-    if (this.billSortType === BillSortTypeEnum.DAY_TOTAL_DESC) {
-      groupList.sort((first: BillGroup, second: BillGroup) => this.getGroupTurnover(second) - this.getGroupTurnover(first));
-      return groupList;
-    }
-
-    groupList.sort((first: BillGroup, second: BillGroup) => second.dateTimestamp - first.dateTimestamp);
-    return groupList;
-  }
-
+  /**
+   * 返回某一天的总流水，供分组头部展示。
+   */
   private getGroupTurnover(group: BillGroup): number {
-    return group.totalIncome + group.totalExpense;
+    return HomeIndexCalculator.getGroupTurnover(group);
   }
 
+  /**
+   * 按显隐状态格式化普通金额文本。
+   */
   private getAmountText(amount: number, hidden: boolean): string {
     if (hidden) {
       return '****';
@@ -293,6 +185,9 @@ export struct Index {
     return `¥${this.formatAmount(amount)}`;
   }
 
+  /**
+   * 按显隐状态格式化带正负号的金额文本。
+   */
   private getSignedAmountText(amount: number, hidden: boolean): string {
     if (hidden) {
       return '****';
@@ -301,20 +196,16 @@ export struct Index {
     return `${prefix}¥${this.formatAmount(Math.abs(amount))}`;
   }
 
+  /**
+   * 将资产条目类型映射为中文标签。
+   */
   private getAssetSignText(isLiability: boolean): string {
     return isLiability ? '负债' : '资产';
   }
 
-  private getBillSortModeText(): string {
-    if (this.billSortType === BillSortTypeEnum.DATE_DESC) {
-      return '按时间倒序';
-    }
-    if (this.billSortType === BillSortTypeEnum.DAY_TOTAL_DESC) {
-      return '按日总额从高到低';
-    }
-    return '按金额从高到低';
-  }
-
+  /**
+   * 为资产列表返回对应的金额颜色。
+   */
   private getAssetAmountColor(isLiability: boolean): ResourceColor {
     if (isLiability) {
       return '#F97316';
@@ -322,21 +213,16 @@ export struct Index {
     return this.themeState.fontPrimary as ResourceColor;
   }
 
+  /**
+   * 统一首页金额千分位格式，避免多处实现。
+   */
   private formatAmount(amount: number): string {
-    const fixedAmount: string = amount.toFixed(2);
-    const amountParts: string[] = fixedAmount.split('.');
-    let integerPart: string = amountParts[0];
-    const decimalPart: string = amountParts[1];
-    const resultParts: string[] = [];
-
-    while (integerPart.length > 3) {
-      resultParts.unshift(integerPart.slice(integerPart.length - 3));
-      integerPart = integerPart.slice(0, integerPart.length - 3);
-    }
-    resultParts.unshift(integerPart);
-    return `${resultParts.join(',')}.${decimalPart}`;
+    return HomeIndexCalculator.formatAmount(amount);
   }
 
+  /**
+   * 读取窗口宽度并转换为 vp，用于判断卡片紧凑布局。
+   */
   private getSwiperViewportWidth(): number {
     const windowWidthPx: number = this.winUtil.mainWindowInfo.windowSize.width;
     if (windowWidthPx <= 0) {
@@ -345,14 +231,105 @@ export struct Index {
     return this.getUIContext().px2vp(windowWidthPx);
   }
 
+  /**
+   * 当宽度较小时切换到紧凑卡片布局。
+   */
   private isCompactSwiperLayout(): boolean {
     return this.getSwiperViewportWidth() < 380;
   }
 
+  /**
+   * 刷新预算和月度收支摘要数据。
+   */
+  private updateMonthlySummary(): void {
+    const summary: HomeMonthlySummary =
+      HomeIndexCalculator.buildMonthlySummary(this.monthBillGroups, DEFAULT_MONTH_BUDGET);
+    this.currentMonthText = summary.currentMonthText;
+    this.monthlyExpense = summary.monthlyExpense;
+    this.monthlyIncome = summary.monthlyIncome;
+    this.monthlyBalance = summary.monthlyBalance;
+    this.budgetRemaining = summary.budgetRemaining;
+    this.remainingDaysOfMonth = summary.remainingDaysOfMonth;
+    this.dailyBudgetRemaining = summary.dailyBudgetRemaining;
+    this.budgetProgressValue = summary.budgetProgressValue;
+    this.budgetUsagePercent = summary.budgetUsagePercent;
+  }
+
+  /**
+   * 刷新周账单列表的排序结果和排序描述文案。
+   */
+  private updateWeeklyDisplayData(): void {
+    const displayState: HomeWeeklyDisplayState =
+      HomeIndexCalculator.buildWeeklyDisplayState(this.weekBillGroups, this.billSortType);
+    this.sortedWeekBills = displayState.sortedWeekBills;
+    this.sortedWeekBillGroups = displayState.sortedWeekBillGroups;
+    this.billSortModeText = displayState.billSortModeText;
+  }
+
+  /**
+   * 刷新资产总额、负债和净资产摘要。
+   */
+  private updateAssetSummary(): void {
+    const summary: HomeAssetSummary = HomeIndexCalculator.buildAssetSummary(this.assetAccounts);
+    this.totalAssets = summary.totalAssets;
+    this.totalLiabilities = summary.totalLiabilities;
+    this.netAssets = summary.netAssets;
+  }
+
+  /**
+   * 首次进入首页时批量初始化所有派生展示数据。
+   */
+  private refreshStaticDerivedState(): void {
+    this.updateAssetSummary();
+    this.updateWeeklyDisplayData();
+    this.updateMonthlySummary();
+    this.updateHeaderState();
+  }
+
+  @Monitor('weekBillGroups')
+  /**
+   * 周账单变化后同步刷新列表展示数据。
+   */
+  onWeekBillGroupsChanged(): void {
+    this.updateWeeklyDisplayData();
+  }
+
+  @Monitor('monthBillGroups')
+  /**
+   * 月账单变化后同步刷新预算和收支摘要。
+   */
+  onMonthBillGroupsChanged(): void {
+    this.updateMonthlySummary();
+  }
+
+  @Monitor('billSortType')
+  /**
+   * 排序方式变化后同步刷新列表和标题动作文案。
+   */
+  onBillSortTypeChanged(): void {
+    this.updateWeeklyDisplayData();
+    this.updateHeaderState();
+  }
+
+  @Monitor('swiperIndex')
+  /**
+   * 卡片切换后刷新列表区标题和操作文案。
+   */
+  onSwiperIndexChanged(): void {
+    this.updateHeaderState();
+  }
+
+  /**
+   * 首页出现时先准备派生数据，再异步拉取最新账单。
+   */
   aboutToAppear(): void {
+    this.refreshStaticDerivedState();
     this.loadBillData();
   }
 
+  /**
+   * 构建首页主容器，负责组合卡片区、标题区和列表区。
+   */
   build() {
     HdsNavigation(this.pageInfos) {
       List({ space: 10 }) {
@@ -364,17 +341,35 @@ export struct Index {
 
         ListItem() {
           SectionHeaderComponent({
-            title: this.getHeaderTitle(),
-            action: this.getHeaderAction(),
+            title: this.headerTitle,
+            action: this.headerAction,
             onAction: () => this.handleHeaderAction(),
             themeState: this.themeState
           })
         }
 
         if (this.swiperIndex === 2) {
-          this.AssetListItems()
+          AssetAccountListSectionComponent({
+            themeState: this.themeState,
+            assetAccounts: this.assetAccounts,
+            hideAssetAmount: this.hideAssetAmount,
+            getAssetSignText: (isLiability: boolean): string => this.getAssetSignText(isLiability),
+            getAmountText: (amount: number, hidden: boolean): string => this.getAmountText(amount, hidden),
+            getAssetAmountColor: (isLiability: boolean): ResourceColor => this.getAssetAmountColor(isLiability)
+          })
         } else {
-          this.WeeklyBillListItems()
+          WeeklyBillListSectionComponent({
+            themeState: this.themeState,
+            isAmountSortMode: this.billSortType === BillSortTypeEnum.AMOUNT_DESC,
+            sortedWeekBills: this.sortedWeekBills,
+            sortedWeekBillGroups: this.sortedWeekBillGroups,
+            billSortModeText: this.billSortModeText,
+            onDeleteBill: (billId: number): void => {
+              this.deleteBill(billId);
+            },
+            formatDateTitle: (dateStr: string): string => this.formatDateTitle(dateStr),
+            formatGroupTurnover: (group: BillGroup): string => `¥${this.formatAmount(this.getGroupTurnover(group))}`
+          })
         }
       }
       .width('100%')
@@ -461,12 +456,59 @@ export struct Index {
   }
 
   @Builder
+  /**
+   * 构建首页顶部统计卡片轮播区与指示器。
+   */
   SwiperSection() {
     Column() {
       Swiper(this.swiperController) {
-        this.BudgetCard()
-        this.IncomeExpenseCard()
-        this.AssetCard()
+        BudgetOverviewCardComponent({
+          themeState: this.themeState,
+          compactLayout: this.isCompactSwiperLayout(),
+          currentMonthText: this.currentMonthText,
+          budgetProgressValue: this.budgetProgressValue,
+          budgetUsagePercent: this.budgetUsagePercent,
+          dailyBudgetText: this.getAmountText(this.dailyBudgetRemaining, false),
+          budgetRemainingText: this.getAmountText(this.budgetRemaining, false),
+          totalBudgetText: this.getAmountText(DEFAULT_MONTH_BUDGET, false),
+          monthlyExpenseText: this.getAmountText(this.monthlyExpense, false),
+          remainingDaysText: `剩余 ${this.remainingDaysOfMonth} 天`,
+          opacityValue: this.opacityList[0],
+          scaleValue: this.scaleList[0],
+          rotateValue: this.rotateList[0],
+          zIndexValue: this.zIndexList[0],
+          totalBudgetValue: DEFAULT_MONTH_BUDGET
+        })
+        IncomeExpenseCardComponent({
+          themeState: this.themeState,
+          compactLayout: this.isCompactSwiperLayout(),
+          hiddenAmount: this.hideIncomeExpenseAmount,
+          expenseText: this.getAmountText(this.monthlyExpense, this.hideIncomeExpenseAmount),
+          incomeText: this.getAmountText(this.monthlyIncome, this.hideIncomeExpenseAmount),
+          balanceText: this.getSignedAmountText(this.monthlyBalance, this.hideIncomeExpenseAmount),
+          opacityValue: this.opacityList[1],
+          scaleValue: this.scaleList[1],
+          rotateValue: this.rotateList[1],
+          zIndexValue: this.zIndexList[1],
+          onToggleHidden: () => {
+            this.hideIncomeExpenseAmount = !this.hideIncomeExpenseAmount;
+          }
+        })
+        AssetOverviewCardComponent({
+          themeState: this.themeState,
+          compactLayout: this.isCompactSwiperLayout(),
+          hiddenAmount: this.hideAssetAmount,
+          netAssetsText: this.getAmountText(this.netAssets, this.hideAssetAmount),
+          totalAssetsText: this.getAmountText(this.totalAssets, this.hideAssetAmount),
+          totalLiabilitiesText: this.getAmountText(this.totalLiabilities, this.hideAssetAmount),
+          opacityValue: this.opacityList[2],
+          scaleValue: this.scaleList[2],
+          rotateValue: this.rotateList[2],
+          zIndexValue: this.zIndexList[2],
+          onToggleHidden: () => {
+            this.hideAssetAmount = !this.hideAssetAmount;
+          }
+        })
       }
       .prevMargin(6)
       .nextMargin(6)
@@ -531,531 +573,4 @@ export struct Index {
     .height(HOME_SWIPER_SECTION_HEIGHT)
   }
 
-  @Builder
-  BudgetCard() {
-    Column() {
-      this.SwiperCardHeader($r('sys.symbol.creditcard'), '本月预算', this.getCurrentMonth())
-
-      Row({ space: this.isCompactSwiperLayout() ? 10 : 16 }) {
-        Stack({ alignContent: Alignment.Center }) {
-          Progress({
-            value: this.getBudgetProgressValue(),
-            total: DEFAULT_MONTH_BUDGET,
-            type: ProgressType.Ring
-          })
-            .width(this.isCompactSwiperLayout() ? 102 : 122)
-            .height(this.isCompactSwiperLayout() ? 102 : 122)
-            .color(this.themeState.brand)
-            .backgroundColor('#EDE6DA')
-            .style({ strokeWidth: this.isCompactSwiperLayout() ? 10 : 12 })
-
-          Column({ space: 2 }) {
-            Text(`${Math.floor(this.getBudgetUsagePercent())}%`)
-              .fontSize(this.isCompactSwiperLayout() ? 20 : 24)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(this.themeState.fontPrimary)
-            Text('已使用')
-              .fontSize(this.isCompactSwiperLayout() ? 9 : 10)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.themeState.fontSecondary)
-          }
-          .alignItems(HorizontalAlign.Center)
-        }
-        .width(this.isCompactSwiperLayout() ? 112 : 138)
-        .height(this.isCompactSwiperLayout() ? 112 : 138)
-
-        Column({ space: this.isCompactSwiperLayout() ? 10 : 12 }) {
-          this.BudgetFigureMetric('剩余日均', this.getAmountText(this.getDailyBudgetRemaining(), false),
-            this.isCompactSwiperLayout())
-          this.BudgetFigureMetric('预算剩余', this.getAmountText(this.getBudgetRemaining(), false),
-            this.isCompactSwiperLayout())
-          this.BudgetFigureMetric('总预算', this.getAmountText(DEFAULT_MONTH_BUDGET, false),
-            this.isCompactSwiperLayout())
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        .padding({ left: this.isCompactSwiperLayout() ? 8 : 22, right: this.isCompactSwiperLayout() ? 0 : 6 })
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      .margin({ top: this.isCompactSwiperLayout() ? 10 : 14 })
-
-      Row() {
-        Text(`本月已支出 ${this.getAmountText(this.getMonthlyExpense(), false)}`)
-          .fontSize(this.isCompactSwiperLayout() ? 12 : 13)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.themeState.fontSecondary)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(`剩余 ${this.getRemainingDaysOfMonth()} 天`)
-          .fontSize(this.isCompactSwiperLayout() ? 12 : 13)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.themeState.brand)
-      }
-      .width('100%')
-      .padding({
-        left: this.isCompactSwiperLayout() ? 12 : 16,
-        right: this.isCompactSwiperLayout() ? 12 : 16,
-        top: 12,
-        bottom: 12
-      })
-      .backgroundColor('#FBF8F3')
-      .borderRadius(14)
-      .border({ width: 1, color: '#F1E8DA' })
-      .justifyContent(FlexAlign.SpaceBetween)
-      .margin({ top: this.isCompactSwiperLayout() ? 10 : 0 })
-    }
-    .width('100%')
-    .height(HOME_SWIPER_CARD_HEIGHT)
-    .padding({
-      left: this.isCompactSwiperLayout() ? 14 : 20,
-      right: this.isCompactSwiperLayout() ? 14 : 20,
-      top: this.isCompactSwiperLayout() ? 14 : 16,
-      bottom: this.isCompactSwiperLayout() ? 12 : 8
-    })
-    .margin({ left: 8, right: 8 })
-    .borderRadius(24)
-    .backgroundColor(this.themeState.compBackgroundPrimary)
-    .border({ width: 1, color: '#EEE6DA' })
-    .opacity(this.opacityList[0])
-    .scale({ x: this.scaleList[0], y: this.scaleList[0] })
-    .rotate({ z: 1, angle: this.rotateList[0] })
-    .zIndex(this.zIndexList[0])
-  }
-
-  @Builder
-  IncomeExpenseCard() {
-    Column() {
-      Row() {
-        Row() {
-          this.SwiperCardHeader($r('sys.symbol.arrow_left_arrow_right'), '本月收支', '')
-        }
-        .layoutWeight(1)
-        this.VisibilityToggle(this.hideIncomeExpenseAmount, () => {
-          this.hideIncomeExpenseAmount = !this.hideIncomeExpenseAmount;
-        })
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceBetween)
-      .alignItems(VerticalAlign.Center)
-
-      Row() {
-        this.IncomeExpenseBlock($r('sys.symbol.arrow_down'), '#F15B4E', '本月支出',
-          this.getAmountText(this.getMonthlyExpense(), this.hideIncomeExpenseAmount), false, this.isCompactSwiperLayout())
-        this.MetricDivider(this.isCompactSwiperLayout())
-        this.IncomeExpenseBlock($r('sys.symbol.arrow_up'), '#45B36B', '本月收入',
-          this.getAmountText(this.getMonthlyIncome(), this.hideIncomeExpenseAmount), false, this.isCompactSwiperLayout())
-        this.MetricDivider(this.isCompactSwiperLayout())
-        this.IncomeExpenseBlock($r('sys.symbol.clock'), this.themeState.brand as string, '月结余',
-          this.getSignedAmountText(this.getMonthlyBalance(), this.hideIncomeExpenseAmount), true,
-          this.isCompactSwiperLayout())
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-      .margin({ top: this.isCompactSwiperLayout() ? 14 : 18, bottom: this.isCompactSwiperLayout() ? 2 : 6 })
-    }
-    .width('100%')
-    .height(HOME_SWIPER_CARD_HEIGHT)
-    .padding({
-      left: this.isCompactSwiperLayout() ? 14 : 20,
-      right: this.isCompactSwiperLayout() ? 14 : 20,
-      top: this.isCompactSwiperLayout() ? 16 : 18,
-      bottom: this.isCompactSwiperLayout() ? 14 : 18
-    })
-    .margin({ left: 8, right: 8 })
-    .borderRadius(24)
-    .backgroundColor(this.themeState.compBackgroundPrimary)
-    .border({ width: 1, color: '#EEE6DA' })
-    .opacity(this.opacityList[1])
-    .scale({ x: this.scaleList[1], y: this.scaleList[1] })
-    .rotate({ z: 1, angle: this.rotateList[1] })
-    .zIndex(this.zIndexList[1])
-  }
-
-  @Builder
-  AssetCard() {
-    Column() {
-      Row() {
-        Row() {
-          this.SwiperCardHeader($r('sys.symbol.list_bullet'), '资产概览', '')
-        }
-        .layoutWeight(1)
-        this.VisibilityToggle(this.hideAssetAmount, () => {
-          this.hideAssetAmount = !this.hideAssetAmount;
-        })
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.SpaceBetween)
-      .alignItems(VerticalAlign.Center)
-
-      Row({ space: this.isCompactSwiperLayout() ? 8 : 14 }) {
-        Column() {
-          Column({ space: 10 }) {
-            Text('净资产')
-              .fontSize(this.isCompactSwiperLayout() ? 12 : 13)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(this.themeState.brand)
-            Text(this.getAmountText(this.getNetAssets(), this.hideAssetAmount))
-              .fontSize(this.isCompactSwiperLayout() ? 24 : 29)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(this.themeState.fontPrimary)
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-          }
-          .width('100%')
-          .alignItems(HorizontalAlign.Start)
-
-          Column()
-            .width('86%')
-            .height(1)
-            .backgroundColor('#E8DCCA')
-            .margin({ top: 16, bottom: 14 })
-
-          Row() {
-            this.AssetStatMetric('总资产', this.getAmountText(this.getTotalAssets(), this.hideAssetAmount),
-              this.isCompactSwiperLayout())
-            this.AssetBottomDivider(this.isCompactSwiperLayout())
-            this.AssetStatMetric('总负债', this.getAmountText(this.getTotalLiabilities(), this.hideAssetAmount),
-              this.isCompactSwiperLayout())
-          }
-          .width('100%')
-          .alignItems(VerticalAlign.Center)
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
-        .margin({ top: this.isCompactSwiperLayout() ? 14 : 18 })
-
-        Image($r('app.media.Assets01'))
-          .width(this.isCompactSwiperLayout() ? 118 : 150)
-          .height(this.isCompactSwiperLayout() ? 118 : 150)
-          .objectFit(ImageFit.Contain)
-          .margin({ top: this.isCompactSwiperLayout() ? 30 : 18 })
-      }
-      .width('100%')
-      .alignItems(VerticalAlign.Top)
-    }
-    .width('100%')
-    .height(HOME_SWIPER_CARD_HEIGHT)
-    .padding({
-      left: this.isCompactSwiperLayout() ? 14 : 20,
-      right: this.isCompactSwiperLayout() ? 14 : 18,
-      top: this.isCompactSwiperLayout() ? 16 : 18,
-      bottom: this.isCompactSwiperLayout() ? 16 : 18
-    })
-    .margin({ left: 8, right: 8 })
-    .borderRadius(24)
-    .backgroundColor(this.themeState.compBackgroundPrimary)
-    .border({ width: 1, color: '#EEE6DA' })
-    .opacity(this.opacityList[2])
-    .scale({ x: this.scaleList[2], y: this.scaleList[2] })
-    .rotate({ z: 1, angle: this.rotateList[2] })
-    .zIndex(this.zIndexList[2])
-  }
-
-  @Builder
-  SwiperCardHeader(icon: Resource, title: string, suffix: string) {
-    Row() {
-      Row({ space: 10 }) {
-        SymbolGlyph(icon)
-          .fontSize(18)
-          .fontColor([this.themeState.brand as ResourceColor])
-        Text(title)
-          .fontSize(16)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(this.themeState.fontPrimary)
-      }
-      if (suffix !== '') {
-        Text(suffix)
-          .fontSize(13)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(this.themeState.brand)
-      }
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.SpaceBetween)
-    .alignItems(VerticalAlign.Center)
-  }
-
-  @Builder
-  BudgetFigureMetric(label: string, value: string, compactLayout: boolean = false) {
-    Column({ space: 4 }) {
-      Text(label)
-        .fontSize(compactLayout ? 11 : 12)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.themeState.brand)
-      Text(value)
-        .fontSize(compactLayout ? 14 : 17)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(this.themeState.fontPrimary)
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder
-  IncomeExpenseBlock(icon: Resource, tone: string, label: string, value: string, accent: boolean,
-    compactLayout: boolean = false) {
-    Column({ space: 10 }) {
-      Row() {
-        SymbolGlyph(icon)
-          .fontSize(compactLayout ? 20 : 22)
-          .fontColor([tone])
-      }
-      .width(compactLayout ? 40 : 44)
-      .height(compactLayout ? 40 : 44)
-      .justifyContent(FlexAlign.Center)
-      .borderRadius(compactLayout ? 20 : 22)
-      .border({ width: 1.8, color: tone })
-
-      Text(label)
-        .fontSize(compactLayout ? 12 : 13)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.themeState.fontSecondary)
-      Text(value)
-        .fontSize(compactLayout ? (accent ? 16 : 15) : (accent ? 19 : 18))
-        .fontWeight(FontWeight.Bold)
-        .fontColor(accent ? this.themeState.brand : this.themeState.fontPrimary)
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .layoutWeight(1)
-    .alignItems(HorizontalAlign.Center)
-  }
-
-  @Builder
-  MetricDivider(compactLayout: boolean = false) {
-    Column()
-      .width(1)
-      .height(compactLayout ? 72 : 84)
-      .backgroundColor('#ECE2D3')
-  }
-
-  @Builder
-  AssetBottomDivider(compactLayout: boolean = false) {
-    Column()
-      .width(1)
-      .height(compactLayout ? 46 : 54)
-      .backgroundColor('#ECE2D3')
-      .margin({ left: 12, right: 12 })
-  }
-
-  @Builder
-  AssetStatMetric(label: string, value: string, compactLayout: boolean = false) {
-    Column({ space: 6 }) {
-      Text(label)
-        .fontSize(compactLayout ? 12 : 13)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.themeState.fontSecondary)
-      Text(value)
-        .fontSize(compactLayout ? 14 : 16)
-        .fontWeight(FontWeight.Bold)
-        .fontColor(this.themeState.fontPrimary)
-        .maxLines(1)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
-    }
-    .layoutWeight(1)
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder
-  VisibilityToggle(hidden: boolean, onToggle: () => void) {
-    Button() {
-      SymbolGlyph(hidden ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
-        .fontSize(16)
-        .fontColor([this.themeState.fontPrimary as ResourceColor])
-    }
-    .width(34)
-    .height(34)
-    .padding(0)
-    .backgroundColor('#FCFAF6')
-    .border({ width: 1, color: '#EEE4D8' })
-    .borderRadius(17)
-    .onClick(() => {
-      onToggle();
-    })
-  }
-
-  @Builder
-  WeeklyBillListItems() {
-    if (this.weekBillGroups.length === 0) {
-      ListItem() {
-        EmptyStateComponent({ text: '本周暂无账单记录', themeState: this.themeState })
-      }
-    } else {
-      if (this.billSortType === BillSortTypeEnum.AMOUNT_DESC) {
-        ListItemGroup({
-          header: this.WeeklyListHeader(),
-          style: ListItemGroupStyle.CARD
-        }) {
-          ForEach(this.getSortedWeekBills(), (bill: BillBean, billIndex: number) => {
-            ListItem() {
-              BillItemComponent({ bill: bill, themeState: this.themeState })
-            }
-            .opacity(1)
-            .translate({ x: 0 })
-            .animation({
-              duration: 300,
-              delay: billIndex * GRADIENT_DELAY,
-              curve: curves.springMotion(0.6, 0.9)
-            })
-            .swipeAction({
-              end: this.DeleteSwipeBuilder(bill.id)
-            })
-          }, (bill: BillBean) => `${bill.id}`)
-        }
-        .divider({
-          strokeWidth: 0.5,
-          color: this.themeState.compDivider,
-          startMargin: 52,
-          endMargin: 16
-        })
-      } else {
-        ForEach(this.getSortedWeekBillGroups(), (group: BillGroup, groupIndex: number) => {
-          ListItemGroup({
-            header: this.WeeklyGroupHeader(group),
-            style: ListItemGroupStyle.CARD
-          }) {
-            ForEach(group.bills, (bill: BillBean, billIndex: number) => {
-              ListItem() {
-                BillItemComponent({ bill: bill, themeState: this.themeState })
-              }
-              .opacity(1)
-              .translate({ x: 0 })
-              .animation({
-                duration: 300,
-                delay: (groupIndex * 3 + billIndex) * GRADIENT_DELAY,
-                curve: curves.springMotion(0.6, 0.9)
-              })
-              .swipeAction({
-                end: this.DeleteSwipeBuilder(bill.id)
-              })
-            }, (bill: BillBean) => `${group.date}-${bill.id}`)
-          }
-          .divider({
-            strokeWidth: 0.5,
-            color: this.themeState.compDivider,
-            startMargin: 52,
-            endMargin: 16
-          })
-        }, (group: BillGroup) => group.date)
-      }
-    }
-  }
-
-  @Builder
-  WeeklyListHeader() {
-    Row() {
-      Text('最近 7 天')
-        .fontSize(13)
-        .fontColor(this.themeState.fontSecondary)
-      Text(this.getBillSortModeText())
-        .fontSize(12)
-        .fontColor(this.themeState.brand)
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16, top: 14, bottom: 10 })
-  }
-
-  @Builder
-  WeeklyGroupHeader(group: BillGroup) {
-    Row() {
-      Text(this.formatDateTitle(group.date))
-        .fontSize(13)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.themeState.fontSecondary)
-      Text(`¥${this.formatAmount(this.getGroupTurnover(group))}`)
-        .fontSize(12)
-        .fontColor(this.themeState.brand)
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16, top: 14, bottom: 10 })
-  }
-
-  @Builder
-  AssetListItems() {
-    if (this.assetAccounts.length === 0) {
-      ListItem() {
-        EmptyStateComponent({ text: '暂无资产账户数据', themeState: this.themeState })
-      }
-    } else {
-      ListItemGroup({
-        header: this.AssetListHeader(),
-        style: ListItemGroupStyle.CARD
-      }) {
-        ForEach(this.assetAccounts, (item: AssetAccountBean, index: number) => {
-          ListItem() {
-            this.AssetAccountItem(item)
-          }
-          .opacity(1)
-          .translate({ x: 0 })
-          .animation({
-            duration: 300,
-            delay: index * GRADIENT_DELAY,
-            curve: curves.springMotion(0.6, 0.9)
-          })
-        }, (item: AssetAccountBean) => item.name)
-      }
-      .divider({
-        strokeWidth: 0.5,
-        color: this.themeState.compDivider,
-        startMargin: 52,
-        endMargin: 16
-      })
-    }
-  }
-
-  @Builder
-  AssetListHeader() {
-    Row() {
-      Text('账户列表')
-        .fontSize(13)
-        .fontColor(this.themeState.fontSecondary)
-      Text(`${this.assetAccounts.length} 个账户`)
-        .fontSize(12)
-        .fontColor(this.themeState.brand)
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16, top: 14, bottom: 10 })
-  }
-
-  @Builder
-  AssetAccountItem(item: AssetAccountBean) {
-    Row() {
-      SymbolGlyph(item.icon)
-        .fontSize(20)
-        .fontColor([item.isLiability ? '#F97316' : this.themeState.brand as ResourceColor])
-        .width(36)
-        .height(36)
-        .borderRadius(8)
-        .backgroundColor(item.isLiability ? '#FFF7ED' : '#EEF6FF')
-        .padding(8)
-
-      Column() {
-        Text(item.name)
-          .fontSize(15)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.themeState.fontPrimary)
-        Text(`${this.getAssetSignText(item.isLiability)} · ${item.subtitle}`)
-          .fontSize(13)
-          .fontColor(this.themeState.fontSecondary)
-          .margin({ top: 2 })
-      }
-      .alignItems(HorizontalAlign.Start)
-      .margin({ left: 12 })
-      .layoutWeight(1)
-
-      Text(this.getAmountText(item.amount, this.hideAssetAmount))
-        .fontSize(16)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.getAssetAmountColor(item.isLiability))
-    }
-    .width('100%')
-    .height(60)
-    .padding({ left: 16, right: 16 })
-    .backgroundColor(this.themeState.compBackgroundPrimary)
-  }
 }
