@@ -83,7 +83,7 @@ export struct AddBillSheetComponent {
   @Local categoryDraftLabel: string = '';
 
   private scroller: Scroller = new Scroller();
-  private accountScroller: Scroller = new Scroller();
+  private accountScroller: ListScroller = new ListScroller();
   private readonly modeSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
     { text: '支出' },
     { text: '收入' },
@@ -260,6 +260,17 @@ export struct AddBillSheetComponent {
   }
 
   /**
+   * 返回当前选中支付方式在原始数组中的索引，用于展开时恢复可视区域位置。
+   */
+  private getSelectedAccountIndex(): number {
+    const selectedIndex: number = this.accounts.indexOf(this.selectedAccount);
+    if (selectedIndex >= 0) {
+      return selectedIndex;
+    }
+    return 0;
+  }
+
+  /**
    * 判断给定支付方式是否为当前激活项。
    */
   private isActiveAccount(account: string): boolean {
@@ -339,6 +350,19 @@ export struct AddBillSheetComponent {
   }
 
   /**
+   * 展开账户列表后，将当前选中项平滑滚动到视窗中央，避免末尾项再次展开时不可见。
+   */
+  private scrollSelectedAccountIntoView(): void {
+    const selectedIndex: number = this.getSelectedAccountIndex();
+    setTimeout(() => {
+      try {
+        this.accountScroller.scrollToIndex(selectedIndex, true, ScrollAlign.CENTER);
+      } catch {
+      }
+    }, 48);
+  }
+
+  /**
    * 展开支付方式列表，复现向右弹开的胶囊动画。
    */
   private expandAccountSelector(): void {
@@ -355,6 +379,7 @@ export struct AddBillSheetComponent {
       curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1)
     }, () => {
       this.isAccountSelectorExpanded = true;
+      this.scrollSelectedAccountIntoView();
     });
   }
 
@@ -984,7 +1009,7 @@ export struct AddBillSheetComponent {
   private AccountSelectorSection() {
     Stack({ alignContent: Alignment.Start }) {
       if (this.isAccountSelectorVisible) {
-        List({ initialIndex: 0, scroller: this.accountScroller }) {
+        List({ initialIndex: this.getSelectedAccountIndex(), scroller: this.accountScroller }) {
           ForEach(this.accounts, (account: string, index: number) => {
             ListItem() {
               this.AccountOptionPill(account, index, this.accounts.length);
@@ -1001,6 +1026,7 @@ export struct AddBillSheetComponent {
         .fadingEdge(this.isAccountSelectorExpanded)
         .edgeEffect(EdgeEffect.None)
         .clip(this.isAccountSelectorExpanded)
+        .scrollSnapAlign(ScrollSnapAlign.CENTER)
         .padding({ left: 0, right: 0 })
         .backgroundColor(this.themeState.compBackgroundPrimary)
         .borderRadius(20)
