@@ -16,12 +16,17 @@ import {
 import { curves } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics, LengthMetrics } from '@ohos.arkui.node';
+import promptAction from '@ohos.promptAction';
 
 const KEYBOARD_CORNER_RADIUS: number = 22;
 const CATEGORY_CARD_SIZE: number = 74;
 const KEYBOARD_KEYS_PER_ROW: number = 4;
-const REMARK_PANEL_COLLAPSED_HEIGHT: number = 0;
-const REMARK_PANEL_EXPANDED_HEIGHT: number = 88;
+const ACCOUNT_VIEWPORT_EXPANDED_WIDTH: number = 196;
+const ACCOUNT_PILL_HEIGHT: number = 34;
+const ACCOUNT_PILL_GAP: number = 12;
+const ACCOUNT_COLLAPSE_DELAY: number = 350;
+const ACCOUNT_ANIMATION_DURATION: number = 600;
+const REMARK_INPUT_ID: string = 'add_bill_sheet_remark_input';
 const RECORD_MODE_EXPENSE: string = 'expense';
 const RECORD_MODE_INCOME: string = 'income';
 const RECORD_MODE_TRANSFER: string = 'transfer';
@@ -68,10 +73,17 @@ export struct AddBillSheetComponent {
   @Local isSaving: boolean = false;
   @Local selectedDate: number = Date.now();
   @Local isRemarkExpanded: boolean = false;
-  @Local remarkPanelHeight: number = REMARK_PANEL_COLLAPSED_HEIGHT;
-  @Local remarkPanelOpacity: number = 0;
+  @Local isAccountSelectorVisible: boolean = false;
+  @Local isAccountSelectorExpanded: boolean = false;
+  @Local isAccountSelectorClosing: boolean = false;
+  @Local customExpenseCategories: CategoryOption[] = [];
+  @Local customIncomeCategories: CategoryOption[] = [];
+  @Local isCategoryEditorVisible: boolean = false;
+  @Local isEditingCurrentCategory: boolean = false;
+  @Local categoryDraftLabel: string = '';
 
   private scroller: Scroller = new Scroller();
+  private accountScroller: Scroller = new Scroller();
   private readonly modeSegmentItems: SegmentButtonV2Items = new SegmentButtonV2Items([
     { text: '支出' },
     { text: '收入' },
@@ -121,20 +133,18 @@ export struct AddBillSheetComponent {
       this.TopActionSection()
 
       Stack({ alignContent: Alignment.Top }) {
-        List({ scroller: this.scroller }) {
-          ListItem() {
-            Column() {
-              this.CategoryGridSection()
-            }
-            .width('100%')
-            .padding({ left: 16, right: 16, top: 6, bottom: 20 })
+        Scroll(this.scroller) {
+          Column({ space: 12 }) {
+            this.CategoryGridSection()
           }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 6, bottom: 20 })
         }
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
+        .clip(false)
         .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
-        .fadingEdge(true)
 
         this.TopFadeMask()
         this.BottomFadeMask()
@@ -162,7 +172,10 @@ export struct AddBillSheetComponent {
     if (this.activeMode === RECORD_MODE_TRANSFER) {
       return [new CategoryOption('转账', $r('sys.symbol.arrow_left_arrow_right'))];
     }
-    return this.selectedType === BillTypeEnum.EXPENSE ? this.expenseCategories : this.incomeCategories;
+    if (this.selectedType === BillTypeEnum.EXPENSE) {
+      return [...this.expenseCategories, ...this.customExpenseCategories];
+    }
+    return [...this.incomeCategories, ...this.customIncomeCategories];
   }
 
   /**
@@ -247,17 +260,207 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 轮换支付账户，减少顶部占位。
+   * 判断给定支付方式是否为当前激活项。
    */
-  private cycleSelectedAccount(): void {
-    let currentIndex: number = 0;
-    this.accounts.forEach((account: string, index: number) => {
-      if (account === this.selectedAccount) {
-        currentIndex = index;
-      }
+  private isActiveAccount(account: string): boolean {
+    return account === this.selectedAccount;
+  }
+
+  /**
+   * 根据文本长度返回支付方式按钮在展开态下的完整宽度。
+   */
+  private getAccountExpandedWidth(account: string): number {
+    if (account === '微信') {
+      return 82;
+    }
+    if (account === '支付宝') {
+      return 98;
+    }
+    if (account === '银行卡') {
+      return 90;
+    }
+    return 74 + account.length * 16;
+  }
+
+  /**
+   * 返回支付方式按钮在当前状态下的宽度。
+   */
+  private getAccountPillWidth(account: string): number {
+    if (this.isAccountSelectorExpanded) {
+      return this.getAccountExpandedWidth(account);
+    }
+    return this.isActiveAccount(account) ? this.getAccountExpandedWidth(account) : 0;
+  }
+
+  /**
+   * 返回支付方式按钮在当前状态下的透明度。
+   */
+  private getAccountPillOpacity(account: string): number {
+    if (this.isAccountSelectorClosing && this.isActiveAccount(account)) {
+      return 0;
+    }
+    if (this.isAccountSelectorExpanded) {
+      return 1;
+    }
+    return this.isActiveAccount(account) ? 1 : 0;
+  }
+
+  /**
+   * 返回支付方式按钮在当前状态下的右间距。
+   */
+  private getAccountPillMarginRight(index: number, totalCount: number): number {
+    if (this.isAccountSelectorExpanded) {
+      return index === totalCount - 1 ? 0 : ACCOUNT_PILL_GAP;
+    }
+    return 0;
+  }
+
+  /**
+   * 返回支付方式按钮在当前状态下的缩放。
+   */
+  private getAccountPillScale(account: string): number {
+    if (this.isAccountSelectorClosing && this.isActiveAccount(account)) {
+      return 0.92;
+    }
+    if (this.isAccountSelectorExpanded) {
+      return 1;
+    }
+    return this.isActiveAccount(account) ? 1 : 0.6;
+  }
+
+  /**
+   * 返回账户选择视窗宽度，展开后限制宽度并交给横向 List 渐隐处理。
+   */
+  private getAccountViewportWidth(): number {
+    if (this.isAccountSelectorExpanded) {
+      return ACCOUNT_VIEWPORT_EXPANDED_WIDTH;
+    }
+    return this.getAccountExpandedWidth(this.selectedAccount);
+  }
+
+  /**
+   * 展开支付方式列表，复现向右弹开的胶囊动画。
+   */
+  private expandAccountSelector(): void {
+    if (this.isAccountSelectorVisible) {
+      return;
+    }
+    if (this.isRemarkExpanded) {
+      this.updateRemarkPanel(false);
+    }
+    this.isAccountSelectorVisible = true;
+    this.isAccountSelectorClosing = false;
+    this.getUIContext().animateTo({
+      duration: ACCOUNT_ANIMATION_DURATION,
+      curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1)
+    }, () => {
+      this.isAccountSelectorExpanded = true;
     });
-    const nextIndex: number = (currentIndex + 1) % this.accounts.length;
-    this.selectedAccount = this.accounts[nextIndex];
+  }
+
+  /**
+   * 收起支付方式列表，只保留当前激活项。
+   */
+  private collapseAccountSelector(): void {
+    if (!this.isAccountSelectorVisible) {
+      return;
+    }
+    this.isAccountSelectorClosing = true;
+    this.getUIContext().animateTo({
+      duration: ACCOUNT_ANIMATION_DURATION,
+      curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1)
+    }, () => {
+      this.isAccountSelectorExpanded = false;
+    });
+    setTimeout(() => {
+      this.isAccountSelectorVisible = false;
+      this.isAccountSelectorClosing = false;
+    }, ACCOUNT_ANIMATION_DURATION);
+  }
+
+  /**
+   * 处理支付方式胶囊点击，展开态下先切换再延迟收起。
+   */
+  private handleAccountPillClick(account: string, index: number): void {
+    if (this.isAccountSelectorClosing) {
+      return;
+    }
+    if (!this.isAccountSelectorExpanded) {
+      if (this.isActiveAccount(account)) {
+        this.expandAccountSelector();
+      }
+      return;
+    }
+    this.selectedAccount = account;
+    setTimeout(() => {
+      this.collapseAccountSelector();
+    }, ACCOUNT_COLLAPSE_DELAY);
+  }
+
+  /**
+   * 打开分类管理菜单，支持新增和编辑当前分类。
+   */
+  private async showCategoryManageMenu(): Promise<void> {
+    if (this.activeMode === RECORD_MODE_TRANSFER) {
+      this.showToast('转账分类暂不支持编辑');
+      return;
+    }
+    try {
+      const result: promptAction.ActionMenuSuccessResponse = await promptAction.showActionMenu({
+        title: '管理分类',
+        buttons: [
+          { text: '新增分类', color: '#191919' },
+          { text: '编辑当前分类', color: '#191919' }
+        ]
+      });
+      if (result.index === 0) {
+        this.isEditingCurrentCategory = false;
+        this.categoryDraftLabel = '';
+      } else {
+        this.isEditingCurrentCategory = true;
+        this.categoryDraftLabel = this.selectedCategory;
+      }
+      this.isCategoryEditorVisible = true;
+    } catch {
+    }
+  }
+
+  /**
+   * 保存新增或编辑后的分类名称。
+   */
+  private saveCategoryDraft(): void {
+    const draftLabel: string = this.categoryDraftLabel.trim();
+    if (draftLabel.length === 0) {
+      this.showToast('请输入分类名称');
+      return;
+    }
+    if (this.isEditingCurrentCategory) {
+      const categories: CategoryOption[] = this.getCurrentCategoryOptions();
+      categories.forEach((item: CategoryOption) => {
+        if (item.label === this.selectedCategory) {
+          item.label = draftLabel;
+        }
+      });
+      this.selectedCategory = draftLabel;
+    } else {
+      const newCategory: CategoryOption = new CategoryOption(draftLabel, $r('sys.symbol.ellipsis_circle'));
+      if (this.selectedType === BillTypeEnum.EXPENSE) {
+        this.customExpenseCategories = [...this.customExpenseCategories, newCategory];
+      } else {
+        this.customIncomeCategories = [...this.customIncomeCategories, newCategory];
+      }
+      this.selectedCategory = draftLabel;
+    }
+    this.categoryDraftLabel = '';
+    this.isCategoryEditorVisible = false;
+  }
+
+  /**
+   * 关闭分类编辑器并清理草稿状态。
+   */
+  private closeCategoryEditor(): void {
+    this.categoryDraftLabel = '';
+    this.isCategoryEditorVisible = false;
   }
 
   /**
@@ -434,7 +637,7 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 切换备注编辑区展开状态，让输入区在底部面板内平滑伸缩。
+   * 切换备注胶囊的输入态，让它在原位展开或收起。
    */
   private updateRemarkPanel(expanded: boolean): void {
     this.getUIContext().animateTo({
@@ -442,9 +645,19 @@ export struct AddBillSheetComponent {
       curve: curves.springMotion(0.6, 0.9)
     }, () => {
       this.isRemarkExpanded = expanded;
-      this.remarkPanelHeight = expanded ? REMARK_PANEL_EXPANDED_HEIGHT : REMARK_PANEL_COLLAPSED_HEIGHT;
-      this.remarkPanelOpacity = expanded ? 1 : 0;
     });
+  }
+
+  /**
+   * 展开备注输入态后主动请求焦点，确保单击即可拉起键盘。
+   */
+  private focusRemarkInput(): void {
+    setTimeout(() => {
+      try {
+        this.getUIContext().getFocusController().requestFocus(REMARK_INPUT_ID);
+      } catch {
+      }
+    }, 40);
   }
 
   /**
@@ -549,7 +762,11 @@ export struct AddBillSheetComponent {
   @Builder
   private CategoryGridSection() {
     Column({ space: 14 }) {
-      this.SectionHeader('分类');
+      this.CategoryHeaderSection();
+
+      if (this.isCategoryEditorVisible) {
+        this.CategoryEditorSection();
+      }
 
       Flex({ wrap: FlexWrap.Wrap, direction: FlexDirection.Row }) {
         ForEach(this.getCurrentCategoryOptions(), (item: CategoryOption) => {
@@ -564,37 +781,93 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 构建备注展开编辑区，默认收起，激活后在底部面板中放大展示。
+   * 构建分类标题与管理入口。
    */
   @Builder
-  private RemarkEditorSection() {
-    Column() {
-      TextInput({ text: this.remarkText, placeholder: '写点备注，让这笔账更容易回忆' })
-        .fontSize(16)
+  private CategoryHeaderSection() {
+    Row() {
+      Text('分类')
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.fontSecondary);
+      Button('管理分类')
+        .fontSize(13)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.brand)
+        .backgroundColor(this.themeState.backgroundPrimary)
+        .borderRadius(16)
+        .border({ width: 1, color: this.themeState.compDivider })
+        .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+        .onClick(() => {
+          this.showCategoryManageMenu();
+        })
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.SpaceBetween)
+    .alignItems(VerticalAlign.Center)
+  }
+
+  /**
+   * 构建分类新增/编辑面板。
+   */
+  @Builder
+  private CategoryEditorSection() {
+    Column({ space: 10 }) {
+      Text(this.isEditingCurrentCategory ? '编辑当前分类' : '新增自定义分类')
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.fontPrimary);
+
+      TextInput({
+        text: this.categoryDraftLabel,
+        placeholder: this.isEditingCurrentCategory ? '输入新的分类名称' : '输入自定义分类名称'
+      })
+        .fontSize(15)
         .fontWeight(this.optionSystem.fontThickness)
         .fontColor(this.themeState.fontPrimary)
         .placeholderColor(this.themeState.fontSecondary)
+        .height(44)
         .width('100%')
-        .height(56)
-        .padding({ left: 16, right: 16 })
-        .backgroundColor(this.themeState.compBackgroundPrimary)
-        .borderRadius(18)
-        .onFocus(() => {
-          this.updateRemarkPanel(true);
-        })
-        .onBlur(() => {
-          if (this.remarkText.trim().length === 0) {
-            this.updateRemarkPanel(false);
-          }
-        })
+        .padding({ left: 14, right: 14 })
+        .backgroundColor(this.themeState.backgroundPrimary)
+        .borderRadius(14)
         .onChange((value: string) => {
-          this.remarkText = value;
+          this.categoryDraftLabel = value;
         });
+
+      Row({ space: 10 }) {
+        Button('取消')
+          .layoutWeight(1)
+          .height(40)
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.themeState.fontPrimary)
+          .backgroundColor(this.themeState.backgroundPrimary)
+          .borderRadius(14)
+          .border({ width: 1, color: this.themeState.compDivider })
+          .onClick(() => {
+            this.closeCategoryEditor();
+          });
+        Button(this.isEditingCurrentCategory ? '保存修改' : '添加分类')
+          .layoutWeight(1)
+          .height(40)
+          .fontSize(14)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(this.themeState.fontOnPrimary)
+          .backgroundColor(this.themeState.brand as ResourceColor)
+          .borderRadius(14)
+          .onClick(() => {
+            this.saveCategoryDraft();
+          });
+      }
+      .width('100%')
     }
     .width('100%')
-    .height(this.remarkPanelHeight)
-    .opacity(this.remarkPanelOpacity)
-    .clip(true)
+    .padding(14)
+    .backgroundColor(this.themeState.compBackgroundPrimary)
+    .borderRadius(18)
+    .border({ width: 1, color: this.themeState.compDivider })
+    .alignItems(HorizontalAlign.Start)
   }
 
   /**
@@ -604,7 +877,6 @@ export struct AddBillSheetComponent {
   private AmountEditorSection() {
     Column({ space: 10 }) {
       this.EntryMetaRow()
-      this.RemarkEditorSection()
 
       Row() {
         Text(`¥ ${this.amountText}`)
@@ -693,15 +965,146 @@ export struct AddBillSheetComponent {
   @Builder
   private EntryMetaRow() {
     Row({ space: 8 }) {
-      this.MetaPill(this.getSelectedAccountLabel(), $r('sys.symbol.creditcard'), () => {
-        this.cycleSelectedAccount();
-      });
-      this.MetaPill(this.getSelectedDateText(), $r('sys.symbol.calendar'), () => {
-      });
-      this.RemarkTriggerPill();
+      this.AccountSelectorSection();
+      if (!this.isRemarkExpanded) {
+        this.MetaPill(this.getSelectedDateText(), $r('sys.symbol.calendar'), () => {
+        });
+        this.RemarkTriggerPill();
+      }
     }
     .width('100%')
     .justifyContent(FlexAlign.Start)
+    .alignItems(VerticalAlign.Center)
+  }
+
+  /**
+   * 构建账户选择区，支持在当前行原地展开候选项。
+   */
+  @Builder
+  private AccountSelectorSection() {
+    Stack({ alignContent: Alignment.Start }) {
+      if (this.isAccountSelectorVisible) {
+        List({ initialIndex: 0, scroller: this.accountScroller }) {
+          ForEach(this.accounts, (account: string, index: number) => {
+            ListItem() {
+              this.AccountOptionPill(account, index, this.accounts.length);
+            }
+            .selectable(false)
+            .focusable(false)
+            .tabStop(false)
+          }, (account: string) => account);
+          }
+        .listDirection(Axis.Horizontal)
+        .width(this.getAccountViewportWidth())
+        .height(ACCOUNT_PILL_HEIGHT)
+        .scrollBar(BarState.Off)
+        .fadingEdge(this.isAccountSelectorExpanded)
+        .edgeEffect(EdgeEffect.None)
+        .clip(this.isAccountSelectorExpanded)
+        .padding({ left: 0, right: 0 })
+        .backgroundColor(this.themeState.compBackgroundPrimary)
+        .borderRadius(20)
+        .animation({ duration: ACCOUNT_ANIMATION_DURATION, curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1) })
+      }
+
+      if (!this.isAccountSelectorVisible || this.isAccountSelectorClosing) {
+        this.AccountCollapsedTrigger();
+      }
+    }
+    .height(ACCOUNT_PILL_HEIGHT)
+    .align(Alignment.Start)
+  }
+
+  /**
+   * 构建收起态的当前支付方式按钮，避免未展开时出现横向滑动与渐隐。
+   */
+  @Builder
+  private AccountCollapsedTrigger() {
+    Button() {
+      Row({ space: 6 }) {
+        SymbolGlyph($r('sys.symbol.creditcard'))
+          .fontSize(15)
+          .fontWeight(this.optionSystem.iconThickness)
+          .fontColor([this.themeState.fontOnPrimary as ResourceColor]);
+        Text(this.selectedAccount)
+          .fontSize(13)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(this.themeState.fontOnPrimary)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+      }
+      .justifyContent(FlexAlign.Center)
+      .alignItems(VerticalAlign.Center)
+    }
+    .width(this.getAccountExpandedWidth(this.selectedAccount))
+    .height(ACCOUNT_PILL_HEIGHT)
+    .padding(0)
+    .padding({ left: 12, right: 12 })
+    .backgroundColor(this.themeState.brand as ResourceColor)
+    .borderRadius(17)
+    .border({ width: 1, color: this.themeState.brand as ResourceColor })
+    .stateEffect(false)
+    .focusable(false)
+    .tabStop(false)
+    .defaultFocus(false)
+    .groupDefaultFocus(false)
+    .scale({
+      x: this.isAccountSelectorClosing ? 1 : 1,
+      y: this.isAccountSelectorClosing ? 1 : 1
+    })
+    .opacity(this.isAccountSelectorClosing ? 1 : 1)
+    .animation({ duration: ACCOUNT_ANIMATION_DURATION, curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1) })
+    .onClick(() => {
+      this.handleAccountPillClick(this.selectedAccount, 0);
+    })
+  }
+
+  /**
+   * 构建支付方式胶囊，按收起/展开两态切换宽度和可见性。
+   */
+  @Builder
+  private AccountOptionPill(account: string, index: number, totalCount: number) {
+    Button() {
+      Row({ space: 6 }) {
+        SymbolGlyph($r('sys.symbol.creditcard'))
+          .fontSize(15)
+          .fontWeight(this.optionSystem.iconThickness)
+          .fontColor([this.isActiveAccount(account) ? this.themeState.fontOnPrimary as ResourceColor :
+            this.themeState.brand as ResourceColor]);
+        Text(account)
+          .fontSize(13)
+          .fontWeight(this.isActiveAccount(account) ? FontWeight.Bold : FontWeight.Medium)
+          .fontColor(this.isActiveAccount(account) ? this.themeState.fontOnPrimary : this.themeState.fontPrimary)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+      }
+      .justifyContent(FlexAlign.Center)
+      .alignItems(VerticalAlign.Center)
+    }
+    .width(this.getAccountPillWidth(account))
+    .height(ACCOUNT_PILL_HEIGHT)
+    .padding(0)
+    .padding({ left: 12, right: 12 })
+    .backgroundColor(this.isActiveAccount(account) ? this.themeState.brand as ResourceColor :
+      this.themeState.backgroundPrimary)
+    .borderRadius(17)
+    .border({
+      width: 1,
+      color: this.isActiveAccount(account) ? this.themeState.brand as ResourceColor : this.themeState.compDivider
+    })
+    .stateEffect(false)
+    .focusable(false)
+    .tabStop(false)
+    .defaultFocus(false)
+    .groupDefaultFocus(false)
+    .margin({ right: this.getAccountPillMarginRight(index, totalCount) })
+    .opacity(this.getAccountPillOpacity(account))
+    .scale({ x: this.getAccountPillScale(account), y: this.getAccountPillScale(account) })
+    .enabled(this.isAccountSelectorExpanded || this.isActiveAccount(account))
+    .animation({ duration: ACCOUNT_ANIMATION_DURATION, curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1) })
+    .onClick(() => {
+      this.handleAccountPillClick(account, index);
+    })
   }
 
   /**
@@ -734,29 +1137,53 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 构建数字键盘单个按钮。
-   */
-  /**
-   * 构建备注入口 pill，点击后在金额上方展开输入区。
+   * 构建备注胶囊，点击后在原位展开为输入态。
    */
   @Builder
   private RemarkTriggerPill() {
-    Button() {
-      Row({ space: 8 }) {
-        SymbolGlyph($r('sys.symbol.square_and_pencil'))
-          .fontSize(16)
-          .fontWeight(this.optionSystem.iconThickness)
-          .fontColor([this.isRemarkExpanded ? this.themeState.fontOnPrimary as ResourceColor :
-            this.themeState.brand as ResourceColor]);
+    Row({ space: 8 }) {
+      SymbolGlyph($r('sys.symbol.square_and_pencil'))
+        .fontSize(16)
+        .fontWeight(this.optionSystem.iconThickness)
+        .fontColor([this.isRemarkExpanded ? this.themeState.fontOnPrimary as ResourceColor :
+          this.themeState.brand as ResourceColor]);
+
+      if (this.isRemarkExpanded) {
+        TextInput({ text: this.remarkText, placeholder: '写备注' })
+          .id(REMARK_INPUT_ID)
+          .layoutWeight(1)
+          .fontSize(13)
+          .fontWeight(this.optionSystem.fontThickness)
+          .fontColor(this.themeState.fontOnPrimary)
+          .placeholderColor(this.themeState.fontOnPrimary)
+          .caretColor(this.themeState.fontOnPrimary)
+          .backgroundColor('#00000000')
+          .padding({ left: 2, right: 0, top: 0, bottom: 0 })
+          .height(22)
+          .onFocus(() => {
+            this.updateRemarkPanel(true);
+          })
+          .onBlur(() => {
+            this.updateRemarkPanel(false);
+          })
+          .onChange((value: string) => {
+            this.remarkText = value;
+          });
+      } else {
         Text(this.remarkText.trim().length > 0 ? this.remarkText : '备注')
+          .layoutWeight(1)
           .fontSize(13)
           .fontWeight(FontWeight.Medium)
-          .fontColor(this.isRemarkExpanded ? this.themeState.fontOnPrimary : this.themeState.fontPrimary)
+          .fontColor(this.themeState.fontPrimary)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis });
       }
     }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+    .layoutWeight(1)
     .height(34)
+    .constraintSize({ minWidth: this.isRemarkExpanded ? 140 : 72, maxWidth: '100%' })
     .padding({ left: 12, right: 12 })
     .backgroundColor(this.isRemarkExpanded ? this.themeState.brand as ResourceColor :
       this.themeState.backgroundPrimary)
@@ -766,7 +1193,10 @@ export struct AddBillSheetComponent {
       color: this.isRemarkExpanded ? this.themeState.brand as ResourceColor : this.themeState.compDivider
     })
     .onClick(() => {
-      this.updateRemarkPanel(!this.isRemarkExpanded);
+      if (!this.isRemarkExpanded) {
+        this.updateRemarkPanel(true);
+        this.focusRemarkInput();
+      }
     })
   }
 
