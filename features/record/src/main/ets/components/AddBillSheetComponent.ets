@@ -686,6 +686,31 @@ export struct AddBillSheetComponent {
   }
 
   /**
+   * 打开日期选择弹窗，并在确认后回写当前账单日期。
+   */
+  private showDatePickerDialog(): void {
+    if (this.isRemarkExpanded) {
+      this.updateRemarkPanel(false);
+    }
+    if (this.isAccountSelectorVisible) {
+      this.collapseAccountSelector();
+    }
+    try {
+      this.getUIContext().showDatePickerDialog({
+        selected: new Date(this.selectedDate),
+        start: new Date('2000-01-01'),
+        end: new Date('2100-12-31'),
+        mode: DatePickerMode.DATE,
+        onDateAccept: (value: Date) => {
+          this.selectedDate = value.getTime();
+        }
+      });
+    } catch {
+      this.showToast('暂时无法打开日期选择');
+    }
+  }
+
+  /**
    * 统一弹出操作结果提示。
    */
   private showToast(message: string): void {
@@ -993,6 +1018,7 @@ export struct AddBillSheetComponent {
       this.AccountSelectorSection();
       if (!this.isRemarkExpanded) {
         this.MetaPill(this.getSelectedDateText(), $r('sys.symbol.calendar'), () => {
+          this.showDatePickerDialog();
         });
         this.RemarkTriggerPill();
       }
