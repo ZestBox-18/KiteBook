@@ -143,11 +143,9 @@ export struct AddBillSheetComponent {
         .width('100%')
         .height('100%')
         .scrollBar(BarState.Off)
+        .fadingEdge(true)
         .clip(false)
         .edgeEffect(EdgeEffect.Spring, { alwaysEnabled: true })
-
-        this.TopFadeMask()
-        this.BottomFadeMask()
       }
       .width('100%')
       .layoutWeight(1)
@@ -976,34 +974,40 @@ export struct AddBillSheetComponent {
    */
   @Builder
   private CategoryCard(item: CategoryOption) {
-    Column({ space: 8 }) {
-      Row() {
-        SymbolGlyph(item.icon)
-          .fontSize(28)
-          .fontWeight(this.optionSystem.iconThickness)
-          .fontColor([this.selectedCategory === item.label ? this.themeState.fontOnPrimary as ResourceColor :
-            this.themeState.brand as ResourceColor]);
-      }
-      .width(CATEGORY_CARD_SIZE)
-      .height(CATEGORY_CARD_SIZE)
-      .justifyContent(FlexAlign.Center)
-      .borderRadius(24)
-      .backgroundColor(this.selectedCategory === item.label ? this.themeState.brand as ResourceColor :
-        this.themeState.compBackgroundPrimary)
-      .border({
-        width: 1,
-        color: this.selectedCategory === item.label ? this.themeState.brand as ResourceColor :
-          this.themeState.compDivider
-      });
+    Button() {
+      Column({ space: 8 }) {
+        Row() {
+          SymbolGlyph(item.icon)
+            .fontSize(28)
+            .fontWeight(this.optionSystem.iconThickness)
+            .fontColor([this.selectedCategory === item.label ? this.themeState.fontOnPrimary as ResourceColor :
+              this.themeState.brand as ResourceColor]);
+        }
+        .width(CATEGORY_CARD_SIZE)
+        .height(CATEGORY_CARD_SIZE)
+        .justifyContent(FlexAlign.Center)
+        .borderRadius(24)
+        .backgroundColor(this.selectedCategory === item.label ? this.themeState.brand as ResourceColor :
+          this.themeState.compBackgroundPrimary)
+        .border({
+          width: 1,
+          color: this.selectedCategory === item.label ? this.themeState.brand as ResourceColor :
+            this.themeState.compDivider
+        });
 
-      Text(item.label)
-        .fontSize(14)
-        .fontWeight(this.selectedCategory === item.label ? FontWeight.Bold : FontWeight.Medium)
-        .fontColor(this.themeState.fontPrimary);
+        Text(item.label)
+          .fontSize(14)
+          .fontWeight(this.selectedCategory === item.label ? FontWeight.Bold : FontWeight.Medium)
+          .fontColor(this.themeState.fontPrimary);
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Center)
     }
     .width('20%')
+    .padding(0)
+    .backgroundColor('#00000000')
+    .stateEffect(false)
     .margin({ bottom: 14 })
-    .alignItems(HorizontalAlign.Center)
     .onClick(() => {
       this.selectedCategory = item.label;
     })
