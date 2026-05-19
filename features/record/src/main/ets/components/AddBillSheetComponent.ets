@@ -1020,8 +1020,8 @@ export struct AddBillSheetComponent {
         this.MetaPill(this.getSelectedDateText(), $r('sys.symbol.calendar'), () => {
           this.showDatePickerDialog();
         });
-        this.RemarkTriggerPill();
       }
+      this.RemarkTriggerPill();
     }
     .width('100%')
     .justifyContent(FlexAlign.Start)
