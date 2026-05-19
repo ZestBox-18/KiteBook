@@ -6,8 +6,6 @@
  * @description:
  */
 
-const TAG: string = '[index]';
-
 export * from "./SystemOptions"
 export * from "./AppThemes"
 export { AppThemeState } from "./AppThemes"

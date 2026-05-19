@@ -3,6 +3,7 @@ export * from "./src/main/ets/database/config"
 export * from "./src/main/ets/constants"
 
 export * from "./src/main/ets/utils"
+export { billSyncController } from "./src/main/ets/utils/BillSyncController"
 
 export * from "./src/main/ets/entities"
 

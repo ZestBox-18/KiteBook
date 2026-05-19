@@ -5,17 +5,16 @@
  * @version 1.0
  * @description: 主入口页面，包含底部 Tab 导航
  */
-import { hdsMaterial, HdsTabs, HdsTabsController, HdsAnimationMode } from '@kit.UIDesignKit';
-import { RouterUrlConstants, mainTabController, fabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
+import { hdsMaterial, HdsTabs, HdsAnimationMode } from '@kit.UIDesignKit';
+import { billSyncController, mainTabController, fabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
-import { WindowUtil, BreakpointSystem, BreakpointConstants } from 'kite_utils';
+import { AddBillSheetComponent } from 'record';
+import { WindowUtil, BreakpointSystem } from 'kite_utils';
 import { Profile } from 'profile';
 import { Reports } from 'reports';
 import { AppStorageV2, PersistenceV2, ThemeControl, Theme, SymbolGlyphModifier } from '@kit.ArkUI';
 import { DraggableFab } from '../components/DraggableFab';
-
-const TAG: string = '[Index]';
 
 @Entry
 @ComponentV2
@@ -23,6 +22,7 @@ struct Index {
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
+  @Local isBillingSheetShown: boolean = false
   // 断点系统
   @Local breakpointSystem: BreakpointSystem =
     AppStorageV2.connect(BreakpointSystem, 'breakpointSystem', () => new BreakpointSystem())!;
@@ -78,12 +78,41 @@ struct Index {
   }
 
   /**
-   * 打开记账半模态窗
-   * TODO: 等待 billing 模块开发完成后实现
+   * 打开全局新增账单半模态。
    */
   private openBillingModal(): void {
-    console.log(TAG, '打开记账半模态窗 - 待实现');
-    // TODO: 打开 billing 模块的半模态窗
+    this.isBillingSheetShown = true;
+  }
+
+  /**
+   * 关闭新增账单半模态。
+   */
+  private closeBillingModal(): void {
+    this.isBillingSheetShown = false;
+  }
+
+  /**
+   * 在新增账单成功后通知首页刷新数据。
+   */
+  private handleBillSaved(): void {
+    billSyncController.notifyBillChanged();
+  }
+
+  /**
+   * 构建新增账单半模态内容。
+   */
+  @Builder
+  AddBillSheetBuilder() {
+    AddBillSheetComponent({
+      themeState: this.themeState,
+      optionSystem: this.optionSystem,
+      onClose: () => {
+        this.closeBillingModal();
+      },
+      onSaved: () => {
+        this.handleBillSaved();
+      }
+    })
   }
 
   build() {
@@ -157,6 +186,11 @@ struct Index {
         }
       })
         .margin({ bottom: 100, right: 24 })
+        .bindSheet($$this.isBillingSheetShown, this.AddBillSheetBuilder(), {
+          detents: [SheetSize.LARGE],
+          showClose: false,
+          enableFloatingDragBar: true,
+        })
     }
     .width('100%')
     .height('100%')

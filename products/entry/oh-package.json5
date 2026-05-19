@@ -8,10 +8,10 @@
   "dependencies": {
     "home": "file:../../features/home",
     "billing": "file:../../features/billing",
+    "record": "file:../../features/record",
     "reports": "file:../../features/reports",
     "profile": "file:../../features/profile",
     "base" : "file:../../commons/base",
     "kite_utils" : "file:../../commons/kite_utils",
   }
 }
-

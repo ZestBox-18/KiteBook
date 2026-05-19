@@ -12,6 +12,7 @@ import {
   BillBean,
   BillGroup,
   BillManager,
+  billSyncController,
   CommonConstants,
   RouterUrlConstants,
   SystemOptions,
@@ -84,6 +85,7 @@ export struct Index {
 
   private indicatorController: IndicatorComponentController = new IndicatorComponentController();
   private swiperController: SwiperController = new SwiperController();
+  private billSyncListenerId: number = -1;
 
   private readonly assetAccounts: AssetAccountBean[] = [
     new AssetAccountBean('支付宝', '日常消费', 8650.35, $r('sys.symbol.creditcard'), false),
@@ -323,8 +325,23 @@ export struct Index {
    * 首页出现时先准备派生数据，再异步拉取最新账单。
    */
   aboutToAppear(): void {
+    if (this.billSyncListenerId < 0) {
+      this.billSyncListenerId = billSyncController.register(() => {
+        this.loadBillData()
+      })
+    }
     this.refreshStaticDerivedState();
     this.loadBillData();
+  }
+
+  /**
+   * 首页离开时注销账单刷新监听，避免重复注册。
+   */
+  aboutToDisappear(): void {
+    if (this.billSyncListenerId >= 0) {
+      billSyncController.unregister(this.billSyncListenerId)
+      this.billSyncListenerId = -1
+    }
   }
 
   /**
