@@ -1,5 +1,6 @@
-import { DatabaseUpgradeSql, dbManager, initDatabaseConfig, Clog } from 'kite_utils';
+import { dbManager, initDatabaseConfig, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
+import { CategoryManager } from '../services/CategoryManager';
 
 const TAG: string = '[DatabaseConfig]';
 
@@ -43,10 +44,22 @@ export function dbManagerInit(context: Context): void {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )`,
+      // 分类表
+      "categories": `CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        icon TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_system INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`,
       // 创建索引
       "idx_bills_date": `CREATE INDEX IF NOT EXISTS idx_bills_date ON bills(date)`,
       "idx_bills_category": `CREATE INDEX IF NOT EXISTS idx_bills_category ON bills(category)`,
-      "idx_budgets_month": `CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month)`
+      "idx_budgets_month": `CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month)`,
+      "idx_categories_type_sort": `CREATE INDEX IF NOT EXISTS idx_categories_type_sort ON categories(type, sort_order)`
     },
     version: 1
   });
@@ -55,6 +68,7 @@ export function dbManagerInit(context: Context): void {
   dbManager.setCallbacks({
     onDatabaseInitialized: async (): Promise<void> => {
       Clog.info(TAG, '数据库首次创建完成');
+      await CategoryManager.insertDefaultCategories();
     },
     onDatabaseUpgraded: async (fromVersion: number, toVersion: number): Promise<void> => {
       Clog.info(TAG, `数据库升级完成: ${fromVersion} -> ${toVersion}`);

@@ -11,6 +11,8 @@ import {
   BillBean,
   BillManager,
   BillTypeEnum,
+  CategoryBean,
+  CategoryManager,
   SystemOptions
 } from 'base';
 import { curves } from '@kit.ArkUI';
@@ -32,12 +34,16 @@ const RECORD_MODE_INCOME: string = 'income';
 const RECORD_MODE_TRANSFER: string = 'transfer';
 
 class CategoryOption {
+  id: number = 0;
   label: string = '';
   icon: Resource = $r('sys.symbol.creditcard');
+  isSystem: boolean = false;
 
-  constructor(label: string, icon: Resource) {
+  constructor(id: number, label: string, icon: Resource, isSystem: boolean = false) {
+    this.id = id;
     this.label = label;
     this.icon = icon;
+    this.isSystem = isSystem;
   }
 }
 
@@ -76,8 +82,8 @@ export struct AddBillSheetComponent {
   @Local isAccountSelectorVisible: boolean = false;
   @Local isAccountSelectorExpanded: boolean = false;
   @Local isAccountSelectorClosing: boolean = false;
-  @Local customExpenseCategories: CategoryOption[] = [];
-  @Local customIncomeCategories: CategoryOption[] = [];
+  @Local expenseCategories: CategoryOption[] = [];
+  @Local incomeCategories: CategoryOption[] = [];
   @Local isCategoryEditorVisible: boolean = false;
   @Local isEditingCurrentCategory: boolean = false;
   @Local categoryDraftLabel: string = '';
@@ -89,22 +95,6 @@ export struct AddBillSheetComponent {
     { text: '收入' },
     { text: '转账' }
   ]);
-  private readonly expenseCategories: CategoryOption[] = [
-    new CategoryOption('餐饮', $r('sys.symbol.fork_knife')),
-    new CategoryOption('交通', $r('sys.symbol.car')),
-    new CategoryOption('购物', $r('sys.symbol.cart')),
-    new CategoryOption('娱乐', $r('sys.symbol.gamecontroller')),
-    new CategoryOption('住房', $r('sys.symbol.house')),
-    new CategoryOption('医疗', $r('sys.symbol.cross_case')),
-    new CategoryOption('教育', $r('sys.symbol.book')),
-    new CategoryOption('其他', $r('sys.symbol.ellipsis_circle'))
-  ];
-  private readonly incomeCategories: CategoryOption[] = [
-    new CategoryOption('工资', $r('sys.symbol.creditcard')),
-    new CategoryOption('奖金', $r('sys.symbol.gift')),
-    new CategoryOption('理财', $r('sys.symbol.arrow_up_circle')),
-    new CategoryOption('其他', $r('sys.symbol.ellipsis_circle'))
-  ];
   private readonly accounts: string[] = ['微信', '支付宝', '银行卡'];
   private readonly keypadKeys: KeypadKey[] = [
     new KeypadKey('1', 'digit_1'),
@@ -124,6 +114,13 @@ export struct AddBillSheetComponent {
     new KeypadKey('.', 'decimal'),
     new KeypadKey('保存', 'save_close', true)
   ];
+
+  /**
+   * 半模态出现时从数据库加载分类，确保新用户和老用户都走同一套数据源。
+   */
+  aboutToAppear(): void {
+    this.loadCategories();
+  }
 
   /**
    * 构建半模态主体布局，顶部直接展示模式切换与关闭操作。
@@ -168,12 +165,12 @@ export struct AddBillSheetComponent {
    */
   private getCurrentCategoryOptions(): CategoryOption[] {
     if (this.activeMode === RECORD_MODE_TRANSFER) {
-      return [new CategoryOption('转账', $r('sys.symbol.arrow_left_arrow_right'))];
+      return [new CategoryOption(0, '转账', $r('sys.symbol.arrow_left_arrow_right'), true)];
     }
     if (this.selectedType === BillTypeEnum.EXPENSE) {
-      return [...this.expenseCategories, ...this.customExpenseCategories];
+      return this.expenseCategories;
     }
-    return [...this.incomeCategories, ...this.customIncomeCategories];
+    return this.incomeCategories;
   }
 
   /**
@@ -248,6 +245,35 @@ export struct AddBillSheetComponent {
       this.selectedType = BillTypeEnum.EXPENSE;
     }
     this.updateCategoryForCurrentType();
+  }
+
+  /**
+   * 将数据库分类实体转换为当前页面直接渲染的分类选项。
+   */
+  private buildCategoryOption(category: CategoryBean): CategoryOption {
+    return new CategoryOption(category.id, category.name, category.getIconResource(), category.isSystem);
+  }
+
+  /**
+   * 从数据库加载支出和收入分类，并回填当前选中分类。
+   */
+  private async loadCategories(): Promise<void> {
+    try {
+      const expenseCategories: CategoryBean[] = await CategoryManager.getCategoriesByType(BillTypeEnum.EXPENSE);
+      const incomeCategories: CategoryBean[] = await CategoryManager.getCategoriesByType(BillTypeEnum.INCOME);
+      this.expenseCategories = expenseCategories.map((item: CategoryBean) => this.buildCategoryOption(item));
+      this.incomeCategories = incomeCategories.map((item: CategoryBean) => this.buildCategoryOption(item));
+      this.updateCategoryForCurrentType();
+    } catch {
+      this.showToast('分类加载失败');
+    }
+  }
+
+  /**
+   * 根据当前选中名称找到分类对象，供编辑分类时拿到数据库主键。
+   */
+  private getSelectedCategoryOption(): CategoryOption | undefined {
+    return this.getCurrentCategoryOptions().find((item: CategoryOption) => item.label === this.selectedCategory);
   }
 
   /**
@@ -451,31 +477,32 @@ export struct AddBillSheetComponent {
   /**
    * 保存新增或编辑后的分类名称。
    */
-  private saveCategoryDraft(): void {
+  private async saveCategoryDraft(): Promise<void> {
     const draftLabel: string = this.categoryDraftLabel.trim();
     if (draftLabel.length === 0) {
       this.showToast('请输入分类名称');
       return;
     }
-    if (this.isEditingCurrentCategory) {
-      const categories: CategoryOption[] = this.getCurrentCategoryOptions();
-      categories.forEach((item: CategoryOption) => {
-        if (item.label === this.selectedCategory) {
-          item.label = draftLabel;
+    try {
+      if (this.isEditingCurrentCategory) {
+        const selectedCategory: CategoryOption | undefined = this.getSelectedCategoryOption();
+        if (!selectedCategory || selectedCategory.id <= 0) {
+          this.showToast('当前分类不可编辑');
+          return;
         }
-      });
-      this.selectedCategory = draftLabel;
-    } else {
-      const newCategory: CategoryOption = new CategoryOption(draftLabel, $r('sys.symbol.ellipsis_circle'));
-      if (this.selectedType === BillTypeEnum.EXPENSE) {
-        this.customExpenseCategories = [...this.customExpenseCategories, newCategory];
+        const categoryPatch: CategoryBean = new CategoryBean();
+        categoryPatch.name = draftLabel;
+        await CategoryManager.updateCategory(selectedCategory.id, categoryPatch);
       } else {
-        this.customIncomeCategories = [...this.customIncomeCategories, newCategory];
+        await CategoryManager.addCategory(draftLabel, this.selectedType, 'ellipsis_circle');
       }
       this.selectedCategory = draftLabel;
+      await this.loadCategories();
+      this.categoryDraftLabel = '';
+      this.isCategoryEditorVisible = false;
+    } catch {
+      this.showToast(this.isEditingCurrentCategory ? '分类修改失败' : '分类添加失败');
     }
-    this.categoryDraftLabel = '';
-    this.isCategoryEditorVisible = false;
   }
 
   /**

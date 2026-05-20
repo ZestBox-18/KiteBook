@@ -10,5 +10,6 @@ export * from "./src/main/ets/entities"
 export { AppThemeState } from "./src/main/ets/entities/AppThemes"
 
 export * from "./src/main/ets/services/BillManager"
+export * from "./src/main/ets/services/CategoryManager"
 
 export { GroupHeader } from "./src/main/ets/components/GroupHeader"
