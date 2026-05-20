@@ -189,10 +189,15 @@ export class WindowUtil {
       if (this.mainWindow.getWindowStatus() === window.WindowStatusType.FULL_SCREEN) {
         this.mainWindow.recover()
           .then(() => {
-            hilog.info(0x0000, 'testLog', `Succeeded in revocering the window.`);
+            hilog.info(0x0000, 'testLog', `Succeeded in recovering the window.`);
           })
           .catch((err: BusinessError) => {
-            hilog.error(0x0000, 'testLog', `Failed to revocer the window. Code: ${err.code}, message: ${err.message}`);
+            if (err.code === 801) {
+              hilog.info(0x0000, 'testLog',
+                `Skip recovering the window because this device does not support the capability.`);
+              return;
+            }
+            hilog.error(0x0000, 'testLog', `Failed to recover the window. Code: ${err.code}, message: ${err.message}`);
           });
       }
     } catch (error) {
