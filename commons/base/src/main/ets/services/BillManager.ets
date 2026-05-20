@@ -6,7 +6,7 @@
  * @description: 账单数据库操作管理类
  */
 
-import { dbManager, resultSet2Record } from 'kite_utils';
+import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { BillBean, BillGroup, BillTypeEnum } from '../entities/BillBean';
@@ -156,6 +156,7 @@ export class BillManager {
 
           // 按日期分组
           const groups = BillManager.groupBillsByDate(bills);
+          Clog.info(TAG, `查询最近账单成功: days=${days}, count=${bills.length}, groupCount=${groups.length}`);
           resolve(groups);
         })
         .catch((err: BusinessError) => {

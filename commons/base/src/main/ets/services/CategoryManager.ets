@@ -6,7 +6,7 @@
  * @description: 分类数据库操作管理类
  */
 
-import { dbManager, resultSet2Record } from 'kite_utils';
+import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { BillTypeEnum } from '../entities/BillBean';
@@ -102,6 +102,7 @@ export class CategoryManager {
             category.updatedAt = Number(row['updated_at']);
             return category;
           });
+          Clog.info(TAG, `查询分类成功: type=${type}, count=${categories.length}`);
           resolve(categories);
         })
         .catch((err: BusinessError) => {
