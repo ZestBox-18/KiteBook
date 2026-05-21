@@ -1,5 +1,6 @@
 import { dbManager, initDatabaseConfig, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
+import { AccountManager } from '../services/AccountManager';
 import { CategoryManager } from '../services/CategoryManager';
 
 const TAG: string = '[DatabaseConfig]';
@@ -68,13 +69,16 @@ export function dbManagerInit(context: Context): void {
   dbManager.setCallbacks({
     onDatabaseInitialized: async (): Promise<void> => {
       Clog.info(TAG, '数据库首次创建完成');
+      await AccountManager.ensureDefaultAccounts();
       await CategoryManager.insertDefaultCategories();
     },
     onDatabaseUpgraded: async (fromVersion: number, toVersion: number): Promise<void> => {
       Clog.info(TAG, `数据库升级完成: ${fromVersion} -> ${toVersion}`);
+      await AccountManager.ensureDefaultAccounts();
     },
     onDatabaseVersionConsistent: async (version: number): Promise<void> => {
       Clog.info(TAG, `数据库版本一致: ${version}`);
+      await AccountManager.ensureDefaultAccounts();
     }
   });
 

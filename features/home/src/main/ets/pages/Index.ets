@@ -8,6 +8,8 @@
 
 import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import {
+  AccountBean,
+  AccountManager,
   AppThemeState,
   BillBean,
   BillGroup,
@@ -82,17 +84,11 @@ export struct Index {
   @Local headerTitle: string = '本周账单';
   @Local headerAction: string = '按日总额排序';
   @Local billSortModeText: string = '按时间倒序';
+  @Local assetAccounts: AssetAccountBean[] = [];
 
   private indicatorController: IndicatorComponentController = new IndicatorComponentController();
   private swiperController: SwiperController = new SwiperController();
   private billSyncListenerId: number = -1;
-
-  private readonly assetAccounts: AssetAccountBean[] = [
-    new AssetAccountBean('支付宝', '日常消费', 8650.35, $r('sys.symbol.creditcard'), false),
-    new AssetAccountBean('微信', '零钱与零钱通', 3268.50, $r('sys.symbol.house'), false),
-    new AssetAccountBean('招商银行卡', '储蓄账户', 42180.00, $r('sys.symbol.creditcard'), false),
-    new AssetAccountBean('花呗', '本月待还', 2580.00, $r('sys.symbol.arrow_up_circle'), true)
-  ];
 
   @Builder
   /**
@@ -149,6 +145,31 @@ export struct Index {
     } catch (err) {
       Clog.error(TAG, '加载账单数据失败', err);
     }
+  }
+
+  /**
+   * 从账户数据库加载首页资产账户列表，避免继续使用本地示例数据。
+   */
+  private async loadAssetAccounts(): Promise<void> {
+    try {
+      const accounts: AccountBean[] = await AccountManager.getAccounts();
+      this.assetAccounts = accounts.map((item: AccountBean) => this.buildAssetAccount(item));
+    } catch (err) {
+      Clog.error(TAG, '加载资产账户失败', err);
+    }
+  }
+
+  /**
+   * 将数据库账户实体转换为首页资产列表使用的展示模型。
+   */
+  private buildAssetAccount(account: AccountBean): AssetAccountBean {
+    return new AssetAccountBean(
+      account.name,
+      account.getSubtitleText(),
+      account.balance,
+      account.getIconResource(),
+      account.isLiability()
+    );
   }
 
   /**
@@ -313,6 +334,14 @@ export struct Index {
     this.updateHeaderState();
   }
 
+  @Monitor('assetAccounts')
+  /**
+   * 资产账户变化后同步刷新资产概览卡片摘要。
+   */
+  onAssetAccountsChanged(): void {
+    this.updateAssetSummary();
+  }
+
   @Monitor('swiperIndex')
   /**
    * 卡片切换后刷新列表区标题和操作文案。
@@ -332,6 +361,7 @@ export struct Index {
     }
     this.refreshStaticDerivedState();
     this.loadBillData();
+    this.loadAssetAccounts();
   }
 
   /**

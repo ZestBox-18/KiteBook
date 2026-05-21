@@ -7,6 +7,8 @@
  */
 
 import {
+  AccountBean,
+  AccountManager,
   AppThemeState,
   BillBean,
   BillManager,
@@ -74,7 +76,7 @@ export struct AddBillSheetComponent {
   @Local activeMode: string = RECORD_MODE_EXPENSE;
   @Local selectedType: string = BillTypeEnum.EXPENSE;
   @Local selectedCategory: string = '餐饮';
-  @Local selectedAccount: string = '微信';
+  @Local selectedAccount: string = '';
   @Local remarkText: string = '';
   @Local isSaving: boolean = false;
   @Local selectedDate: number = Date.now();
@@ -82,6 +84,7 @@ export struct AddBillSheetComponent {
   @Local isAccountSelectorVisible: boolean = false;
   @Local isAccountSelectorExpanded: boolean = false;
   @Local isAccountSelectorClosing: boolean = false;
+  @Local accountOptions: string[] = [];
   @Local expenseCategories: CategoryOption[] = [];
   @Local incomeCategories: CategoryOption[] = [];
   @Local isCategoryEditorVisible: boolean = false;
@@ -95,7 +98,6 @@ export struct AddBillSheetComponent {
     { text: '收入' },
     { text: '转账' }
   ]);
-  private readonly accounts: string[] = ['微信', '支付宝', '银行卡'];
   private readonly keypadKeys: KeypadKey[] = [
     new KeypadKey('1', 'digit_1'),
     new KeypadKey('2', 'digit_2'),
@@ -119,6 +121,7 @@ export struct AddBillSheetComponent {
    * 半模态出现时从数据库加载分类，确保新用户和老用户都走同一套数据源。
    */
   aboutToAppear(): void {
+    this.loadAccounts();
     this.loadCategories();
   }
 
@@ -280,14 +283,17 @@ export struct AddBillSheetComponent {
    * 返回当前选中的支付账户名称。
    */
   private getSelectedAccountLabel(): string {
-    return this.selectedAccount;
+    if (this.selectedAccount.trim().length > 0) {
+      return this.selectedAccount;
+    }
+    return '暂无账户';
   }
 
   /**
    * 返回当前选中支付方式在原始数组中的索引，用于展开时恢复可视区域位置。
    */
   private getSelectedAccountIndex(): number {
-    const selectedIndex: number = this.accounts.indexOf(this.selectedAccount);
+    const selectedIndex: number = this.accountOptions.indexOf(this.selectedAccount);
     if (selectedIndex >= 0) {
       return selectedIndex;
     }
@@ -302,19 +308,50 @@ export struct AddBillSheetComponent {
   }
 
   /**
+   * 从数据库加载账户列表，并修正当前选中的账户。
+   */
+  private async loadAccounts(): Promise<void> {
+    try {
+      const accounts: AccountBean[] = await AccountManager.getAccounts();
+      this.accountOptions = accounts.map((item: AccountBean) => item.name);
+      this.updateSelectedAccount();
+    } catch {
+      this.showToast('账户加载失败');
+    }
+  }
+
+  /**
+   * 当账户列表变化时，确保当前选中项仍然有效。
+   */
+  private updateSelectedAccount(): void {
+    let hasMatchedAccount: boolean = false;
+    this.accountOptions.forEach((item: string) => {
+      if (item === this.selectedAccount) {
+        hasMatchedAccount = true;
+      }
+    });
+    if (!hasMatchedAccount) {
+      this.selectedAccount = this.getDefaultAccountName();
+    }
+  }
+
+  /**
+   * 返回默认账户名称，用于首次加载和重置表单。
+   */
+  private getDefaultAccountName(): string {
+    if (this.accountOptions.length > 0) {
+      return this.accountOptions[0];
+    }
+    return '';
+  }
+
+  /**
    * 根据文本长度返回支付方式按钮在展开态下的完整宽度。
    */
   private getAccountExpandedWidth(account: string): number {
-    if (account === '微信') {
-      return 82;
-    }
-    if (account === '支付宝') {
-      return 98;
-    }
-    if (account === '银行卡') {
-      return 90;
-    }
-    return 74 + account.length * 16;
+    const normalizedLength: number = account.length > 0 ? account.length : 4;
+    const calculatedWidth: number = 50 + normalizedLength * 16;
+    return calculatedWidth > 82 ? calculatedWidth : 82;
   }
 
   /**
@@ -370,7 +407,7 @@ export struct AddBillSheetComponent {
     if (this.isAccountSelectorExpanded) {
       return ACCOUNT_VIEWPORT_EXPANDED_WIDTH;
     }
-    return this.getAccountExpandedWidth(this.selectedAccount);
+    return this.getAccountExpandedWidth(this.getSelectedAccountLabel());
   }
 
   /**
@@ -391,6 +428,10 @@ export struct AddBillSheetComponent {
    */
   private expandAccountSelector(): void {
     if (this.isAccountSelectorVisible) {
+      return;
+    }
+    if (this.accountOptions.length === 0) {
+      this.showToast('请先添加资产账户');
       return;
     }
     if (this.isRemarkExpanded) {
@@ -619,6 +660,17 @@ export struct AddBillSheetComponent {
   }
 
   /**
+   * 校验当前是否存在可用账户，避免把空账户写入账单记录。
+   */
+  private validateAccount(): boolean {
+    if (this.selectedAccount.trim().length > 0) {
+      return true;
+    }
+    this.showToast('请先添加资产账户');
+    return false;
+  }
+
+  /**
    * 构建待保存的账单对象。
    */
   private buildBill(amountValue: number): BillBean {
@@ -641,6 +693,9 @@ export struct AddBillSheetComponent {
     }
     const amountValue: number = this.validateAmount();
     if (amountValue <= 0) {
+      return;
+    }
+    if (!this.validateAccount()) {
       return;
     }
 
@@ -680,7 +735,7 @@ export struct AddBillSheetComponent {
     this.activeMode = RECORD_MODE_EXPENSE;
     this.selectedType = BillTypeEnum.EXPENSE;
     this.selectedCategory = '餐饮';
-    this.selectedAccount = '微信';
+    this.selectedAccount = this.getDefaultAccountName();
     this.remarkText = '';
     this.selectedDate = Date.now();
     this.updateRemarkPanel(false);
@@ -1067,9 +1122,9 @@ export struct AddBillSheetComponent {
     Stack({ alignContent: Alignment.Start }) {
       if (this.isAccountSelectorVisible) {
         List({ initialIndex: this.getSelectedAccountIndex(), scroller: this.accountScroller }) {
-          ForEach(this.accounts, (account: string, index: number) => {
+          ForEach(this.accountOptions, (account: string, index: number) => {
             ListItem() {
-              this.AccountOptionPill(account, index, this.accounts.length);
+              this.AccountOptionPill(account, index, this.accountOptions.length);
             }
             .selectable(false)
             .focusable(false)
@@ -1109,7 +1164,7 @@ export struct AddBillSheetComponent {
           .fontSize(15)
           .fontWeight(this.optionSystem.iconThickness)
           .fontColor([this.themeState.fontOnPrimary as ResourceColor]);
-        Text(this.selectedAccount)
+        Text(this.getSelectedAccountLabel())
           .fontSize(13)
           .fontWeight(FontWeight.Bold)
           .fontColor(this.themeState.fontOnPrimary)
@@ -1119,7 +1174,7 @@ export struct AddBillSheetComponent {
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
     }
-    .width(this.getAccountExpandedWidth(this.selectedAccount))
+    .width(this.getAccountExpandedWidth(this.getSelectedAccountLabel()))
     .height(ACCOUNT_PILL_HEIGHT)
     .padding(0)
     .padding({ left: 12, right: 12 })
@@ -1137,6 +1192,7 @@ export struct AddBillSheetComponent {
     })
     .opacity(this.isAccountSelectorClosing ? 1 : 1)
     .animation({ duration: ACCOUNT_ANIMATION_DURATION, curve: curves.cubicBezierCurve(0.34, 1.56, 0.64, 1) })
+    .enabled(this.accountOptions.length > 0)
     .onClick(() => {
       this.handleAccountPillClick(this.selectedAccount, 0);
     })

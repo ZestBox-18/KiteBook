@@ -6,6 +6,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "base": "file:../../commons/base"
+    "base": "file:../../commons/base",
+    "kite_utils": "file:../../commons/kite_utils"
   }
 }
