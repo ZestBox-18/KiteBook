@@ -14,3 +14,4 @@ export * from "./src/main/ets/services/BillManager"
 export * from "./src/main/ets/services/CategoryManager"
 
 export { GroupHeader } from "./src/main/ets/components/GroupHeader"
+export { Clog, WindowUtil } from "kite_utils"

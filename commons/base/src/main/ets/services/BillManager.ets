@@ -16,6 +16,25 @@ const TABLE_NAME: string = 'bills';
 
 export class BillManager {
   /**
+   * 将查询结果行映射为账单实体，避免不同查询重复手写转换逻辑。
+   */
+  private static mapRowsToBills(rows: Record<string, object>[]): BillBean[] {
+    return rows.map((row: Record<string, object>) => {
+      const bill: BillBean = new BillBean();
+      bill.id = Number(row['id']);
+      bill.type = String(row['type']);
+      bill.category = String(row['category']);
+      bill.amount = Number(row['amount']);
+      bill.account = String(row['account']);
+      bill.date = Number(row['date']);
+      bill.remark = String(row['remark'] ?? '');
+      bill.createdAt = Number(row['created_at']);
+      bill.updatedAt = Number(row['updated_at']);
+      return bill;
+    });
+  }
+
+  /**
    * 添加账单
    * @param bill 账单数据
    * @returns 新增记录的ID，失败返回-1
@@ -140,19 +159,7 @@ export class BillManager {
       dbManager.dbStore?.query(predicates)
         .then((result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
-          const bills: BillBean[] = rows.map((r: Record<string, object>) => {
-            const bill = new BillBean();
-            bill.id = Number(r['id']);
-            bill.type = String(r['type']);
-            bill.category = String(r['category']);
-            bill.amount = Number(r['amount']);
-            bill.account = String(r['account']);
-            bill.date = Number(r['date']);
-            bill.remark = String(r['remark'] ?? '');
-            bill.createdAt = Number(r['created_at']);
-            bill.updatedAt = Number(r['updated_at']);
-            return bill;
-          });
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
 
           // 按日期分组
           const groups = BillManager.groupBillsByDate(bills);
@@ -161,6 +168,41 @@ export class BillManager {
         })
         .catch((err: BusinessError) => {
           console.error(`${TAG} 查询最近账单失败, code=${err.code}, msg=${err.message}`);
+          reject([]);
+        });
+    });
+  }
+
+  /**
+   * 查询指定月份的账单，可按账单类型进一步过滤。
+   */
+  static async getBillsByMonth(monthTimestamp: number, type: string = ''): Promise<BillGroup[]> {
+    const currentMonthDate: Date = new Date(monthTimestamp);
+    const startDate: Date = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth(), 1);
+    const endDate: Date = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 1);
+
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.greaterThanOrEqualTo('date', startDate.getTime());
+    predicates.lessThan('date', endDate.getTime());
+    if (type.length > 0) {
+      predicates.equalTo('type', type);
+    }
+    predicates.orderByDesc('date');
+
+    return new Promise<BillGroup[]>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          const groups: BillGroup[] = BillManager.groupBillsByDate(bills);
+          const monthText: string =
+            `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
+          Clog.info(TAG,
+            `查询月份账单成功: month=${monthText}, type=${type.length > 0 ? type : 'all'}, count=${bills.length}, groupCount=${groups.length}`);
+          resolve(groups);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询月份账单失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
