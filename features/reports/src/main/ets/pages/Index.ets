@@ -24,6 +24,54 @@ interface ReportMeta {
   accent: ResourceColor;
 }
 
+interface FeatureChip {
+  title: string;
+  subtitle: string;
+}
+
+const PAGE_PADDING: number = 16;
+const SECTION_GAP: number = 16;
+const CARD_RADIUS: number = 24;
+const CHIP_RADIUS: number = 16;
+const HERO_BADGE_SIZE: number = 56;
+const HERO_BADGE_RADIUS: number = 18;
+const HERO_BADGE_TEXT: string = '#FFFFFF';
+const HERO_CAPTION: string = 'REPORTS';
+const REPORT_TITLE: string = '报表中心';
+const REPORT_SUBTITLE: string = '一屏查看账本的趋势、结构、资产和预算';
+const TAB_LABEL: string = '选择报表';
+const FEATURE_CHIPS: FeatureChip[] = [
+  { title: '4 个维度', subtitle: '趋势 / 分类 / 资产 / 预算' },
+  { title: '统一入口', subtitle: '切换更快，阅读更顺' },
+  { title: '主题适配', subtitle: '自动跟随深色浅色模式' }
+];
+const REPORT_META_LIST: ReportMeta[] = [
+  {
+    title: '收支趋势',
+    subtitle: '按日、周、月、年追踪收入、支出与结余变化。',
+    badge: '趋势分析',
+    accent: '#4BB3FF'
+  },
+  {
+    title: '分类构成',
+    subtitle: '查看各消费类别的占比、排序和金额分布。',
+    badge: '结构拆解',
+    accent: '#50D3A1'
+  },
+  {
+    title: '资产变化',
+    subtitle: '跟踪账户总额、净资产和阶段性增长曲线。',
+    badge: '资产看板',
+    accent: '#E1C67A'
+  },
+  {
+    title: '预算追踪',
+    subtitle: '关注预算使用率、剩余额度和风险提醒。',
+    badge: '预算控制',
+    accent: '#FF9966'
+  }
+];
+
 @ComponentV2
 export struct Index {
   @Local pageInfos: NavPathStack = new NavPathStack();
@@ -39,35 +87,16 @@ export struct Index {
     { text: $r('app.string.reports_budget') }
   ]);
 
-  private readonly reportMetaList: ReportMeta[] = [
-    {
-      title: '收支趋势',
-      subtitle: '按日、周、月、年追踪收入、支出与结余变化。',
-      badge: '趋势分析',
-      accent: '#4BB3FF'
-    },
-    {
-      title: '分类构成',
-      subtitle: '查看各消费类别的占比、排序和金额分布。',
-      badge: '结构拆解',
-      accent: '#50D3A1'
-    },
-    {
-      title: '资产变化',
-      subtitle: '跟踪账户总额、净资产和阶段性增长曲线。',
-      badge: '资产看板',
-      accent: '#E1C67A'
-    },
-    {
-      title: '预算追踪',
-      subtitle: '关注预算使用率、剩余额度和风险提醒。',
-      badge: '预算控制',
-      accent: '#FF9966'
-    }
-  ];
-
   private getCurrentMeta(): ReportMeta {
-    return this.reportMetaList[this.currentTabIndex] || this.reportMetaList[0];
+    return REPORT_META_LIST[this.currentTabIndex] || REPORT_META_LIST[0];
+  }
+
+  private createColorMetrics(color: ResourceColor): ColorMetrics {
+    try {
+      return ColorMetrics.resourceColor(color);
+    } catch {
+      return ColorMetrics.resourceColor(this.themeState.fontPrimary);
+    }
   }
 
   build() {
@@ -75,7 +104,7 @@ export struct Index {
       Column() {
         Blank().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
 
-        Column({ space: 16 }) {
+        Column({ space: SECTION_GAP }) {
           this.HeroSection()
           this.TabSection()
           this.ContentSection()
@@ -85,7 +114,7 @@ export struct Index {
       }
       .width('100%')
       .height('100%')
-      .padding({ left: 16, right: 16, bottom: 16 })
+      .padding({ left: PAGE_PADDING, right: PAGE_PADDING, bottom: PAGE_PADDING })
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
@@ -142,7 +171,7 @@ export struct Index {
     Column({ space: 12 }) {
       Row() {
         Column({ space: 8 }) {
-          Text('REPORTS')
+          Text(HERO_CAPTION)
             .fontSize(12)
             .fontWeight(FontWeight.Medium)
             .fontColor(this.themeState.brand)
@@ -165,21 +194,21 @@ export struct Index {
           Text(this.getCurrentMeta().badge)
             .fontSize(11)
             .fontWeight(FontWeight.Bold)
-            .fontColor('#FFFFFF')
+            .fontColor(HERO_BADGE_TEXT)
             .textAlign(TextAlign.Center)
         }
-        .width(56)
-        .height(56)
-        .borderRadius(18)
-        .backgroundColor(ColorMetrics.resourceColor(this.getCurrentMeta().accent))
+        .width(HERO_BADGE_SIZE)
+        .height(HERO_BADGE_SIZE)
+        .borderRadius(HERO_BADGE_RADIUS)
+        .backgroundColor(this.createColorMetrics(this.getCurrentMeta().accent))
         .alignItems(HorizontalAlign.Center)
         .justifyContent(FlexAlign.Center)
       }
 
       Row({ space: 8 }) {
-        this.InfoChip('4 个维度', '趋势 / 分类 / 资产 / 预算')
-        this.InfoChip('统一入口', '切换更快，阅读更顺')
-        this.InfoChip('主题适配', '自动跟随深色浅色模式')
+        this.InfoChip(FEATURE_CHIPS[0])
+        this.InfoChip(FEATURE_CHIPS[1])
+        this.InfoChip(FEATURE_CHIPS[2])
       }
       .width('100%')
     }
@@ -191,13 +220,13 @@ export struct Index {
   }
 
   @Builder
-  private InfoChip(title: string, subtitle: string) {
+  private InfoChip(item: FeatureChip) {
     Column({ space: 2 }) {
-      Text(title)
+      Text(item.title)
         .fontSize(13)
         .fontWeight(FontWeight.Medium)
         .fontColor(this.themeState.fontPrimary)
-      Text(subtitle)
+      Text(item.subtitle)
         .fontSize(11)
         .fontColor(this.themeState.fontSecondary)
         .maxLines(1)
@@ -206,14 +235,14 @@ export struct Index {
     .layoutWeight(1)
     .padding({ left: 12, right: 12, top: 10, bottom: 10 })
     .backgroundColor(this.themeState.compBackgroundNeutral)
-    .borderRadius(16)
+    .borderRadius(CHIP_RADIUS)
   }
 
   @Builder
   private TabSection() {
     Column({ space: 10 }) {
       Row() {
-        Text('选择报表')
+        Text(TAB_LABEL)
           .fontSize(15)
           .fontWeight(FontWeight.Medium)
           .fontColor(this.themeState.fontPrimary)
@@ -231,10 +260,10 @@ export struct Index {
         itemSelectedFontSize: LengthMetrics.vp(14),
         itemFontWeight: FontWeight.Medium,
         itemSelectedFontWeight: FontWeight.Bold,
-        itemFontColor: ColorMetrics.resourceColor(this.themeState.fontSecondary),
-        itemSelectedFontColor: ColorMetrics.resourceColor(this.themeState.fontOnPrimary),
-        itemSelectedBackgroundColor: ColorMetrics.resourceColor(this.themeState.brand),
-        buttonBackgroundColor: ColorMetrics.resourceColor(this.themeState.compBackgroundPrimary),
+        itemFontColor: this.createColorMetrics(this.themeState.fontSecondary),
+        itemSelectedFontColor: this.createColorMetrics(this.themeState.fontOnPrimary),
+        itemSelectedBackgroundColor: this.createColorMetrics(this.themeState.brand),
+        buttonBackgroundColor: this.createColorMetrics(this.themeState.compBackgroundPrimary),
         buttonBorderRadius: LengthMetrics.vp(24),
         itemBorderRadius: LengthMetrics.vp(20),
         buttonPadding: LengthMetrics.vp(4),
@@ -247,9 +276,9 @@ export struct Index {
       .width('100%')
     }
     .width('100%')
-    .padding(16)
+    .padding(PAGE_PADDING)
     .backgroundColor(this.themeState.compBackgroundPrimary)
-    .borderRadius(24)
+    .borderRadius(CARD_RADIUS)
     .shadow({ radius: 2, color: '#12000000', offsetX: 0, offsetY: 1 })
   }
 
