@@ -24,6 +24,14 @@ export class SystemOptions {
   @Trace iconThickness: number = 500
   // 通知开关
   @Trace notificationEnabled: boolean = true
+  // 账单提醒
+  @Trace billReminderEnabled: boolean = true
+  // 预算预警
+  @Trace budgetAlertEnabled: boolean = true
+  // 每日记账提醒
+  @Trace dailyReminderEnabled: boolean = false
+  // 周报月报提醒
+  @Trace weeklyMonthlyReportEnabled: boolean = true
   // 深色模式：auto, light, dark
   @Trace darkMode: string = 'auto'
 
@@ -38,10 +46,25 @@ export class SystemOptions {
     this.fontThickness = data.fontThickness
     this.iconThickness = data.iconThickness
     this.notificationEnabled = data.notificationEnabled
+    this.billReminderEnabled = data.billReminderEnabled
+    this.budgetAlertEnabled = data.budgetAlertEnabled
+    this.dailyReminderEnabled = data.dailyReminderEnabled
+    this.weeklyMonthlyReportEnabled = data.weeklyMonthlyReportEnabled
     this.darkMode = data.darkMode
   }
 
-  @Monitor('firstStart', 'themeIndex', 'fontThickness', 'iconThickness', 'notificationEnabled', 'darkMode')
+  @Monitor(
+    'firstStart',
+    'themeIndex',
+    'fontThickness',
+    'iconThickness',
+    'notificationEnabled',
+    'billReminderEnabled',
+    'budgetAlertEnabled',
+    'dailyReminderEnabled',
+    'weeklyMonthlyReportEnabled',
+    'darkMode'
+  )
   onDataChange(monitor: IMonitor) {
     DebounceManager.getInstance().execute('SystemOptions', () => {
       PersistenceV2.save('SystemOptions')

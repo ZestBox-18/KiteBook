@@ -22,10 +22,6 @@ export struct NotificationSettings {
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
 
-  @Local billReminder: boolean = true
-  @Local budgetAlert: boolean = true
-  @Local dailyReminder: boolean = false
-  @Local weeklyReport: boolean = true
   @Local notifyListExpanded: boolean = false
 
   aboutToAppear(): void {
@@ -87,9 +83,9 @@ export struct NotificationSettings {
                   '账单提醒',
                   '账单到期、还款日提醒',
                   $r('sys.symbol.creditcard'),
-                  this.billReminder,
+                  this.optionSystem.billReminderEnabled,
                   (isOn: boolean) => {
-                    this.billReminder = isOn
+                    this.optionSystem.billReminderEnabled = isOn
                   }
                 )
 
@@ -103,9 +99,9 @@ export struct NotificationSettings {
                   '预算预警',
                   '预算超支时发送提醒',
                   $r('sys.symbol.exclamationmark_triangle'),
-                  this.budgetAlert,
+                  this.optionSystem.budgetAlertEnabled,
                   (isOn: boolean) => {
-                    this.budgetAlert = isOn
+                    this.optionSystem.budgetAlertEnabled = isOn
                   }
                 )
 
@@ -119,9 +115,9 @@ export struct NotificationSettings {
                   '每日记账',
                   '每天提醒记账',
                   $r('sys.symbol.calendar'),
-                  this.dailyReminder,
+                  this.optionSystem.dailyReminderEnabled,
                   (isOn: boolean) => {
-                    this.dailyReminder = isOn
+                    this.optionSystem.dailyReminderEnabled = isOn
                   }
                 )
 
@@ -135,9 +131,9 @@ export struct NotificationSettings {
                   '周报月报',
                   '定期发送收支统计',
                   $r('sys.symbol.list_bullet'),
-                  this.weeklyReport,
+                  this.optionSystem.weeklyMonthlyReportEnabled,
                   (isOn: boolean) => {
-                    this.weeklyReport = isOn
+                    this.optionSystem.weeklyMonthlyReportEnabled = isOn
                   }
                 )
               }
