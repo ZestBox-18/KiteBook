@@ -179,6 +179,7 @@ export struct Index {
     try {
       await BillManager.deleteBill(billId);
       await this.loadBillData();
+      await this.loadAssetAccounts();
     } catch (err) {
       Clog.error(TAG, '删除账单失败', err);
     }
@@ -355,8 +356,9 @@ export struct Index {
    */
   aboutToAppear(): void {
     if (this.billSyncListenerId < 0) {
-      this.billSyncListenerId = billSyncController.register(() => {
-        this.loadBillData()
+      this.billSyncListenerId = billSyncController.register(async () => {
+        await this.loadBillData();
+        await this.loadAssetAccounts();
       })
     }
     this.refreshStaticDerivedState();

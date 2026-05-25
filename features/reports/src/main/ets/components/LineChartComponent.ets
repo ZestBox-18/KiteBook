@@ -29,6 +29,11 @@ export struct LineChartComponent {
   private readonly EXPENSE_COLOR: string = '#F44336';
   private readonly GRID_COLOR: string = '#E0E0E0';
   private readonly TEXT_COLOR: string = '#757575';
+
+  @Monitor('incomeData', 'expenseData')
+  onChartDataChanged(): void {
+    this.drawChart();
+  }
   
   build() {
     Column() {
@@ -42,6 +47,9 @@ export struct LineChartComponent {
   }
   
   private drawChart(): void {
+    if (!this.context) {
+      return;
+    }
     if (this.incomeData.length === 0 && this.expenseData.length === 0) {
       this.drawEmptyState();
       return;

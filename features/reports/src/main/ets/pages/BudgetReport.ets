@@ -1,15 +1,23 @@
 import { BudgetAnalysisBean, BudgetAnalysisSummaryBean, BudgetStatusEnum } from '../models/BudgetAnalysisBean';
-
-interface BudgetData { name: string; amount: number; }
+import { ReportDataHelper } from '../utils/ReportDataHelper';
 
 @ComponentV2
 export struct BudgetReport {
+  @Param refreshToken: number = 0;
   @Local reportData: BudgetAnalysisBean[] = [];
   @Local summaryData: BudgetAnalysisSummaryBean | null = null;
   @Local currentPeriod: string = '';
+  @Local currentMonthAnchor: number = 0;
+  @Local loading: boolean = false;
   
   aboutToAppear(): void {
+    this.currentMonthAnchor = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
     this.currentPeriod = this.getCurrentPeriod();
+    this.loadReportData();
+  }
+
+  @Monitor('refreshToken')
+  onRefreshTokenChanged(): void {
     this.loadReportData();
   }
   
@@ -86,27 +94,35 @@ export struct BudgetReport {
             }
           }, (item: BudgetAnalysisBean) => item.budgetName)
         }.width('100%').layoutWeight(1).divider({ strokeWidth: 1, color: '#E0E0E0', startMargin: 16, endMargin: 16 })
+      } else {
+        Column() {
+          Text(this.loading ? '正在读取预算数据...' : '当前月份还没有预算记录')
+            .fontSize(14)
+            .fontColor('#757575')
+          if (!this.loading) {
+            Text('预算表已接入真实数据，后续写入预算后这里会直接显示结果。')
+              .fontSize(12)
+              .fontColor('#9E9E9E')
+              .margin({ top: 8 })
+          }
+        }
+        .width('100%')
+        .height(180)
+        .justifyContent(FlexAlign.Center)
       }
     }.width('100%').padding(16).backgroundColor('#FFFFFF').borderRadius(8).margin({ left: 16, right: 16, top: 8, bottom: 8 })
     .shadow({ radius: 2, color: '#1F000000', offsetX: 0, offsetY: 1 })
   }
   
-  private loadReportData(): void {
-    setTimeout(() => {
-      this.reportData = this.generateMockData();
-      this.summaryData = new BudgetAnalysisSummaryBean(this.reportData);
-    }, 500);
-  }
-  
-  private generateMockData(): BudgetAnalysisBean[] {
-    const budgets: BudgetData[] = [
-      { name: '餐饮预算', amount: 2000 },
-      { name: '交通预算', amount: 800 },
-      { name: '购物预算', amount: 1500 },
-      { name: '娱乐预算', amount: 500 },
-      { name: '医疗预算', amount: 1000 }
-    ];
-    return budgets.map(budget => new BudgetAnalysisBean(budget.name, budget.amount, budget.amount * (Math.random() * 1.2), this.currentPeriod));
+  private async loadReportData(): Promise<void> {
+    this.loading = true;
+    try {
+      const reportData: BudgetAnalysisBean[] = await ReportDataHelper.loadBudgetReport(this.currentMonthAnchor);
+      this.reportData = reportData;
+      this.summaryData = new BudgetAnalysisSummaryBean(reportData);
+    } finally {
+      this.loading = false;
+    }
   }
   
   private getCurrentPeriod(): string {

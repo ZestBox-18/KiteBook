@@ -1,6 +1,7 @@
 import { TimeDimensionEnum } from '../models/TimeDimensionEnum';
 import { IncomeExpenseBean, IncomeExpenseSummaryBean } from '../models/IncomeExpenseBean';
 import { LineChartComponent } from '../components/LineChartComponent';
+import { ReportDataHelper } from '../utils/ReportDataHelper';
 
 interface TimeDimensionItem {
   label: Resource;
@@ -9,11 +10,18 @@ interface TimeDimensionItem {
 
 @ComponentV2
 export struct IncomeExpenseReport {
+  @Param refreshToken: number = 0;
   @Local currentTimeDimension: TimeDimensionEnum = TimeDimensionEnum.MONTH;
   @Local reportData: IncomeExpenseBean[] = [];
   @Local summaryData: IncomeExpenseSummaryBean | null = null;
+  @Local loading: boolean = false;
   
   aboutToAppear(): void {
+    this.loadReportData();
+  }
+
+  @Monitor('refreshToken')
+  onRefreshTokenChanged(): void {
     this.loadReportData();
   }
   
@@ -96,7 +104,7 @@ export struct IncomeExpenseReport {
         })
       } else {
         Column() {
-          Text($r('app.string.reports_no_data')).fontSize(14).fontColor('#757575')
+          Text(this.loading ? '加载中...' : $r('app.string.reports_no_data')).fontSize(14).fontColor('#757575')
         }.width('100%').height(220).justifyContent(FlexAlign.Center).backgroundColor('#FFFFFF').borderRadius(8)
       }
     }
@@ -104,27 +112,15 @@ export struct IncomeExpenseReport {
     .shadow({ radius: 2, color: '#1F000000', offsetX: 0, offsetY: 1 })
   }
   
-  private loadReportData(): void {
-    setTimeout(() => {
-      this.reportData = this.generateMockData();
-      this.summaryData = new IncomeExpenseSummaryBean(this.reportData);
-    }, 500);
-  }
-  
-  private generateMockData(): IncomeExpenseBean[] {
-    const data: IncomeExpenseBean[] = [];
-    const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const count = 6;
-    for (let i = count - 1; i >= 0; i--) {
-      const timestamp = now - i * 30 * dayMs;
-      const date = new Date(timestamp);
-      const timeLabel = date.getFullYear() + '-' + ((date.getMonth() + 1).toString().padStart(2, '0')) + '-' + (date.getDate().toString().padStart(2, '0'));
-      const income = Math.random() * 5000 + 2000;
-      const expense = Math.random() * 4000 + 1000;
-      data.push(new IncomeExpenseBean(timeLabel, income, expense, timestamp));
+  private async loadReportData(): Promise<void> {
+    this.loading = true;
+    try {
+      const reportData: IncomeExpenseBean[] = await ReportDataHelper.loadIncomeExpenseReport(this.currentTimeDimension);
+      this.reportData = reportData;
+      this.summaryData = new IncomeExpenseSummaryBean(reportData);
+    } finally {
+      this.loading = false;
     }
-    return data;
   }
   
   private formatAmount(amount: number): string {

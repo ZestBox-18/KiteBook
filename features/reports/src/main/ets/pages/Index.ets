@@ -7,7 +7,7 @@
  */
 
 import { hdsMaterial, HdsNavigation, ScrollEffectType } from '@kit.UIDesignKit';
-import { AppThemeState, CommonConstants } from 'base';
+import { AppThemeState, CommonConstants, billSyncController } from 'base';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics } from '@ohos.arkui.node';
@@ -79,6 +79,9 @@ export struct Index {
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!;
   @Local currentTabIndex: number = 0;
+  @Local reportRefreshToken: number = 0;
+
+  private billSyncListenerId: number = -1;
 
   private readonly tabItems: SegmentButtonV2Items = new SegmentButtonV2Items([
     { text: $r('app.string.reports_income_expense') },
@@ -96,6 +99,21 @@ export struct Index {
       return ColorMetrics.resourceColor(color);
     } catch {
       return ColorMetrics.resourceColor(this.themeState.fontPrimary);
+    }
+  }
+
+  aboutToAppear(): void {
+    if (this.billSyncListenerId < 0) {
+      this.billSyncListenerId = billSyncController.register(() => {
+        this.reportRefreshToken = this.reportRefreshToken + 1;
+      });
+    }
+  }
+
+  aboutToDisappear(): void {
+    if (this.billSyncListenerId >= 0) {
+      billSyncController.unregister(this.billSyncListenerId);
+      this.billSyncListenerId = -1;
     }
   }
 
@@ -286,13 +304,13 @@ export struct Index {
   private ContentSection() {
     Column() {
       if (this.currentTabIndex === 0) {
-        IncomeExpenseReport()
+        IncomeExpenseReport({ refreshToken: this.reportRefreshToken })
       } else if (this.currentTabIndex === 1) {
-        CategoryReport()
+        CategoryReport({ refreshToken: this.reportRefreshToken })
       } else if (this.currentTabIndex === 2) {
-        AssetReport()
+        AssetReport({ refreshToken: this.reportRefreshToken })
       } else {
-        BudgetReport()
+        BudgetReport({ refreshToken: this.reportRefreshToken })
       }
     }
     .width('100%')

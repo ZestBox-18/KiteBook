@@ -1,12 +1,12 @@
 export class CategoryStatBean {
   categoryName: string = '';
-  categoryIcon: string = '';
+  categoryIcon: Resource = $r('sys.symbol.ellipsis_circle');
   categoryColor: string = '#2196F3';
   amount: number = 0;
   ratio: number = 0;
   count: number = 0;
   
-  constructor(categoryName: string, categoryIcon: string, categoryColor: string, amount: number, count: number) {
+  constructor(categoryName: string, categoryIcon: Resource, categoryColor: string, amount: number, count: number) {
     this.categoryName = categoryName;
     this.categoryIcon = categoryIcon;
     this.categoryColor = categoryColor;

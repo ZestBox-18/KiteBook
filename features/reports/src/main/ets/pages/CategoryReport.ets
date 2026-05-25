@@ -1,17 +1,24 @@
 import { TimeDimensionEnum } from '../models/TimeDimensionEnum';
 import { CategoryStatBean, CategoryStatSummaryBean } from '../models/CategoryStatBean';
 import { PieChartComponent } from '../components/PieChartComponent';
+import { ReportDataHelper } from '../utils/ReportDataHelper';
 
 interface TimeDimensionItem { label: Resource; value: TimeDimensionEnum; }
-interface CategoryData { name: string; icon: string; color: string; }
 
 @ComponentV2
 export struct CategoryReport {
+  @Param refreshToken: number = 0;
   @Local currentTimeDimension: TimeDimensionEnum = TimeDimensionEnum.MONTH;
   @Local reportData: CategoryStatBean[] = [];
   @Local summaryData: CategoryStatSummaryBean | null = null;
+  @Local loading: boolean = false;
   
   aboutToAppear(): void { this.loadReportData(); }
+
+  @Monitor('refreshToken')
+  onRefreshTokenChanged(): void {
+    this.loadReportData();
+  }
   
   build() {
     Column() {
@@ -53,7 +60,7 @@ export struct CategoryReport {
           }.margin({ top: 12 })
         }
       } else {
-        Column() { Text($r('app.string.reports_no_data')).fontSize(14).fontColor('#757575') }
+        Column() { Text(this.loading ? '加载中...' : $r('app.string.reports_no_data')).fontSize(14).fontColor('#757575') }
         .width('100%').height(280).justifyContent(FlexAlign.Center).backgroundColor('#FFFFFF').borderRadius(8)
       }
     }.width('100%').padding(16).backgroundColor('#FFFFFF').borderRadius(8).margin({ left: 16, right: 16, top: 8, bottom: 8 })
@@ -70,7 +77,10 @@ export struct CategoryReport {
             ListItem() {
               Row() {
                 Text((index + 1).toString()).fontSize(14).fontColor('#757575').width(24)
-                Text(item.categoryIcon).fontSize(24).width(32)
+                SymbolGlyph(item.categoryIcon)
+                  .fontSize(20)
+                  .fontColor([item.categoryColor])
+                  .width(32)
                 Column() {
                   Text(item.categoryName).fontSize(14).fontColor('#212121').fontWeight(FontWeight.Medium)
                   Text(item.count + '笔').fontSize(12).fontColor('#757575').margin({ top: 2 })
@@ -83,30 +93,29 @@ export struct CategoryReport {
             }
           }, (item: CategoryStatBean) => item.categoryName)
         }.width('100%').layoutWeight(1).divider({ strokeWidth: 1, color: '#E0E0E0', startMargin: 48, endMargin: 16 })
+      } else {
+        Column() {
+          Text(this.loading ? '正在读取分类统计...' : '当前时间范围内暂无支出分类数据')
+            .fontSize(14)
+            .fontColor('#757575')
+        }
+        .width('100%')
+        .height(180)
+        .justifyContent(FlexAlign.Center)
       }
     }.width('100%').padding(16).backgroundColor('#FFFFFF').borderRadius(8).margin({ left: 16, right: 16, top: 8, bottom: 8 })
     .shadow({ radius: 2, color: '#1F000000', offsetX: 0, offsetY: 1 })
   }
   
-  private loadReportData(): void {
-    setTimeout(() => {
-      this.reportData = this.generateMockData();
-      this.summaryData = new CategoryStatSummaryBean(this.reportData);
-    }, 500);
-  }
-  
-  private generateMockData(): CategoryStatBean[] {
-    const categories: CategoryData[] = [
-      { name: '餐饮', icon: '🍽', color: '#FF9800' },
-      { name: '交通', icon: '🚗', color: '#2196F3' },
-      { name: '购物', icon: '🛍', color: '#E91E63' },
-      { name: '娱乐', icon: '🎮', color: '#9C27B0' },
-      { name: '医疗', icon: '🏥', color: '#F44336' },
-      { name: '教育', icon: '📚', color: '#4CAF50' }
-    ];
-    const data = categories.map(cat => new CategoryStatBean(cat.name, cat.icon, cat.color, Math.random() * 3000 + 500, Math.floor(Math.random() * 20) + 1));
-    data.sort((a, b) => b.amount - a.amount);
-    return data;
+  private async loadReportData(): Promise<void> {
+    this.loading = true;
+    try {
+      const reportData: CategoryStatBean[] = await ReportDataHelper.loadCategoryReport(this.currentTimeDimension);
+      this.reportData = reportData;
+      this.summaryData = new CategoryStatSummaryBean(reportData);
+    } finally {
+      this.loading = false;
+    }
   }
   
   private formatAmount(amount: number): string {

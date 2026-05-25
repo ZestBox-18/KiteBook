@@ -10,6 +10,8 @@ import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { BillBean, BillGroup, BillTypeEnum } from '../entities/BillBean';
+import { AccountManager } from './AccountManager';
+import { AccountBean, AccountTypeEnum } from '../entities/AccountBean';
 
 const TAG: string = '[BillManager]';
 const TABLE_NAME: string = 'bills';
@@ -35,6 +37,74 @@ export class BillManager {
   }
 
   /**
+   * 根据账单和账户类型计算余额变动值。
+   */
+  private static async calculateAccountBalanceDelta(bill: BillBean): Promise<number> {
+    const account: AccountBean | null = await AccountManager.getAccountByName(bill.account);
+    if (account === null) {
+      return 0;
+    }
+    if (account.type === AccountTypeEnum.LIABILITY) {
+      return bill.type === BillTypeEnum.INCOME ? -bill.amount : bill.amount;
+    }
+    return bill.type === BillTypeEnum.INCOME ? bill.amount : -bill.amount;
+  }
+
+  /**
+   * 将账单影响同步到账户余额，正负方向由账单类型和账户类型共同决定。
+   */
+  private static async applyBillToAccountBalance(bill: BillBean, reverse: boolean = false): Promise<void> {
+    const delta: number = await BillManager.calculateAccountBalanceDelta(bill);
+    if (delta === 0) {
+      return;
+    }
+    const balanceDelta: number = reverse ? -delta : delta;
+    await AccountManager.updateAccountBalanceByName(bill.account, balanceDelta);
+  }
+
+  /**
+   * 查询单条账单明细，供更新和删除前恢复账户余额使用。
+   */
+  static async getBillById(id: number): Promise<BillBean | null> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+
+    return new Promise<BillBean | null>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          if (rows.length === 0) {
+            resolve(null);
+            return;
+          }
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          resolve(bills[0]);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询账单详情失败, code=${err.code}, msg=${err.message}`);
+          reject(null);
+        });
+    });
+  }
+
+  /**
+   * 合并旧账单和补丁，得到更新后的完整账单数据。
+   */
+  private static buildUpdatedBill(originalBill: BillBean, patch: Partial<BillBean>): BillBean {
+    const nextBill: BillBean = new BillBean();
+    nextBill.id = originalBill.id;
+    nextBill.type = patch.type !== undefined ? patch.type : originalBill.type;
+    nextBill.category = patch.category !== undefined ? patch.category : originalBill.category;
+    nextBill.amount = patch.amount !== undefined ? patch.amount : originalBill.amount;
+    nextBill.account = patch.account !== undefined ? patch.account : originalBill.account;
+    nextBill.date = patch.date !== undefined ? patch.date : originalBill.date;
+    nextBill.remark = patch.remark !== undefined ? patch.remark : originalBill.remark;
+    nextBill.createdAt = originalBill.createdAt;
+    nextBill.updatedAt = Date.now();
+    return nextBill;
+  }
+
+  /**
    * 添加账单
    * @param bill 账单数据
    * @returns 新增记录的ID，失败返回-1
@@ -54,10 +124,11 @@ export class BillManager {
 
     return new Promise<number>((resolve, reject) => {
       dbManager.dbStore?.insert(TABLE_NAME, data)
-        .then((id: number) => {
+        .then(async (id: number) => {
           if (id === -1) {
             reject(-1);
           } else {
+            await BillManager.applyBillToAccountBalance(bill);
             resolve(id);
           }
         })
@@ -74,15 +145,20 @@ export class BillManager {
    * @returns 删除的记录数
    */
   static async deleteBill(id: number): Promise<number> {
+    const existingBill: BillBean | null = await BillManager.getBillById(id);
+    if (existingBill === null) {
+      return -1;
+    }
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('id', id);
 
     return new Promise<number>((resolve, reject) => {
       dbManager.dbStore?.delete(predicates)
-        .then((num: number) => {
+        .then(async (num: number) => {
           if (num === -1) {
             reject(-1);
           } else {
+            await BillManager.applyBillToAccountBalance(existingBill, true);
             resolve(num);
           }
         })
@@ -100,6 +176,11 @@ export class BillManager {
    * @returns 更新的记录数
    */
   static async updateBill(id: number, patch: Partial<BillBean>): Promise<number> {
+    const originalBill: BillBean | null = await BillManager.getBillById(id);
+    if (originalBill === null) {
+      return -1;
+    }
+    const updatedBill: BillBean = BillManager.buildUpdatedBill(originalBill, patch);
     const data: relationalStore.ValuesBucket = {
       updated_at: Date.now()
     };
@@ -127,10 +208,12 @@ export class BillManager {
 
     return new Promise<number>((resolve, reject) => {
       dbManager.dbStore?.update(data, predicates)
-        .then((num: number) => {
+        .then(async (num: number) => {
           if (num === -1) {
             reject(-1);
           } else {
+            await BillManager.applyBillToAccountBalance(originalBill, true);
+            await BillManager.applyBillToAccountBalance(updatedBill);
             resolve(num);
           }
         })
@@ -203,6 +286,32 @@ export class BillManager {
         })
         .catch((err: BusinessError) => {
           console.error(`${TAG} 查询月份账单失败, code=${err.code}, msg=${err.message}`);
+          reject([]);
+        });
+    });
+  }
+
+  /**
+   * 查询指定时间区间内的账单明细，供报表等需要原始流水的场景复用。
+   */
+  static async getBillsByRange(startTime: number, endTime: number, type: string = ''): Promise<BillBean[]> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.greaterThanOrEqualTo('date', startTime);
+    predicates.lessThan('date', endTime);
+    if (type.length > 0) {
+      predicates.equalTo('type', type);
+    }
+    predicates.orderByAsc('date');
+
+    return new Promise<BillBean[]>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          resolve(bills);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询区间账单失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });

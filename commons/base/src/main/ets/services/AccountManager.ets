@@ -87,6 +87,72 @@ export class AccountManager {
   }
 
   /**
+   * 按账户名称查询单个账户，供账单记账时同步更新余额。
+   */
+  static async getAccountByName(name: string): Promise<AccountBean | null> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('name', name);
+
+    return new Promise<AccountBean | null>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          if (rows.length === 0) {
+            resolve(null);
+            return;
+          }
+          const row: Record<string, object> = rows[0];
+          const account: AccountBean = new AccountBean();
+          account.id = Number(row['id']);
+          account.name = String(row['name']);
+          account.balance = Number(row['balance']);
+          account.type = String(row['type']);
+          account.icon = String(row['icon'] ?? 'creditcard');
+          account.createdAt = Number(row['created_at']);
+          account.updatedAt = Number(row['updated_at']);
+          resolve(account);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询账户失败, code=${err.code}, msg=${err.message}`);
+          reject(null);
+        });
+    });
+  }
+
+  /**
+   * 按名称增量更新账户余额，供账单增删改时复用。
+   */
+  static async updateAccountBalanceByName(name: string, delta: number): Promise<boolean> {
+    if (delta === 0) {
+      return true;
+    }
+    const account: AccountBean | null = await AccountManager.getAccountByName(name);
+    if (account === null) {
+      Clog.warn(TAG, `账户不存在，跳过余额更新: ${name}`);
+      return false;
+    }
+
+    const nextBalance: number = account.balance + delta;
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', account.id);
+    const data: relationalStore.ValuesBucket = {
+      balance: nextBalance,
+      updated_at: Date.now()
+    };
+
+    return new Promise<boolean>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then((num: number) => {
+          resolve(num > 0);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 更新账户余额失败, code=${err.code}, msg=${err.message}`);
+          reject(false);
+        });
+    });
+  }
+
+  /**
    * 新增账户记录，供资产管理页创建用户自定义账户。
    */
   static async addAccount(name: string, balance: number, type: string, icon: string): Promise<number> {

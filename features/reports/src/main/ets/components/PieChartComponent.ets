@@ -24,6 +24,11 @@ export struct PieChartComponent {
     '#2196F3', '#4CAF50', '#FF9800', '#F44336', '#9C27B0',
     '#00BCD4', '#FFEB3B', '#795548', '#607D8B', '#E91E63'
   ];
+
+  @Monitor('data')
+  onChartDataChanged(): void {
+    this.drawChart();
+  }
   
   build() {
     Column() {
@@ -37,6 +42,9 @@ export struct PieChartComponent {
   }
   
   private drawChart(): void {
+    if (!this.context) {
+      return;
+    }
     if (this.data.length === 0) {
       this.drawEmptyState();
       return;
@@ -71,7 +79,7 @@ export struct PieChartComponent {
     let startAngle = -Math.PI / 2;
     
     this.data.forEach((item, index) => {
-      const color = this.COLORS[index % this.COLORS.length];
+      const color = item.categoryColor.length > 0 ? item.categoryColor : this.COLORS[index % this.COLORS.length];
       const angle = (item.ratio / 100) * 2 * Math.PI;
       const endAngle = startAngle + angle;
       
@@ -117,7 +125,7 @@ export struct PieChartComponent {
       const x = legendStartX + col * legendItemWidth;
       const y = legendStartY + row * 18;
       
-      const color = this.COLORS[index % this.COLORS.length];
+      const color = item.categoryColor.length > 0 ? item.categoryColor : this.COLORS[index % this.COLORS.length];
       this.context.fillStyle = color;
       this.context.fillRect(x, y, 12, 12);
       

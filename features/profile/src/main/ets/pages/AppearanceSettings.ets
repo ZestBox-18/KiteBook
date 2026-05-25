@@ -348,9 +348,10 @@ export struct AppearanceSettings {
       Blank()
 
       if (isSelected) {
-        Text('✓')
+        SymbolGlyph($r('sys.symbol.checkmark'))
           .fontSize(16)
-          .fontColor(this.themeState.brand)
+          .fontWeight(this.optionSystem.iconThickness)
+          .fontColor([this.themeState.brand as ResourceColor])
       }
     }
     .width('100%')
