@@ -17,6 +17,7 @@ import { UserEditSheet } from '../components/UserEditSheet';
 import { AppearanceSettings } from './AppearanceSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { DataExport } from './DataExport';
+import { BudgetSettings } from './BudgetSettings';
 import { About } from './About';
 import { Sponsorship } from './Sponsorship';
 import { TestPage } from './TestPage';
@@ -55,6 +56,8 @@ export struct Index {
       NotificationSettings()
     } else if (name === RouterUrlConstants.DATA_EXPORT) {
       DataExport()
+    } else if (name === RouterUrlConstants.BUDGET_SETTINGS) {
+      BudgetSettings()
     } else if (name === RouterUrlConstants.ABOUT) {
       About()
     } else if (name === RouterUrlConstants.SPONSORSHIP) {
@@ -142,6 +145,16 @@ export struct Index {
                 title: '通知设置',
                 onItemClick: () => {
                   this.navigateToSubPage(RouterUrlConstants.NOTIFICATION_SETTINGS)
+                }
+              })
+            }
+
+            ListItem() {
+              SettingItem({
+                icon: $r('sys.symbol.creditcard'),
+                title: '预算管理',
+                onItemClick: () => {
+                  this.navigateToSubPage(RouterUrlConstants.BUDGET_SETTINGS)
                 }
               })
             }

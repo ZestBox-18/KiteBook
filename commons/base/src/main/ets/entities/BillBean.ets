@@ -21,6 +21,7 @@ export class BillBean {
   id: number = 0;
   type: string = BillTypeEnum.EXPENSE;
   category: string = '';
+  categoryIconKey: string = '';
   amount: number = 0;
   account: string = '';
   date: number = 0;
@@ -33,6 +34,18 @@ export class BillBean {
    */
   getCategoryIcon(): Resource {
     const iconMap: Record<string, Resource> = {
+      'fork_knife': $r('sys.symbol.fork_knife'),
+      'car': $r('sys.symbol.car'),
+      'cart': $r('sys.symbol.cart'),
+      'gamecontroller': $r('sys.symbol.gamecontroller'),
+      'house': $r('sys.symbol.house'),
+      'cross_case': $r('sys.symbol.cross_case'),
+      'book': $r('sys.symbol.book'),
+      'creditcard': $r('sys.symbol.creditcard'),
+      'gift': $r('sys.symbol.gift'),
+      'arrow_up_circle': $r('sys.symbol.arrow_up_circle'),
+      'ellipsis_circle': $r('sys.symbol.ellipsis_circle'),
+      'arrow_left_arrow_right': $r('sys.symbol.arrow_left_arrow_right'),
       '餐饮': $r('sys.symbol.fork_knife'),
       '交通': $r('sys.symbol.car'),
       '购物': $r('sys.symbol.cart'),
@@ -45,6 +58,12 @@ export class BillBean {
       '理财': $r('sys.symbol.creditcard'),
       '其他': $r('sys.symbol.ellipsis_circle')
     };
+    if (this.categoryIconKey.length > 0) {
+      const categoryIcon: Resource | undefined = iconMap[this.categoryIconKey];
+      if (categoryIcon !== undefined) {
+        return categoryIcon;
+      }
+    }
     return iconMap[this.category] ?? $r('sys.symbol.ellipsis_circle');
   }
 

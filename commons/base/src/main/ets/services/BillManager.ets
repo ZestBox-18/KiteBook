@@ -12,6 +12,8 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { BillBean, BillGroup, BillTypeEnum } from '../entities/BillBean';
 import { AccountManager } from './AccountManager';
 import { AccountBean, AccountTypeEnum } from '../entities/AccountBean';
+import { CategoryManager } from './CategoryManager';
+import { CategoryBean } from '../entities/CategoryBean';
 
 const TAG: string = '[BillManager]';
 const TABLE_NAME: string = 'bills';
@@ -20,12 +22,13 @@ export class BillManager {
   /**
    * 将查询结果行映射为账单实体，避免不同查询重复手写转换逻辑。
    */
-  private static mapRowsToBills(rows: Record<string, object>[]): BillBean[] {
+  private static mapRowsToBills(rows: Record<string, object>[], categories: CategoryBean[]): BillBean[] {
     return rows.map((row: Record<string, object>) => {
       const bill: BillBean = new BillBean();
       bill.id = Number(row['id']);
       bill.type = String(row['type']);
       bill.category = String(row['category']);
+      bill.categoryIconKey = BillManager.resolveCategoryIconKey(String(row['category']), String(row['type']), categories);
       bill.amount = Number(row['amount']);
       bill.account = String(row['account']);
       bill.date = Number(row['date']);
@@ -34,6 +37,19 @@ export class BillManager {
       bill.updatedAt = Number(row['updated_at']);
       return bill;
     });
+  }
+
+  /**
+   * 从分类列表中解析账单展示应使用的图标键。
+   */
+  private static resolveCategoryIconKey(categoryName: string, type: string, categories: CategoryBean[]): string {
+    for (let index = 0; index < categories.length; index++) {
+      const category: CategoryBean = categories[index];
+      if (category.name === categoryName && category.type === type) {
+        return category.icon;
+      }
+    }
+    return '';
   }
 
   /**
@@ -71,13 +87,14 @@ export class BillManager {
 
     return new Promise<BillBean | null>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
-        .then((result) => {
+        .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
           if (rows.length === 0) {
             resolve(null);
             return;
           }
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          const categories: CategoryBean[] = await CategoryManager.getAllCategories();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
           resolve(bills[0]);
         })
         .catch((err: BusinessError) => {
@@ -240,9 +257,10 @@ export class BillManager {
 
     return new Promise<BillGroup[]>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
-        .then((result) => {
+        .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          const categories: CategoryBean[] = await CategoryManager.getAllCategories();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
 
           // 按日期分组
           const groups = BillManager.groupBillsByDate(bills);
@@ -274,9 +292,10 @@ export class BillManager {
 
     return new Promise<BillGroup[]>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
-        .then((result) => {
+        .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          const categories: CategoryBean[] = await CategoryManager.getAllCategories();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
           const groups: BillGroup[] = BillManager.groupBillsByDate(bills);
           const monthText: string =
             `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -305,9 +324,10 @@ export class BillManager {
 
     return new Promise<BillBean[]>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
-        .then((result) => {
+        .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows);
+          const categories: CategoryBean[] = await CategoryManager.getAllCategories();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
           resolve(bills);
         })
         .catch((err: BusinessError) => {

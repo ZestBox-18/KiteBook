@@ -14,6 +14,7 @@ import {
   BillBean,
   BillGroup,
   BillManager,
+  BudgetManager,
   billSyncController,
   CommonConstants,
   RouterUrlConstants,
@@ -45,7 +46,6 @@ const TAG: string = '[HomeIndex]';
 const CARD_COUNT: number = 3;
 const MIN_SCALE: number = 0.85;
 const MAX_ROTATE: number = 5;
-const DEFAULT_MONTH_BUDGET: number = 4000;
 const HOME_SWIPER_CARD_HEIGHT: number = 236;
 const HOME_SWIPER_SECTION_HEIGHT: number = 274;
 
@@ -71,9 +71,10 @@ export struct Index {
   @Local monthlyExpense: number = 0;
   @Local monthlyIncome: number = 0;
   @Local monthlyBalance: number = 0;
-  @Local budgetRemaining: number = DEFAULT_MONTH_BUDGET;
+  @Local totalBudget: number = 0;
+  @Local budgetRemaining: number = 0;
   @Local remainingDaysOfMonth: number = 1;
-  @Local dailyBudgetRemaining: number = DEFAULT_MONTH_BUDGET;
+  @Local dailyBudgetRemaining: number = 0;
   @Local budgetProgressValue: number = 0;
   @Local budgetUsagePercent: number = 0;
   @Local totalAssets: number = 0;
@@ -156,6 +157,18 @@ export struct Index {
       this.assetAccounts = accounts.map((item: AccountBean) => this.buildAssetAccount(item));
     } catch (err) {
       Clog.error(TAG, '加载资产账户失败', err);
+    }
+  }
+
+  /**
+   * 加载当前月份总预算，供首页预算卡和摘要计算复用。
+   */
+  private async loadBudgetData(): Promise<void> {
+    try {
+      this.totalBudget = await BudgetManager.getMonthBudgetTotal(Date.now());
+    } catch (err) {
+      Clog.error(TAG, '加载预算数据失败', err);
+      this.totalBudget = 0;
     }
   }
 
@@ -267,7 +280,7 @@ export struct Index {
    */
   private updateMonthlySummary(): void {
     const summary: HomeMonthlySummary =
-      HomeIndexCalculator.buildMonthlySummary(this.monthBillGroups, DEFAULT_MONTH_BUDGET);
+      HomeIndexCalculator.buildMonthlySummary(this.monthBillGroups, this.totalBudget);
     this.currentMonthText = summary.currentMonthText;
     this.monthlyExpense = summary.monthlyExpense;
     this.monthlyIncome = summary.monthlyIncome;
@@ -326,6 +339,14 @@ export struct Index {
     this.updateMonthlySummary();
   }
 
+  @Monitor('totalBudget')
+  /**
+   * 预算变化后同步刷新预算卡摘要。
+   */
+  onTotalBudgetChanged(): void {
+    this.updateMonthlySummary();
+  }
+
   @Monitor('billSortType')
   /**
    * 排序方式变化后同步刷新列表和标题动作文案。
@@ -359,11 +380,13 @@ export struct Index {
       this.billSyncListenerId = billSyncController.register(async () => {
         await this.loadBillData();
         await this.loadAssetAccounts();
+        await this.loadBudgetData();
       })
     }
     this.refreshStaticDerivedState();
     this.loadBillData();
     this.loadAssetAccounts();
+    this.loadBudgetData();
   }
 
   /**
@@ -519,14 +542,14 @@ export struct Index {
           budgetUsagePercent: this.budgetUsagePercent,
           dailyBudgetText: this.getAmountText(this.dailyBudgetRemaining, false),
           budgetRemainingText: this.getAmountText(this.budgetRemaining, false),
-          totalBudgetText: this.getAmountText(DEFAULT_MONTH_BUDGET, false),
+          totalBudgetText: this.getAmountText(this.totalBudget, false),
           monthlyExpenseText: this.getAmountText(this.monthlyExpense, false),
           remainingDaysText: `剩余 ${this.remainingDaysOfMonth} 天`,
           opacityValue: this.opacityList[0],
           scaleValue: this.scaleList[0],
           rotateValue: this.rotateList[0],
           zIndexValue: this.zIndexList[0],
-          totalBudgetValue: DEFAULT_MONTH_BUDGET
+          totalBudgetValue: this.totalBudget > 0 ? this.totalBudget : 1
         })
         IncomeExpenseCardComponent({
           themeState: this.themeState,

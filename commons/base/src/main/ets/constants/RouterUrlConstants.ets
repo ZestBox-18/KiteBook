@@ -56,6 +56,10 @@ export class RouterUrlConstants {
    */
   static readonly DATA_EXPORT: string = 'DataExport';
   /**
+   * 预算管理
+   */
+  static readonly BUDGET_SETTINGS: string = 'BudgetSettings';
+  /**
    * 关于
    */
   static readonly ABOUT: string = 'About';

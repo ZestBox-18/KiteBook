@@ -14,6 +14,7 @@ import { CategoryBean } from '../entities/CategoryBean';
 
 const TAG: string = '[CategoryManager]';
 const TABLE_NAME: string = 'categories';
+const BILL_TABLE_NAME: string = 'bills';
 
 /**
  * 默认分类种子项，避免 ArkTS 对匿名对象字面量的限制。
@@ -113,6 +114,74 @@ export class CategoryManager {
   }
 
   /**
+   * 查询全部分类，供账单显示和导出等场景复用。
+   */
+  static async getAllCategories(): Promise<CategoryBean[]> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.orderByAsc('type');
+    predicates.orderByAsc('sort_order');
+    predicates.orderByAsc('id');
+
+    return new Promise<CategoryBean[]>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          const categories: CategoryBean[] = rows.map((row: Record<string, object>) => {
+            const category: CategoryBean = new CategoryBean();
+            category.id = Number(row['id']);
+            category.name = String(row['name']);
+            category.type = String(row['type']);
+            category.icon = String(row['icon']);
+            category.sortOrder = Number(row['sort_order']);
+            category.isSystem = Number(row['is_system']) === 1;
+            category.createdAt = Number(row['created_at']);
+            category.updatedAt = Number(row['updated_at']);
+            return category;
+          });
+          resolve(categories);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询全部分类失败, code=${err.code}, msg=${err.message}`);
+          reject([]);
+        });
+    });
+  }
+
+  /**
+   * 按主键查询分类，供改名时同步历史账单使用。
+   */
+  static async getCategoryById(id: number): Promise<CategoryBean | null> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+
+    return new Promise<CategoryBean | null>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          if (rows.length === 0) {
+            resolve(null);
+            return;
+          }
+          const row: Record<string, object> = rows[0];
+          const category: CategoryBean = new CategoryBean();
+          category.id = Number(row['id']);
+          category.name = String(row['name']);
+          category.type = String(row['type']);
+          category.icon = String(row['icon']);
+          category.sortOrder = Number(row['sort_order']);
+          category.isSystem = Number(row['is_system']) === 1;
+          category.createdAt = Number(row['created_at']);
+          category.updatedAt = Number(row['updated_at']);
+          resolve(category);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询分类详情失败, code=${err.code}, msg=${err.message}`);
+          reject(null);
+        });
+    });
+  }
+
+  /**
    * 新增一个自定义分类，并自动追加到同类型分类列表的尾部。
    */
   static async addCategory(name: string, type: string, icon: string = 'ellipsis_circle'): Promise<number> {
@@ -149,6 +218,10 @@ export class CategoryManager {
    * 更新分类名称或图标，保持更新时间与数据库一致。
    */
   static async updateCategory(id: number, patch: Partial<CategoryBean>): Promise<number> {
+    const originalCategory: CategoryBean | null = await CategoryManager.getCategoryById(id);
+    if (originalCategory === null) {
+      return -1;
+    }
     const data: relationalStore.ValuesBucket = {
       updated_at: Date.now()
     };
@@ -167,16 +240,43 @@ export class CategoryManager {
 
     return new Promise<number>((resolve, reject) => {
       dbManager.dbStore?.update(data, predicates)
-        .then((num: number) => {
+        .then(async (num: number) => {
           if (num === -1) {
             reject(-1);
           } else {
+            if (patch.name !== undefined && patch.name !== originalCategory.name) {
+              await CategoryManager.renameBillsForCategory(originalCategory, patch.name);
+            }
             resolve(num);
           }
         })
         .catch((err: BusinessError) => {
           console.error(`${TAG} 更新分类失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
+        });
+    });
+  }
+
+  /**
+   * 分类改名后同步历史账单中的分类名称，避免列表和统计出现断层。
+   */
+  private static async renameBillsForCategory(category: CategoryBean, nextName: string): Promise<void> {
+    const predicates = new relationalStore.RdbPredicates(BILL_TABLE_NAME);
+    predicates.equalTo('category', category.name);
+    predicates.equalTo('type', category.type);
+    const data: relationalStore.ValuesBucket = {
+      category: nextName,
+      updated_at: Date.now()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then(() => {
+          resolve();
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 同步账单分类名称失败, code=${err.code}, msg=${err.message}`);
+          reject(err);
         });
     });
   }

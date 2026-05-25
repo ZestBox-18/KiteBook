@@ -11,6 +11,7 @@ export { AppThemeState } from "./src/main/ets/entities/AppThemes"
 
 export * from "./src/main/ets/services/AccountManager"
 export * from "./src/main/ets/services/BillManager"
+export * from "./src/main/ets/services/BudgetManager"
 export * from "./src/main/ets/services/CategoryManager"
 
 export { GroupHeader } from "./src/main/ets/components/GroupHeader"
