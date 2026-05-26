@@ -11,7 +11,8 @@
  */
 export enum BillTypeEnum {
   EXPENSE = 'expense', // 支出
-  INCOME = 'income' // 收入
+  INCOME = 'income', // 收入
+  TRANSFER = 'transfer' // 转账
 }
 
 /**
@@ -24,6 +25,7 @@ export class BillBean {
   categoryIconKey: string = '';
   amount: number = 0;
   account: string = '';
+  targetAccount: string = '';
   date: number = 0;
   remark: string = '';
   createdAt: number = 0;
@@ -71,8 +73,21 @@ export class BillBean {
    * 格式化金额显示
    */
   formatAmount(): string {
+    if (this.type === BillTypeEnum.TRANSFER) {
+      return `¥${this.amount.toFixed(2)}`;
+    }
     const prefix = this.type === BillTypeEnum.EXPENSE ? '-' : '+';
     return `${prefix}${this.amount.toFixed(2)}`;
+  }
+
+  /**
+   * 获取账单展示使用的账户文案。
+   */
+  getAccountDisplayText(): string {
+    if (this.type === BillTypeEnum.TRANSFER && this.targetAccount.trim().length > 0) {
+      return `${this.account} -> ${this.targetAccount}`;
+    }
+    return this.account;
   }
 
   /**

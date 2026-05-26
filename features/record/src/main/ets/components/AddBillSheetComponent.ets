@@ -77,6 +77,7 @@ export struct AddBillSheetComponent {
   @Local selectedType: string = BillTypeEnum.EXPENSE;
   @Local selectedCategory: string = '餐饮';
   @Local selectedAccount: string = '';
+  @Local targetAccount: string = '';
   @Local remarkText: string = '';
   @Local isSaving: boolean = false;
   @Local selectedDate: number = Date.now();
@@ -243,6 +244,9 @@ export struct AddBillSheetComponent {
       this.selectedType = BillTypeEnum.INCOME;
     } else if (selectedIndex === 2) {
       this.activeMode = RECORD_MODE_TRANSFER;
+      this.selectedType = BillTypeEnum.TRANSFER;
+      this.selectedCategory = '转账';
+      this.updateTransferTargetAccount();
     } else {
       this.activeMode = RECORD_MODE_EXPENSE;
       this.selectedType = BillTypeEnum.EXPENSE;
@@ -290,6 +294,23 @@ export struct AddBillSheetComponent {
   }
 
   /**
+   * 返回当前选中的转入账户名称。
+   */
+  private getTargetAccountLabel(): string {
+    if (this.targetAccount.trim().length > 0) {
+      return this.targetAccount;
+    }
+    return '选择转入账户';
+  }
+
+  /**
+   * 返回可选的转入账户列表，避免与转出账户重复。
+   */
+  private getTransferTargetOptions(): string[] {
+    return this.accountOptions.filter((item: string) => item !== this.selectedAccount);
+  }
+
+  /**
    * 返回当前选中支付方式在原始数组中的索引，用于展开时恢复可视区域位置。
    */
   private getSelectedAccountIndex(): number {
@@ -305,6 +326,21 @@ export struct AddBillSheetComponent {
    */
   private isActiveAccount(account: string): boolean {
     return account === this.selectedAccount;
+  }
+
+  /**
+   * 根据转出账户修正当前转入账户，保证转账目标始终有效。
+   */
+  private updateTransferTargetAccount(): void {
+    const targetOptions: string[] = this.getTransferTargetOptions();
+    if (targetOptions.length === 0) {
+      this.targetAccount = '';
+      return;
+    }
+    if (targetOptions.indexOf(this.targetAccount) >= 0) {
+      return;
+    }
+    this.targetAccount = targetOptions[0];
   }
 
   /**
@@ -333,6 +369,7 @@ export struct AddBillSheetComponent {
     if (!hasMatchedAccount) {
       this.selectedAccount = this.getDefaultAccountName();
     }
+    this.updateTransferTargetAccount();
   }
 
   /**
@@ -482,9 +519,27 @@ export struct AddBillSheetComponent {
       return;
     }
     this.selectedAccount = account;
+    this.updateTransferTargetAccount();
     setTimeout(() => {
       this.collapseAccountSelector();
     }, ACCOUNT_COLLAPSE_DELAY);
+  }
+
+  /**
+   * 切换到下一个可用的转入账户，避免依赖动态菜单数组。
+   */
+  private cycleTargetAccount(): void {
+    const targetOptions: string[] = this.getTransferTargetOptions();
+    if (targetOptions.length === 0) {
+      this.showToast('请至少准备两个账户再进行转账');
+      return;
+    }
+    const currentIndex: number = targetOptions.indexOf(this.targetAccount);
+    if (currentIndex < 0 || currentIndex === targetOptions.length - 1) {
+      this.targetAccount = targetOptions[0];
+      return;
+    }
+    this.targetAccount = targetOptions[currentIndex + 1];
   }
 
   /**
@@ -492,7 +547,7 @@ export struct AddBillSheetComponent {
    */
   private async showCategoryManageMenu(): Promise<void> {
     if (this.activeMode === RECORD_MODE_TRANSFER) {
-      this.showToast('转账分类暂不支持编辑');
+      this.showToast('转账使用系统分类，无需编辑');
       return;
     }
     try {
@@ -647,10 +702,6 @@ export struct AddBillSheetComponent {
    * 校验输入内容并返回可提交的金额。
    */
   private validateAmount(): number {
-    if (this.activeMode === RECORD_MODE_TRANSFER) {
-      this.showToast('转账录入稍后支持');
-      return 0;
-    }
     const amountValue: number = Number(this.amountText);
     if (!Number.isFinite(amountValue) || amountValue === 0) {
       this.showToast('请输入正确的金额');
@@ -664,6 +715,17 @@ export struct AddBillSheetComponent {
    */
   private validateAccount(): boolean {
     if (this.selectedAccount.trim().length > 0) {
+      if (this.activeMode !== RECORD_MODE_TRANSFER) {
+        return true;
+      }
+      if (this.targetAccount.trim().length === 0) {
+        this.showToast('请选择转入账户');
+        return false;
+      }
+      if (this.targetAccount === this.selectedAccount) {
+        this.showToast('转入和转出账户不能相同');
+        return false;
+      }
       return true;
     }
     this.showToast('请先添加资产账户');
@@ -679,6 +741,7 @@ export struct AddBillSheetComponent {
     bill.category = this.selectedCategory;
     bill.amount = amountValue;
     bill.account = this.selectedAccount;
+    bill.targetAccount = this.activeMode === RECORD_MODE_TRANSFER ? this.targetAccount : '';
     bill.date = this.selectedDate;
     bill.remark = this.remarkText.trim();
     return bill;
@@ -736,8 +799,10 @@ export struct AddBillSheetComponent {
     this.selectedType = BillTypeEnum.EXPENSE;
     this.selectedCategory = '餐饮';
     this.selectedAccount = this.getDefaultAccountName();
+    this.targetAccount = '';
     this.remarkText = '';
     this.selectedDate = Date.now();
+    this.updateTransferTargetAccount();
     this.updateRemarkPanel(false);
   }
 
@@ -1023,6 +1088,10 @@ export struct AddBillSheetComponent {
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
+
+      if (this.activeMode === RECORD_MODE_TRANSFER) {
+        this.TransferTargetSection();
+      }
     }
     .width('100%')
     .padding(16)
@@ -1112,6 +1181,39 @@ export struct AddBillSheetComponent {
     .width('100%')
     .justifyContent(FlexAlign.Start)
     .alignItems(VerticalAlign.Center)
+  }
+
+  /**
+   * 构建转账模式下的转入账户入口。
+   */
+  @Builder
+  private TransferTargetSection() {
+    Button() {
+      Row({ space: 8 }) {
+        SymbolGlyph($r('sys.symbol.arrow_left_arrow_right'))
+          .fontSize(15)
+          .fontWeight(this.optionSystem.iconThickness)
+          .fontColor([this.themeState.brand as ResourceColor]);
+        Text(`转入 ${this.getTargetAccountLabel()}`)
+          .fontSize(13)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.themeState.fontPrimary)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis });
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Start)
+      .alignItems(VerticalAlign.Center)
+    }
+    .width('100%')
+    .height(34)
+    .padding({ left: 12, right: 12 })
+    .backgroundColor(this.themeState.backgroundPrimary)
+    .borderRadius(17)
+    .border({ width: 1, color: this.themeState.compDivider })
+    .onClick(() => {
+      this.cycleTargetAccount();
+    })
   }
 
   /**

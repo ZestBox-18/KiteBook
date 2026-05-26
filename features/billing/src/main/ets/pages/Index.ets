@@ -465,11 +465,11 @@ export struct Index {
     Row() {
       SymbolGlyph(bill.getCategoryIcon())
         .fontSize(20)
-        .fontColor([bill.type === BillTypeEnum.EXPENSE ? '#E55454' : '#10B981'])
+        .fontColor([this.getBillTintColor(bill)])
         .width(36)
         .height(36)
         .borderRadius(8)
-        .backgroundColor(bill.type === BillTypeEnum.EXPENSE ? '#FEE2E2' : '#D1FAE5')
+        .backgroundColor(this.getBillBgColor(bill))
         .padding(8)
 
       Column() {
@@ -477,7 +477,8 @@ export struct Index {
           .fontSize(15)
           .fontWeight(FontWeight.Medium)
           .fontColor(this.themeState.fontPrimary)
-        Text(bill.remark.trim().length > 0 ? `${bill.account} · ${bill.remark}` : bill.account)
+        Text(bill.remark.trim().length > 0 ? `${bill.getAccountDisplayText()} · ${bill.remark}` :
+          bill.getAccountDisplayText())
           .fontSize(13)
           .fontColor(this.themeState.fontSecondary)
           .margin({ top: 2 })
@@ -492,7 +493,7 @@ export struct Index {
         Text(bill.formatAmount())
           .fontSize(16)
           .fontWeight(FontWeight.Medium)
-          .fontColor(bill.type === BillTypeEnum.EXPENSE ? '#E55454' : '#10B981')
+          .fontColor(this.getBillTintColor(bill))
         Text(bill.getTimeString())
           .fontSize(12)
           .fontColor(this.themeState.fontSecondary)
@@ -504,6 +505,26 @@ export struct Index {
     .height(60)
     .padding({ left: 16, right: 16 })
     .backgroundColor(this.themeState.compBackgroundPrimary)
+  }
+
+  private getBillTintColor(bill: BillBean): ResourceColor {
+    if (bill.type === BillTypeEnum.EXPENSE) {
+      return '#E55454';
+    }
+    if (bill.type === BillTypeEnum.INCOME) {
+      return '#10B981';
+    }
+    return this.themeState.brand as ResourceColor;
+  }
+
+  private getBillBgColor(bill: BillBean): ResourceColor {
+    if (bill.type === BillTypeEnum.EXPENSE) {
+      return '#FEE2E2';
+    }
+    if (bill.type === BillTypeEnum.INCOME) {
+      return '#D1FAE5';
+    }
+    return '#DBEAFE';
   }
 
   build() {

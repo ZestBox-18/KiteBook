@@ -1,9 +1,19 @@
-import { dbManager, initDatabaseConfig, Clog } from 'kite_utils';
+import { dbManager, initDatabaseConfig, Clog, DatabaseUpgradeSql } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { AccountManager } from '../services/AccountManager';
 import { CategoryManager } from '../services/CategoryManager';
 
 const TAG: string = '[DatabaseConfig]';
+const DATABASE_UPGRADE_SQLS: DatabaseUpgradeSql[] = [
+  {
+    fromVersion: 1,
+    toVersion: 2,
+    description: '为账单表补充转账目标账户字段',
+    sql: [
+      'ALTER TABLE bills ADD COLUMN target_account TEXT DEFAULT ""'
+    ]
+  }
+];
 
 /**
  * 初始化数据库管理器
@@ -21,6 +31,7 @@ export function dbManagerInit(context: Context): void {
         category TEXT NOT NULL,
         amount REAL NOT NULL,
         account TEXT NOT NULL,
+        target_account TEXT DEFAULT '',
         date INTEGER NOT NULL,
         remark TEXT,
         created_at INTEGER NOT NULL,
@@ -62,7 +73,8 @@ export function dbManagerInit(context: Context): void {
       "idx_budgets_month": `CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month)`,
       "idx_categories_type_sort": `CREATE INDEX IF NOT EXISTS idx_categories_type_sort ON categories(type, sort_order)`
     },
-    version: 1
+    version: 2,
+    upgradeSqls: DATABASE_UPGRADE_SQLS
   });
 
   // 设置数据库回调

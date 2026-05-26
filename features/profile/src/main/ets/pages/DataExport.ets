@@ -129,12 +129,13 @@ export struct DataExport {
   }
 
   private buildCsvContent(bills: BillBean[]): string {
-    const header: string = 'id,type,category,amount,account,date,remark,createdAt,updatedAt';
+    const header: string = 'id,type,category,amount,account,targetAccount,date,remark,createdAt,updatedAt';
     const lines: string[] = [header];
     bills.forEach((bill: BillBean) => {
       const row: string =
         `${bill.id},${this.escapeCsvValue(bill.type)},${this.escapeCsvValue(bill.category)},${bill.amount.toFixed(2)},` +
-        `${this.escapeCsvValue(bill.account)},${bill.date},${this.escapeCsvValue(bill.remark)},${bill.createdAt},${bill.updatedAt}`;
+        `${this.escapeCsvValue(bill.account)},${this.escapeCsvValue(bill.targetAccount)},${bill.date},` +
+        `${this.escapeCsvValue(bill.remark)},${bill.createdAt},${bill.updatedAt}`;
       lines.push(row);
     });
     return lines.join('\n');

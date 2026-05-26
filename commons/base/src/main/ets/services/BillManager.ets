@@ -31,6 +31,7 @@ export class BillManager {
       bill.categoryIconKey = BillManager.resolveCategoryIconKey(String(row['category']), String(row['type']), categories);
       bill.amount = Number(row['amount']);
       bill.account = String(row['account']);
+      bill.targetAccount = String(row['target_account'] ?? '');
       bill.date = Number(row['date']);
       bill.remark = String(row['remark'] ?? '');
       bill.createdAt = Number(row['created_at']);
@@ -67,9 +68,26 @@ export class BillManager {
   }
 
   /**
+   * 将转账账单同步到转出和转入账户余额。
+   */
+  private static async applyTransferBill(bill: BillBean, reverse: boolean = false): Promise<void> {
+    if (bill.targetAccount.trim().length === 0 || bill.targetAccount === bill.account) {
+      return;
+    }
+    const sourceDelta: number = reverse ? bill.amount : -bill.amount;
+    const targetDelta: number = reverse ? -bill.amount : bill.amount;
+    await AccountManager.updateAccountBalanceByName(bill.account, sourceDelta);
+    await AccountManager.updateAccountBalanceByName(bill.targetAccount, targetDelta);
+  }
+
+  /**
    * 将账单影响同步到账户余额，正负方向由账单类型和账户类型共同决定。
    */
   private static async applyBillToAccountBalance(bill: BillBean, reverse: boolean = false): Promise<void> {
+    if (bill.type === BillTypeEnum.TRANSFER) {
+      await BillManager.applyTransferBill(bill, reverse);
+      return;
+    }
     const delta: number = await BillManager.calculateAccountBalanceDelta(bill);
     if (delta === 0) {
       return;
@@ -114,6 +132,7 @@ export class BillManager {
     nextBill.category = patch.category !== undefined ? patch.category : originalBill.category;
     nextBill.amount = patch.amount !== undefined ? patch.amount : originalBill.amount;
     nextBill.account = patch.account !== undefined ? patch.account : originalBill.account;
+    nextBill.targetAccount = patch.targetAccount !== undefined ? patch.targetAccount : originalBill.targetAccount;
     nextBill.date = patch.date !== undefined ? patch.date : originalBill.date;
     nextBill.remark = patch.remark !== undefined ? patch.remark : originalBill.remark;
     nextBill.createdAt = originalBill.createdAt;
@@ -133,6 +152,7 @@ export class BillManager {
       category: bill.category,
       amount: bill.amount,
       account: bill.account,
+      target_account: bill.targetAccount,
       date: bill.date,
       remark: bill.remark,
       created_at: now,
@@ -212,6 +232,9 @@ export class BillManager {
     }
     if (patch.account !== undefined) {
       data.account = patch.account;
+    }
+    if (patch.targetAccount !== undefined) {
+      data.target_account = patch.targetAccount;
     }
     if (patch.date !== undefined) {
       data.date = patch.date;
@@ -363,7 +386,7 @@ export class BillManager {
       group.bills.push(bill);
       if (bill.type === BillTypeEnum.EXPENSE) {
         group.totalExpense += bill.amount;
-      } else {
+      } else if (bill.type === BillTypeEnum.INCOME) {
         group.totalIncome += bill.amount;
       }
     }

@@ -86,7 +86,7 @@ export class ReportDataHelper {
         if (bill.date >= bucket.startTime && bill.date < bucket.endTime) {
           if (bill.type === BillTypeEnum.INCOME) {
             bucket.income += bill.amount;
-          } else {
+          } else if (bill.type === BillTypeEnum.EXPENSE) {
             bucket.expense += bill.amount;
           }
           break;
