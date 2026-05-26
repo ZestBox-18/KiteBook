@@ -53,4 +53,16 @@ export class UserProfile {
     this.userId = openId || ''
     this.isLoggedIn = true
   }
+
+  /**
+   * 从另一个用户档案对象同步数据。
+   */
+  updateFromData(data: UserProfile): void {
+    this.nickname = data.nickname
+    this.avatar = data.avatar
+    this.userId = data.userId
+    this.openId = data.openId
+    this.unionId = data.unionId
+    this.isLoggedIn = data.isLoggedIn
+  }
 }

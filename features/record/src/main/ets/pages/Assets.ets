@@ -11,6 +11,7 @@ import {
   AccountManager,
   AccountTypeEnum,
   AppThemeState,
+  billSyncController,
   CommonConstants,
   GroupHeader,
   SystemOptions,
@@ -31,6 +32,7 @@ export struct Assets {
   @Local accountNameText: string = '';
   @Local accountBalanceText: string = '';
   @Local accountType: string = AccountTypeEnum.ASSET;
+  @Local editingAccountId: number = 0
   @Local saving: boolean = false
 
   aboutToAppear(): void {
@@ -58,7 +60,8 @@ export struct Assets {
       this.showToast('请输入账户名称');
       return -1;
     }
-    const duplicated: boolean = this.accountList.some((item: AccountBean) => item.name === name);
+    const duplicated: boolean =
+      this.accountList.some((item: AccountBean) => item.name === name && item.id !== this.editingAccountId);
     if (duplicated) {
       this.showToast('账户名称已存在');
       return -1;
@@ -82,6 +85,33 @@ export struct Assets {
   }
 
   /**
+   * 当前是否处于编辑账户状态。
+   */
+  private isEditingAccount(): boolean {
+    return this.editingAccountId > 0;
+  }
+
+  /**
+   * 将账户数据回填到表单，便于直接编辑。
+   */
+  private startEditingAccount(account: AccountBean): void {
+    this.editingAccountId = account.id;
+    this.accountNameText = account.name;
+    this.accountBalanceText = account.balance.toFixed(2);
+    this.accountType = account.type;
+  }
+
+  /**
+   * 重置账户表单，回到新增模式。
+   */
+  private resetAccountForm(): void {
+    this.editingAccountId = 0;
+    this.accountNameText = '';
+    this.accountBalanceText = '';
+    this.accountType = AccountTypeEnum.ASSET;
+  }
+
+  /**
    * 提交新增账户，并刷新列表让首页与记账页读取同一份数据。
    */
   private async submitAccount(): Promise<void> {
@@ -94,21 +124,61 @@ export struct Assets {
     }
 
     this.saving = true;
+    const editingMode: boolean = this.isEditingAccount();
     try {
-      await AccountManager.addAccount(
-        this.accountNameText.trim(),
-        balance,
-        this.accountType,
-        this.getDefaultIconByType()
-      );
-      this.accountNameText = '';
-      this.accountBalanceText = '';
-      this.accountType = AccountTypeEnum.ASSET;
+      if (editingMode) {
+        await AccountManager.updateAccount(
+          this.editingAccountId,
+          this.accountNameText.trim(),
+          balance,
+          this.accountType,
+          this.getDefaultIconByType()
+        );
+      } else {
+        await AccountManager.addAccount(
+          this.accountNameText.trim(),
+          balance,
+          this.accountType,
+          this.getDefaultIconByType()
+        );
+      }
+      this.resetAccountForm();
       await this.loadAccounts();
-      this.showToast('已添加账户');
+      billSyncController.notifyBillChanged();
+      this.showToast(editingMode ? '账户已更新' : '已添加账户');
     } catch (err) {
-      Clog.error('[Assets]', '新增账户失败', err);
-      this.showToast('添加失败，请稍后重试');
+      Clog.error('[Assets]', editingMode ? '更新账户失败' : '新增账户失败', err);
+      this.showToast(editingMode ? '更新失败，请稍后重试' : '添加失败，请稍后重试');
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  /**
+   * 删除当前编辑中的账户；若账单仍引用该账户则阻止删除。
+   */
+  private async deleteEditingAccount(): Promise<void> {
+    if (!this.isEditingAccount() || this.saving) {
+      return;
+    }
+    this.saving = true;
+    try {
+      const result: number = await AccountManager.deleteAccount(this.editingAccountId);
+      if (result === -2) {
+        this.showToast('该账户已被账单引用，暂不能删除');
+        return;
+      }
+      if (result <= 0) {
+        this.showToast('删除失败，请稍后重试');
+        return;
+      }
+      this.resetAccountForm();
+      await this.loadAccounts();
+      billSyncController.notifyBillChanged();
+      this.showToast('账户已删除');
+    } catch (err) {
+      Clog.error('[Assets]', '删除账户失败', err);
+      this.showToast('删除失败，请稍后重试');
     } finally {
       this.saving = false;
     }
@@ -184,7 +254,8 @@ export struct Assets {
   @Builder
   private AccountCreateSection() {
     ListItemGroup({
-      header: GroupHeader('新增账户', '保存后记账页可直接选择'),
+      header: GroupHeader(this.isEditingAccount() ? '编辑账户' : '新增账户',
+        this.isEditingAccount() ? '修改后会同步历史账单中的账户名称' : '保存后记账页可直接选择'),
       style: ListItemGroupStyle.CARD
     }) {
       ListItem() {
@@ -220,18 +291,63 @@ export struct Assets {
           }
           .width('100%')
 
-          Button(this.saving ? '保存中...' : '添加账户')
+          if (this.isEditingAccount()) {
+            Row({ space: 10 }) {
+              Button('取消编辑')
+                .layoutWeight(1)
+                .height(46)
+                .backgroundColor(this.themeState.backgroundPrimary)
+                .fontColor(this.themeState.fontPrimary)
+                .fontWeight(FontWeight.Medium)
+                .borderRadius(14)
+                .border({ width: 1, color: this.themeState.compDivider })
+                .enabled(!this.saving)
+                .stateEffect(false)
+                .onClick(() => {
+                  this.resetAccountForm();
+                })
+
+              Button(this.saving ? '保存中...' : '保存修改')
+                .layoutWeight(1)
+                .height(46)
+                .backgroundColor(this.themeState.brand as ResourceColor)
+                .fontColor(this.themeState.fontOnPrimary)
+                .fontWeight(FontWeight.Bold)
+                .borderRadius(14)
+                .enabled(!this.saving)
+                .stateEffect(false)
+                .onClick(() => {
+                  this.submitAccount();
+                })
+            }
             .width('100%')
-            .height(46)
-            .backgroundColor(this.themeState.brand as ResourceColor)
-            .fontColor(this.themeState.fontOnPrimary)
-            .fontWeight(FontWeight.Bold)
-            .borderRadius(14)
-            .enabled(!this.saving)
-            .stateEffect(false)
-            .onClick(() => {
-              this.submitAccount();
-            })
+
+            Button(this.saving ? '处理中...' : '删除当前账户')
+              .width('100%')
+              .height(42)
+              .backgroundColor('#FFF1F2')
+              .fontColor('#DC2626')
+              .fontWeight(FontWeight.Medium)
+              .borderRadius(14)
+              .enabled(!this.saving)
+              .stateEffect(false)
+              .onClick(() => {
+                this.deleteEditingAccount();
+              })
+          } else {
+            Button(this.saving ? '保存中...' : '添加账户')
+              .width('100%')
+              .height(46)
+              .backgroundColor(this.themeState.brand as ResourceColor)
+              .fontColor(this.themeState.fontOnPrimary)
+              .fontWeight(FontWeight.Bold)
+              .borderRadius(14)
+              .enabled(!this.saving)
+              .stateEffect(false)
+              .onClick(() => {
+                this.submitAccount();
+              })
+          }
         }
         .width('100%')
         .padding(16)
@@ -295,6 +411,9 @@ export struct Assets {
             .height(60)
             .padding({ left: 16, right: 16 })
             .backgroundColor(this.themeState.compBackgroundPrimary)
+            .onClick(() => {
+              this.startEditingAccount(item);
+            })
           }
         }, (item: AccountBean) => `${item.id}`)
       }

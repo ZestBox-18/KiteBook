@@ -15,6 +15,7 @@ import {
   BillTypeEnum,
   BudgetBean,
   BudgetManager,
+  billSyncController,
   CategoryBean,
   CategoryManager,
   CommonConstants,
@@ -25,12 +26,28 @@ import {
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
-import { WindowUtil } from 'kite_utils';
+import { WindowUtil, dbManager } from 'kite_utils';
 import { UserProfile } from '../entities/UserProfile';
 import { common } from '@kit.AbilityKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 
 const DAY_MS: number = 24 * 60 * 60 * 1000;
+const LATEST_JSON_BACKUP_FILE_NAME: string = 'kitebook_backup_latest.json';
+
+class BackupPayload {
+  exportedAt: number = 0;
+  exportRange: string = '';
+  billCount: number = 0;
+  accountCount: number = 0;
+  categoryCount: number = 0;
+  budgetCount: number = 0;
+  bills: BillBean[] = [];
+  accounts: AccountBean[] = [];
+  categories: CategoryBean[] = [];
+  budgets: BudgetBean[] = [];
+  settings: SystemOptions = new SystemOptions();
+  userProfile: UserProfile = new UserProfile();
+}
 
 class ExportRangeInfo {
   startTime: number = 0;
@@ -61,10 +78,18 @@ export struct DataExport {
   @Local exportRange: string = 'all'
   @Local lastExportPath: string = ''
   @Local lastExportSummary: string = ''
+  @Local importing: boolean = false
+  @Local latestBackupPath: string = ''
+  @Local latestBackupAvailable: boolean = false
+  @Local lastImportSummary: string = ''
   // 主题颜色
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
   private context = getContext(this) as common.UIAbilityContext;
+
+  aboutToAppear(): void {
+    this.refreshLatestBackupState();
+  }
 
   private buildRangeInfo(): ExportRangeInfo {
     if (this.exportRange === 'month') {
@@ -114,6 +139,22 @@ export struct DataExport {
     return exportDir;
   }
 
+  private getLatestJsonBackupPath(): string {
+    return `${this.ensureExportDir()}/${LATEST_JSON_BACKUP_FILE_NAME}`;
+  }
+
+  private refreshLatestBackupState(): void {
+    const latestBackupPath: string = this.getLatestJsonBackupPath();
+    try {
+      fs.statSync(latestBackupPath);
+      this.latestBackupAvailable = true;
+      this.latestBackupPath = latestBackupPath;
+    } catch {
+      this.latestBackupAvailable = false;
+      this.latestBackupPath = '';
+    }
+  }
+
   private writeExportFile(fileName: string, content: string): string {
     const exportDir: string = this.ensureExportDir();
     const filePath: string = `${exportDir}/${fileName}`;
@@ -121,6 +162,10 @@ export struct DataExport {
     fs.writeSync(file.fd, content, { offset: 0, encoding: 'utf-8' });
     fs.closeSync(file);
     return filePath;
+  }
+
+  private writeLatestJsonBackup(content: string): string {
+    return this.writeExportFile(LATEST_JSON_BACKUP_FILE_NAME, content);
   }
 
   private escapeCsvValue(value: string): string {
@@ -148,20 +193,131 @@ export struct DataExport {
     categories: CategoryBean[],
     budgets: BudgetBean[]
   ): string {
-    return JSON.stringify({
-      exportedAt: Date.now(),
-      exportRange: rangeInfo.label,
-      billCount: bills.length,
-      accountCount: accounts.length,
-      categoryCount: categories.length,
-      budgetCount: budgets.length,
-      bills: bills,
-      accounts: accounts,
-      categories: categories,
-      budgets: budgets,
-      settings: this.optionSystem,
-      userProfile: this.userProfile
-    }, null, 2);
+    const payload: BackupPayload = new BackupPayload();
+    payload.exportedAt = Date.now();
+    payload.exportRange = rangeInfo.label;
+    payload.billCount = bills.length;
+    payload.accountCount = accounts.length;
+    payload.categoryCount = categories.length;
+    payload.budgetCount = budgets.length;
+    payload.bills = bills;
+    payload.accounts = accounts;
+    payload.categories = categories;
+    payload.budgets = budgets;
+    payload.settings = this.optionSystem;
+    payload.userProfile = this.userProfile;
+    return JSON.stringify(payload, null, 2);
+  }
+
+  private async clearTable(tableName: string): Promise<void> {
+    await dbManager.dbStore?.executeSql(`DELETE FROM ${tableName}`);
+  }
+
+  private async restoreAccounts(accounts: AccountBean[]): Promise<void> {
+    for (const account of accounts) {
+      await dbManager.dbStore?.insert('accounts', {
+        id: account.id,
+        name: account.name,
+        balance: account.balance,
+        type: account.type,
+        icon: account.icon,
+        created_at: account.createdAt,
+        updated_at: account.updatedAt
+      });
+    }
+  }
+
+  private async restoreCategories(categories: CategoryBean[]): Promise<void> {
+    for (const category of categories) {
+      await dbManager.dbStore?.insert('categories', {
+        id: category.id,
+        name: category.name,
+        type: category.type,
+        icon: category.icon,
+        sort_order: category.sortOrder,
+        is_system: category.isSystem ? 1 : 0,
+        created_at: category.createdAt,
+        updated_at: category.updatedAt
+      });
+    }
+  }
+
+  private async restoreBudgets(budgets: BudgetBean[]): Promise<void> {
+    for (const budget of budgets) {
+      await dbManager.dbStore?.insert('budgets', {
+        id: budget.id,
+        category: budget.category,
+        amount: budget.amount,
+        month: budget.month,
+        created_at: budget.createdAt,
+        updated_at: budget.updatedAt
+      });
+    }
+  }
+
+  private async restoreBills(bills: BillBean[]): Promise<void> {
+    for (const bill of bills) {
+      await dbManager.dbStore?.insert('bills', {
+        id: bill.id,
+        type: bill.type,
+        category: bill.category,
+        amount: bill.amount,
+        account: bill.account,
+        target_account: bill.targetAccount,
+        date: bill.date,
+        remark: bill.remark,
+        created_at: bill.createdAt,
+        updated_at: bill.updatedAt
+      });
+    }
+  }
+
+  private async restoreSnapshot(payload: BackupPayload): Promise<void> {
+    await dbManager.dbStore?.beginTransaction();
+    try {
+      await this.clearTable('bills');
+      await this.clearTable('budgets');
+      await this.clearTable('categories');
+      await this.clearTable('accounts');
+      await this.restoreAccounts(payload.accounts);
+      await this.restoreCategories(payload.categories);
+      await this.restoreBudgets(payload.budgets);
+      await this.restoreBills(payload.bills);
+      await dbManager.dbStore?.commit();
+    } catch (error) {
+      await dbManager.dbStore?.rollBack();
+      throw new Error('restore snapshot failed');
+    }
+  }
+
+  private async importLatestBackup(): Promise<void> {
+    if (this.importing || this.exporting) {
+      return;
+    }
+    this.refreshLatestBackupState();
+    if (!this.latestBackupAvailable || this.latestBackupPath.length === 0) {
+      this.showToast('还没有可恢复的 JSON 备份');
+      return;
+    }
+
+    this.importing = true;
+    try {
+      const content: string = fs.readTextSync(this.latestBackupPath);
+      const payload: BackupPayload = JSON.parse(content);
+      await this.restoreSnapshot(payload);
+      this.optionSystem.updateFromData(payload.settings);
+      this.userProfile.updateFromData(payload.userProfile);
+      PersistenceV2.save('SystemOptions');
+      PersistenceV2.save('UserProfile');
+      billSyncController.notifyBillChanged();
+      this.lastImportSummary =
+        `已恢复账单 ${payload.bills.length} 条，账户 ${payload.accounts.length} 个，分类 ${payload.categories.length} 个，预算 ${payload.budgets.length} 条`;
+      this.showToast('恢复完成');
+    } catch {
+      this.showToast('恢复失败，请检查最近备份文件');
+    } finally {
+      this.importing = false;
+    }
   }
 
   private showToast(message: string): void {
@@ -197,6 +353,8 @@ export struct DataExport {
       if (this.exportFormat === 'json') {
         const jsonContent: string = this.buildJsonContent(rangeInfo, bills, accounts, categories, budgets);
         filePath = this.writeExportFile(this.buildExportFileName('json'), jsonContent);
+        this.writeLatestJsonBackup(jsonContent);
+        this.refreshLatestBackupState();
       } else {
         const csvContent: string = this.buildCsvContent(bills);
         filePath = this.writeExportFile(this.buildExportFileName('csv'), csvContent);
@@ -248,6 +406,13 @@ export struct DataExport {
                   .width('100%')
 
                 Text('JSON 会导出完整账本快照，CSV 会导出当前范围内的账单明细。')
+                  .fontSize(12)
+                  .fontWeight(this.optionSystem.fontThickness)
+                  .fontColor($r('app.color.text_secondary'))
+                  .margin({ top: 6 })
+                  .width('100%')
+
+                Text('导出 JSON 时会同时更新一份“最近备份”，可直接用于本机恢复。')
                   .fontSize(12)
                   .fontWeight(this.optionSystem.fontThickness)
                   .fontColor($r('app.color.text_secondary'))
@@ -405,6 +570,47 @@ export struct DataExport {
           }
           .padding({ left: 16, right: 16, top: 8 })
 
+          ListItemGroup({
+            header: GroupHeader('数据恢复', '恢复会覆盖当前本地账本'),
+            space: 1,
+            style: ListItemGroupStyle.CARD
+          }) {
+            ListItem() {
+              Column({ space: 10 }) {
+                Text(this.latestBackupAvailable ? '最近 JSON 备份已就绪，可直接恢复。' : '暂无最近 JSON 备份，请先导出一次 JSON。')
+                  .fontSize(14)
+                  .fontWeight(this.optionSystem.fontThickness)
+                  .fontColor(this.themeState.fontPrimary)
+                  .width('100%')
+
+                if (this.latestBackupPath.length > 0) {
+                  Text(this.latestBackupPath)
+                    .fontSize(12)
+                    .fontWeight(this.optionSystem.fontThickness)
+                    .fontColor(this.themeState.fontSecondary)
+                    .width('100%')
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                }
+
+                Button(this.importing ? '恢复中...' : '恢复最近 JSON 备份')
+                  .width('100%')
+                  .height(46)
+                  .backgroundColor(this.latestBackupAvailable ? this.themeState.brand : '#D1D5DB')
+                  .fontWeight(this.optionSystem.fontThickness)
+                  .fontColor(Color.White)
+                  .borderRadius(12)
+                  .enabled(this.latestBackupAvailable && !this.importing && !this.exporting)
+                  .onClick(() => {
+                    this.importLatestBackup();
+                  })
+              }
+              .width('100%')
+              .padding(16)
+              .alignItems(HorizontalAlign.Start)
+            }
+          }
+
           if (this.lastExportPath.length > 0) {
             ListItemGroup({
               header: GroupHeader('最近导出'),
@@ -430,6 +636,23 @@ export struct DataExport {
                 .width('100%')
                 .padding(16)
                 .alignItems(HorizontalAlign.Start)
+              }
+            }
+          }
+
+          if (this.lastImportSummary.length > 0) {
+            ListItemGroup({
+              header: GroupHeader('最近恢复'),
+              space: 1,
+              style: ListItemGroupStyle.CARD
+            }) {
+              ListItem() {
+                Text(this.lastImportSummary)
+                  .fontSize(14)
+                  .fontWeight(this.optionSystem.fontThickness)
+                  .fontColor(this.themeState.fontPrimary)
+                  .width('100%')
+                  .padding(16)
               }
             }
           }

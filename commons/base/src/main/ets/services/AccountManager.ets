@@ -13,6 +13,7 @@ import { AccountBean, AccountTypeEnum } from '../entities/AccountBean';
 
 const TAG: string = '[AccountManager]';
 const TABLE_NAME: string = 'accounts';
+const BILL_TABLE_NAME: string = 'bills';
 
 class AccountSeed {
   name: string = '';
@@ -120,6 +121,39 @@ export class AccountManager {
   }
 
   /**
+   * 按主键查询账户详情，供编辑和删除前校验使用。
+   */
+  static async getAccountById(id: number): Promise<AccountBean | null> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+
+    return new Promise<AccountBean | null>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          if (rows.length === 0) {
+            resolve(null);
+            return;
+          }
+          const row: Record<string, object> = rows[0];
+          const account: AccountBean = new AccountBean();
+          account.id = Number(row['id']);
+          account.name = String(row['name']);
+          account.balance = Number(row['balance']);
+          account.type = String(row['type']);
+          account.icon = String(row['icon'] ?? 'creditcard');
+          account.createdAt = Number(row['created_at']);
+          account.updatedAt = Number(row['updated_at']);
+          resolve(account);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询账户详情失败, code=${err.code}, msg=${err.message}`);
+          reject(null);
+        });
+    });
+  }
+
+  /**
    * 按名称增量更新账户余额，供账单增删改时复用。
    */
   static async updateAccountBalanceByName(name: string, delta: number): Promise<boolean> {
@@ -148,6 +182,90 @@ export class AccountManager {
         .catch((err: BusinessError) => {
           console.error(`${TAG} 更新账户余额失败, code=${err.code}, msg=${err.message}`);
           reject(false);
+        });
+    });
+  }
+
+  /**
+   * 更新账户基础信息；当账户名称变更时，同步历史账单中的来源与目标账户名称。
+   */
+  static async updateAccount(
+    id: number,
+    name: string,
+    balance: number,
+    type: string,
+    icon: string
+  ): Promise<number> {
+    const originalAccount: AccountBean | null = await AccountManager.getAccountById(id);
+    if (originalAccount === null) {
+      return -1;
+    }
+
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+    const data: relationalStore.ValuesBucket = {
+      name: name,
+      balance: balance,
+      type: type,
+      icon: icon,
+      updated_at: Date.now()
+    };
+
+    return new Promise<number>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then(async (num: number) => {
+          if (num <= 0) {
+            reject(-1);
+            return;
+          }
+          if (originalAccount.name !== name) {
+            await AccountManager.renameBillsForSourceAccount(originalAccount.name, name);
+            await AccountManager.renameBillsForTargetAccount(originalAccount.name, name);
+          }
+          resolve(num);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 更新账户失败, code=${err.code}, msg=${err.message}`);
+          reject(-1);
+        });
+    });
+  }
+
+  /**
+   * 判断账户是否已被任意账单引用，用于删除前保护。
+   */
+  static async hasReferencedBills(name: string): Promise<boolean> {
+    const sourceMatched: boolean = await AccountManager.hasBillReferenceByColumn('account', name);
+    if (sourceMatched) {
+      return true;
+    }
+    return AccountManager.hasBillReferenceByColumn('target_account', name);
+  }
+
+  /**
+   * 删除账户；仅在没有账单引用时允许删除。
+   */
+  static async deleteAccount(id: number): Promise<number> {
+    const account: AccountBean | null = await AccountManager.getAccountById(id);
+    if (account === null) {
+      return -1;
+    }
+    const hasReferencedBills: boolean = await AccountManager.hasReferencedBills(account.name);
+    if (hasReferencedBills) {
+      return -2;
+    }
+
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+
+    return new Promise<number>((resolve, reject) => {
+      dbManager.dbStore?.delete(predicates)
+        .then((num: number) => {
+          resolve(num);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 删除账户失败, code=${err.code}, msg=${err.message}`);
+          reject(-1);
         });
     });
   }
@@ -222,6 +340,72 @@ export class AccountManager {
         })
         .catch((err: BusinessError) => {
           console.error(`${TAG} 写入默认账户失败, code=${err.code}, msg=${err.message}`);
+          reject(err);
+        });
+    });
+  }
+
+  /**
+   * 判断账单表的指定列中是否存在对账户名称的引用。
+   */
+  private static async hasBillReferenceByColumn(columnName: string, name: string): Promise<boolean> {
+    const predicates = new relationalStore.RdbPredicates(BILL_TABLE_NAME);
+    predicates.equalTo(columnName, name);
+
+    return new Promise<boolean>((resolve, reject) => {
+      dbManager.dbStore?.query(predicates)
+        .then((result) => {
+          const rows = resultSet2Record(result) as Record<string, object>[];
+          resolve(rows.length > 0);
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 查询账户引用失败, code=${err.code}, msg=${err.message}`);
+          reject(false);
+        });
+    });
+  }
+
+  /**
+   * 账户改名后同步账单来源账户字段。
+   */
+  private static async renameBillsForSourceAccount(originalName: string, nextName: string): Promise<void> {
+    const predicates = new relationalStore.RdbPredicates(BILL_TABLE_NAME);
+    predicates.equalTo('account', originalName);
+    const data: relationalStore.ValuesBucket = {
+      account: nextName,
+      updated_at: Date.now()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then(() => {
+          resolve();
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 同步来源账户名称失败, code=${err.code}, msg=${err.message}`);
+          reject(err);
+        });
+    });
+  }
+
+  /**
+   * 账户改名后同步账单目标账户字段。
+   */
+  private static async renameBillsForTargetAccount(originalName: string, nextName: string): Promise<void> {
+    const predicates = new relationalStore.RdbPredicates(BILL_TABLE_NAME);
+    predicates.equalTo('target_account', originalName);
+    const data: relationalStore.ValuesBucket = {
+      target_account: nextName,
+      updated_at: Date.now()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then(() => {
+          resolve();
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 同步目标账户名称失败, code=${err.code}, msg=${err.message}`);
           reject(err);
         });
     });
