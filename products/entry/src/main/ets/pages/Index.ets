@@ -5,8 +5,8 @@
  * @version 1.0
  * @description: 主入口页面，包含底部 Tab 导航
  */
-import { hdsMaterial, HdsTabs, HdsAnimationMode } from '@kit.UIDesignKit';
-import { billSyncController, mainTabController, fabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
+import { hdsMaterial, HdsTabs } from '@kit.UIDesignKit';
+import { billSyncController, mainTabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
 import { AddBillSheetComponent } from 'record';
@@ -23,6 +23,7 @@ struct Index {
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   @Local isBillingSheetShown: boolean = false
+  @Local currentTabIndex: number = 0
   // 断点系统
   @Local breakpointSystem: BreakpointSystem =
     AppStorageV2.connect(BreakpointSystem, 'breakpointSystem', () => new BreakpointSystem())!;
@@ -167,30 +168,27 @@ struct Index {
         lightColor: this.themeState.brand as ResourceColor
       })
       .onChange((index: number) => {
-        // 个人中心页面（索引3）隐藏悬浮按钮，其他页面显示
-        if (index === 3) {
-          fabController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION);
-        } else {
-          fabController.applyShowAnimation(HdsAnimationMode.SCROLL_ANIMATION);
-        }
+        this.currentTabIndex = index;
       })
       .width('100%')
       .height('100%')
 
       // 悬浮记账按钮 - 固定在右下角，比 TabBar 高一点
-      DraggableFab({
-        optionSystem: this.optionSystem,
-        themeState: this.themeState,
-        onFabClick: () => {
-          this.openBillingModal();
-        }
-      })
-        .margin({ bottom: 100, right: 24 })
-        .bindSheet($$this.isBillingSheetShown, this.AddBillSheetBuilder(), {
-          detents: [SheetSize.LARGE],
-          showClose: false,
-          enableFloatingDragBar: true,
+      if (this.currentTabIndex !== 3) {
+        DraggableFab({
+          optionSystem: this.optionSystem,
+          themeState: this.themeState,
+          onFabClick: () => {
+            this.openBillingModal();
+          }
         })
+          .margin({ bottom: 100, right: 24 })
+          .bindSheet($$this.isBillingSheetShown, this.AddBillSheetBuilder(), {
+            detents: [SheetSize.LARGE],
+            showClose: false,
+            enableFloatingDragBar: true,
+          })
+      }
     }
     .width('100%')
     .height('100%')
