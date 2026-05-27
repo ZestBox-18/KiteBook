@@ -104,133 +104,132 @@ export struct Index {
 
   build() {
     HdsNavigation(this.pageInfos) {
-      Column() {
-        List({ space: 10 }) {
-          // 用户信息卡片
-          ListItemGroup({
-            space: 5,
-            style: ListItemGroupStyle.CARD
-          }) {
-            UserCard({
-              profile: this.userProfile,
-              onEdit: () => {
-                this.showEditSheet = true
-              },
-              uiContext: this.getUIContext(),
-              loginAnimationTrigger: this.loginAnimationTrigger,
-              logoutAnimationTrigger: this.logoutAnimationTrigger,
-              loginFailedTrigger: this.loginFailedTrigger
+      List({ space: 10 }) {
+        ListItem().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
+
+        // 用户信息卡片
+        ListItemGroup({
+          space: 5,
+          style: ListItemGroupStyle.CARD
+        }) {
+          UserCard({
+            profile: this.userProfile,
+            onEdit: () => {
+              this.showEditSheet = true
+            },
+            uiContext: this.getUIContext(),
+            loginAnimationTrigger: this.loginAnimationTrigger,
+            logoutAnimationTrigger: this.logoutAnimationTrigger,
+            loginFailedTrigger: this.loginFailedTrigger
+          })
+        }
+
+        // 设置分组
+        ListItemGroup({
+          header: GroupHeader('设置'),
+          space: 1,
+          style: ListItemGroupStyle.CARD
+        }) {
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.paintpalette'),
+              title: '外观设置',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.APPEARANCE_SETTINGS)
+              }
             })
           }
 
-          // 设置分组
-          ListItemGroup({
-            header: GroupHeader('设置'),
-            space: 1,
-            style: ListItemGroupStyle.CARD
-          }) {
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.paintpalette'),
-                title: '外观设置',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.APPEARANCE_SETTINGS)
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.bell'),
-                title: '通知设置',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.NOTIFICATION_SETTINGS)
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.creditcard'),
-                title: '预算管理',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.BUDGET_SETTINGS)
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.arrow_up_circle'),
-                title: '数据导出',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.DATA_EXPORT)
-                }
-              })
-            }
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.bell'),
+              title: '通知设置',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.NOTIFICATION_SETTINGS)
+              }
+            })
           }
 
-          // 支持分组
-          ListItemGroup({
-            header: GroupHeader('支持'),
-            space: 1,
-            style: ListItemGroupStyle.CARD
-          }) {
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.hand_thumbsup'),
-                title: '给个好评',
-                onItemClick: () => {
-                  const link: string = 'https://appgallery.huawei.com/app/detail?id=cn.zestbox.kitebook';
-                  const want: Want = {
-                    action: 'ohos.want.action.viewData',
-                    entities: ['entity.system.browsable'],
-                    uri: link
-                  };
-                  this.context.startAbility(want).catch((error: BusinessError) => {
-                    Clog.error(TAG, `Failed to open link: ${error.message}`);
-                  });
-                }
-              })
-            }
-
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.gift'),
-                title: '投喂作者',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.SPONSORSHIP)
-                }
-              })
-            }
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.creditcard'),
+              title: '预算管理',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.BUDGET_SETTINGS)
+              }
+            })
           }
 
-          // 关于分组
-          ListItemGroup({
-            header: GroupHeader('关于'),
-            space: 1,
-            style: ListItemGroupStyle.CARD
-          }) {
-            ListItem() {
-              SettingItem({
-                icon: $r('sys.symbol.info_circle'),
-                title: '关于',
-                onItemClick: () => {
-                  this.navigateToSubPage(RouterUrlConstants.ABOUT)
-                }
-              })
-            }
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.arrow_up_circle'),
+              title: '数据导出',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.DATA_EXPORT)
+              }
+            })
+          }
+        }
+
+        // 支持分组
+        ListItemGroup({
+          header: GroupHeader('支持'),
+          space: 1,
+          style: ListItemGroupStyle.CARD
+        }) {
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.hand_thumbsup'),
+              title: '给个好评',
+              onItemClick: () => {
+                const link: string = 'https://appgallery.huawei.com/app/detail?id=cn.zestbox.kitebook';
+                const want: Want = {
+                  action: 'ohos.want.action.viewData',
+                  entities: ['entity.system.browsable'],
+                  uri: link
+                };
+                this.context.startAbility(want).catch((error: BusinessError) => {
+                  Clog.error(TAG, `Failed to open link: ${error.message}`);
+                });
+              }
+            })
+          }
+
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.gift'),
+              title: '投喂作者',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.SPONSORSHIP)
+              }
+            })
+          }
+        }
+
+        // 关于分组
+        ListItemGroup({
+          header: GroupHeader('关于'),
+          space: 1,
+          style: ListItemGroupStyle.CARD
+        }) {
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.info_circle'),
+              title: '关于',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.ABOUT)
+              }
+            })
           }
         }
       }
-      .width(CommonConstants.FULL_WIN)
-      .height(CommonConstants.FULL_WIN)
+      .width('100%')
+      .height('100%')
       .backgroundColor($r('app.color.start_window_background'))
-      .padding({
-        top: this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE,
-        left: 16,
-        right: 16
-      })
+      .padding({ left: 16, right: 16, bottom: 16 })
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+      .contentEndOffset(this.winUtil.mainWindowInfo.navIndicatorHeight + CommonConstants.TAB_HEIGHT + 8)
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
