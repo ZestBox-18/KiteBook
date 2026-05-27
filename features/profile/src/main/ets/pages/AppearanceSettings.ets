@@ -34,6 +34,7 @@ export struct AppearanceSettings {
 
   @Local colorModeExpanded: boolean = false
   @Local iconScale: number = 1
+  @Local iconAnimationVersion: number = 0
   private context = getContext(this) as common.UIAbilityContext;
 
   aboutToAppear(): void {
@@ -68,6 +69,67 @@ export struct AppearanceSettings {
     this.context.getApplicationContext().setColorMode(colorMode);
   }
 
+  /**
+   * 播放颜色模式图标弹跳动画，重复点击时只保留最后一轮动画。
+   */
+  private playIconBounceAnimation(): void {
+    this.iconAnimationVersion = this.iconAnimationVersion + 1
+    const currentVersion: number = this.iconAnimationVersion
+    this.getUIContext().animateTo({ duration: 120, curve: Curve.EaseIn }, () => {
+      this.iconScale = 0.6
+    })
+    setTimeout(() => {
+      if (currentVersion !== this.iconAnimationVersion) {
+        return
+      }
+      this.getUIContext().animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
+        this.iconScale = 1
+      })
+    }, 120)
+  }
+
+  /**
+   * 仅在主题索引真正变化时写入设置并应用主题。
+   */
+  private updateThemeSelection(index: number): void {
+    if (this.optionSystem.themeIndex === index) {
+      return
+    }
+    this.optionSystem.themeIndex = index
+    this.applyTheme(index)
+  }
+
+  /**
+   * 仅在字体粗细真正变化时写入设置。
+   */
+  private updateFontThickness(value: number): void {
+    if (this.optionSystem.fontThickness === value) {
+      return
+    }
+    this.optionSystem.fontThickness = value
+  }
+
+  /**
+   * 仅在图标粗细真正变化时写入设置。
+   */
+  private updateIconThickness(value: number): void {
+    if (this.optionSystem.iconThickness === value) {
+      return
+    }
+    this.optionSystem.iconThickness = value
+  }
+
+  /**
+   * 统一更新深色模式，避免重复写入同一状态。
+   */
+  private updateDarkMode(mode: string): void {
+    if (this.optionSystem.darkMode === mode) {
+      return
+    }
+    this.optionSystem.darkMode = mode
+    this.applyDarkMode(mode)
+  }
+
   build() {
     HdsNavDestination() {
       Column() {
@@ -89,8 +151,7 @@ export struct AppearanceSettings {
                       name: name,
                       isSelected: this.optionSystem.themeIndex === index,
                       onSelect: () => {
-                        this.optionSystem.themeIndex = index
-                        this.applyTheme(index)
+                        this.updateThemeSelection(index)
                       }
                     })
                   }
@@ -129,7 +190,7 @@ export struct AppearanceSettings {
                       this.optionSystem.fontThickness == 500 ? '正常' : '较粗')
                   .layoutWeight(1)
                   .onChange((value: number) => {
-                    this.optionSystem.fontThickness = value
+                    this.updateFontThickness(value)
                   })
               }
               .alignItems(VerticalAlign.Center)
@@ -167,7 +228,7 @@ export struct AppearanceSettings {
                       this.optionSystem.iconThickness == 500 ? '正常' : '较粗')
                   .layoutWeight(1)
                   .onChange((value: number) => {
-                    this.optionSystem.iconThickness = value
+                    this.updateIconThickness(value)
                   })
               }
               .alignItems(VerticalAlign.Center)
@@ -206,22 +267,16 @@ export struct AppearanceSettings {
                   .selectedColor(this.themeState.brand)
                   .switchPointColor('#FFFFFF')
                   .onChange((isOn: boolean) => {
-                    // 图标弹跳动画
-                    this.getUIContext().animateTo({ duration: 120, curve: Curve.EaseIn }, () => {
-                      this.iconScale = 0.6
-                    })
-                    setTimeout(() => {
-                      this.getUIContext().animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
-                        this.iconScale = 1
-                      })
-                    }, 120)
-
-                    // 展开/收起颜色模式
+                    if (isOn === this.isFollowSystem()) {
+                      return
+                    }
+                    this.playIconBounceAnimation()
                     this.getUIContext().animateTo({ duration: 250, curve: Curve.EaseInOut }, () => {
                       this.colorModeExpanded = !isOn
                     })
-                    this.optionSystem.darkMode = isOn ? 'auto' : (this.isDarkMode() ? 'dark' : 'light')
-                    this.applyDarkMode(this.optionSystem.darkMode)
+                    const nextMode: string = isOn ? 'auto' :
+                      (this.optionSystem.darkMode === 'dark' ? 'dark' : 'light')
+                    this.updateDarkMode(nextMode)
                   })
               }
               .width('100%')
@@ -243,18 +298,12 @@ export struct AppearanceSettings {
                   .selectedColor(this.themeState.brand)
                   .switchPointColor('#FFFFFF')
                   .onChange((isOn: boolean) => {
-                    // 图标弹跳动画
-                    this.getUIContext().animateTo({ duration: 120, curve: Curve.EaseIn }, () => {
-                      this.iconScale = 0.6
-                    })
-                    setTimeout(() => {
-                      this.getUIContext().animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
-                        this.iconScale = 1
-                      })
-                    }, 120)
-
-                    this.optionSystem.darkMode = isOn ? 'dark' : 'light'
-                    this.applyDarkMode(this.optionSystem.darkMode)
+                    const nextMode: string = isOn ? 'dark' : 'light'
+                    if (nextMode === this.optionSystem.darkMode) {
+                      return
+                    }
+                    this.playIconBounceAnimation()
+                    this.updateDarkMode(nextMode)
                   })
               }
               .width('100%')
