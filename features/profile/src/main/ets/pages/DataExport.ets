@@ -85,7 +85,14 @@ export struct DataExport {
   // 主题颜色
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
-  private context = getContext(this) as common.UIAbilityContext;
+
+  private getAbilityContext(): common.UIAbilityContext | null {
+    const hostContext = this.getUIContext().getHostContext()
+    if (!hostContext) {
+      return null
+    }
+    return hostContext as common.UIAbilityContext
+  }
 
   aboutToAppear(): void {
     this.refreshLatestBackupState();
@@ -130,7 +137,11 @@ export struct DataExport {
   }
 
   private ensureExportDir(): string {
-    const exportDir: string = `${this.context.filesDir}/exports`;
+    const context = this.getAbilityContext()
+    if (!context) {
+      return ''
+    }
+    const exportDir: string = `${context.filesDir}/exports`;
     try {
       fs.statSync(exportDir);
     } catch {
@@ -140,11 +151,20 @@ export struct DataExport {
   }
 
   private getLatestJsonBackupPath(): string {
-    return `${this.ensureExportDir()}/${LATEST_JSON_BACKUP_FILE_NAME}`;
+    const exportDir: string = this.ensureExportDir()
+    if (exportDir.length === 0) {
+      return ''
+    }
+    return `${exportDir}/${LATEST_JSON_BACKUP_FILE_NAME}`;
   }
 
   private refreshLatestBackupState(): void {
     const latestBackupPath: string = this.getLatestJsonBackupPath();
+    if (latestBackupPath.length === 0) {
+      this.latestBackupAvailable = false;
+      this.latestBackupPath = '';
+      return;
+    }
     try {
       fs.statSync(latestBackupPath);
       this.latestBackupAvailable = true;
@@ -157,6 +177,9 @@ export struct DataExport {
 
   private writeExportFile(fileName: string, content: string): string {
     const exportDir: string = this.ensureExportDir();
+    if (exportDir.length === 0) {
+      throw new Error('export dir unavailable');
+    }
     const filePath: string = `${exportDir}/${fileName}`;
     const file = fs.openSync(filePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
     fs.writeSync(file.fd, content, { offset: 0, encoding: 'utf-8' });

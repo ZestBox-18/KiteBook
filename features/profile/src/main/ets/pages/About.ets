@@ -10,12 +10,9 @@ import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState, 
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
-import { WindowUtil, Clog } from 'kite_utils';
+import { WindowUtil } from 'kite_utils';
 import { Want, common } from '@kit.AbilityKit';
 import { pasteboard } from '@kit.BasicServicesKit';
-import { promptAction } from '@kit.ArkUI';
-
-const TAG: string = '[About]';
 
 @ComponentV2
 export struct About {
@@ -23,38 +20,61 @@ export struct About {
   @Local winUtil: WindowUtil = AppStorageV2.connect(WindowUtil, 'winUtil')!;
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
-  private context = getContext(this) as common.UIAbilityContext;
   // 主题颜色
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
   // QQ 群号
   private qqGroupId: string = '123456789'
 
+  private getAbilityContext(): common.UIAbilityContext | null {
+    const hostContext = this.getUIContext().getHostContext()
+    if (!hostContext) {
+      return null
+    }
+    return hostContext as common.UIAbilityContext
+  }
+
+  private showToast(message: string): void {
+    try {
+      this.getUIContext().getPromptAction().showToast({
+        message: message,
+        duration: 1800
+      })
+    } catch {
+    }
+  }
+
   private copyToClipboard(text: string): void {
     try {
       const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
       const systemPasteboard = pasteboard.getSystemPasteboard();
       systemPasteboard.setData(pasteData).then(() => {
-        promptAction.showToast({ message: '已复制' });
+        this.showToast('已复制')
       }).catch(() => {
-        promptAction.showToast({ message: '复制失败' });
+        this.showToast('复制失败')
       });
     } catch (e) {
-      promptAction.showToast({ message: '复制出错' });
+      this.showToast('复制出错')
     }
   }
 
   private joinQQGroup(): void {
+    const context = this.getAbilityContext()
+    if (!context) {
+      this.copyToClipboard(this.qqGroupId)
+      this.showToast('未能打开 QQ，已复制群号')
+      return
+    }
     const uri =
       `mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${this.qqGroupId}&card_type=group&source=qrcode`;
     try {
-      this.context.startAbility({ uri }).catch(() => {
+      context.startAbility({ uri }).catch(() => {
         this.copyToClipboard(this.qqGroupId);
-        promptAction.showToast({ message: '未能打开 QQ，已复制群号' });
+        this.showToast('未能打开 QQ，已复制群号')
       });
     } catch (e) {
       this.copyToClipboard(this.qqGroupId);
-      promptAction.showToast({ message: '未能打开 QQ，已复制群号' });
+      this.showToast('未能打开 QQ，已复制群号')
     }
   }
 
@@ -125,12 +145,16 @@ export struct About {
               .width('100%')
               .textAlign(TextAlign.Center)
               .onClick(() => {
+                const context = this.getAbilityContext()
+                if (!context) {
+                  return
+                }
                 const want: Want = {
                   action: 'ohos.want.action.viewData',
                   entities: ['entity.system.browsable'],
                   uri: 'http://beian.miit.gov.cn/'
                 };
-                this.context.startAbility(want);
+                context.startAbility(want);
               })
           }
           .padding({ top: 16, bottom: 24 })

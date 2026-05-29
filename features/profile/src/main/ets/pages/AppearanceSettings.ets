@@ -8,7 +8,7 @@
 
 import { SystemOptions, gAppThemes, gAppThemeNames, CommonConstants, mainTabController, AppThemeState, GroupHeader } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
-import { AppStorageV2, LengthMetrics, curves, ThemeControl } from '@kit.ArkUI';
+import { AppStorageV2, LengthMetrics, ThemeControl } from '@kit.ArkUI';
 import { ConfigurationConstant, common } from '@kit.AbilityKit';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { WindowUtil } from 'kite_utils';
@@ -35,7 +35,14 @@ export struct AppearanceSettings {
   @Local colorModeExpanded: boolean = false
   @Local iconScale: number = 1
   @Local iconAnimationVersion: number = 0
-  private context = getContext(this) as common.UIAbilityContext;
+
+  private getAbilityContext(): common.UIAbilityContext | null {
+    const hostContext = this.getUIContext().getHostContext()
+    if (!hostContext) {
+      return null
+    }
+    return hostContext as common.UIAbilityContext
+  }
 
   aboutToAppear(): void {
     this.colorModeExpanded = !this.isFollowSystem()
@@ -54,6 +61,10 @@ export struct AppearanceSettings {
    * 应用深色模式（实时生效）
    */
   private applyDarkMode(mode: string): void {
+    const context = this.getAbilityContext()
+    if (!context) {
+      return
+    }
     let colorMode: ConfigurationConstant.ColorMode;
     switch (mode) {
       case 'dark':
@@ -66,7 +77,7 @@ export struct AppearanceSettings {
         colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
         break;
     }
-    this.context.getApplicationContext().setColorMode(colorMode);
+    context.getApplicationContext().setColorMode(colorMode);
   }
 
   /**

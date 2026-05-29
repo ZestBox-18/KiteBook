@@ -11,7 +11,6 @@ import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } fr
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { WindowUtil, Clog, dbManager } from 'kite_utils';
-import { promptAction } from '@kit.ArkUI';
 
 const TAG: string = '[TestPage]';
 
@@ -24,6 +23,16 @@ export struct TestPage {
   @Local themeState: AppThemeState =
     AppStorageV2.connect(AppThemeState, 'themeState', () => new AppThemeState())!
   @Local isInserting: boolean = false
+
+  private showToast(message: string): void {
+    try {
+      this.getUIContext().getPromptAction().showToast({
+        message: message,
+        duration: 1800
+      })
+    } catch {
+    }
+  }
 
   /**
    * 插入示例数据
@@ -63,13 +72,13 @@ export struct TestPage {
       }
 
       if (successCount > 0) {
-        promptAction.showToast({ message: `成功插入 ${successCount} 条数据` });
+        this.showToast(`成功插入 ${successCount} 条数据`)
       } else {
-        promptAction.showToast({ message: '插入失败，请检查数据库' });
+        this.showToast('插入失败，请检查数据库')
       }
     } catch (err) {
       Clog.error(TAG, '插入示例数据失败', err);
-      promptAction.showToast({ message: '插入失败' });
+      this.showToast('插入失败')
     } finally {
       this.isInserting = false;
     }

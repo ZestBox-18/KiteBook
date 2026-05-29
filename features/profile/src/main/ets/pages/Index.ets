@@ -43,7 +43,14 @@ export struct Index {
   @Local loginAnimationTrigger: number = 0
   @Local logoutAnimationTrigger: number = 0
   @Local loginFailedTrigger: number = 0
-  private context = getContext(this) as common.UIAbilityContext;
+
+  private getAbilityContext(): common.UIAbilityContext | null {
+    const hostContext = this.getUIContext().getHostContext()
+    if (!hostContext) {
+      return null
+    }
+    return hostContext as common.UIAbilityContext
+  }
 
   /**
    * 页面路由表
@@ -182,13 +189,17 @@ export struct Index {
               icon: $r('sys.symbol.hand_thumbsup'),
               title: '给个好评',
               onItemClick: () => {
+                const context = this.getAbilityContext()
+                if (!context) {
+                  return
+                }
                 const link: string = 'https://appgallery.huawei.com/app/detail?id=cn.zestbox.kitebook';
                 const want: Want = {
                   action: 'ohos.want.action.viewData',
                   entities: ['entity.system.browsable'],
                   uri: link
                 };
-                this.context.startAbility(want).catch((error: BusinessError) => {
+                context.startAbility(want).catch((error: BusinessError) => {
                   Clog.error(TAG, `Failed to open link: ${error.message}`);
                 });
               }
