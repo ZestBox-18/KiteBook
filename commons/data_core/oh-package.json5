@@ -1,0 +1,12 @@
+{
+  "name": "data_core",
+  "version": "1.0.0",
+  "description": "KiteBook 数据运行时核心模块，承载数据库初始化、业务数据管理器和后续云同步能力。",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "base": "file:../base",
+    "kite_utils": "file:../kite_utils"
+  }
+}

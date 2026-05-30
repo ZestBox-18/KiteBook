@@ -32,8 +32,8 @@
       {
         "name": "default",
         "signingConfig": "default",
-        "targetSdkVersion": "6.1.0(23)",
-        "compatibleSdkVersion": "6.1.0(23)",
+        "targetSdkVersion": "26.0.0",
+        "compatibleSdkVersion": "26.0.0",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {
@@ -68,6 +68,30 @@
     {
       "name": "base",
       "srcPath": "./commons/base"
+    },
+    {
+      "name": "shared_assets",
+      "srcPath": "./commons/shared_assets",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "data_core",
+      "srcPath": "./commons/data_core",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
     },
     {
       "name": "kite_utils",
