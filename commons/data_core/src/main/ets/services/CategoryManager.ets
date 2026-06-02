@@ -9,8 +9,7 @@
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { BillTypeEnum } from '../entities/BillBean';
-import { CategoryBean } from '../entities/CategoryBean';
+import { BillTypeEnum, CategoryBean } from 'base';
 
 const TAG: string = '[CategoryManager]';
 const TABLE_NAME: string = 'categories';

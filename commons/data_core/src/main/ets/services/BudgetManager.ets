@@ -9,7 +9,7 @@
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { BudgetBean } from '../entities/BudgetBean';
+import { BudgetBean } from 'base';
 
 const TAG: string = '[BudgetManager]';
 const TABLE_NAME: string = 'budgets';

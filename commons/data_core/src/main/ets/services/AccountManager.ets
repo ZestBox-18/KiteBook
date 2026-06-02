@@ -9,7 +9,7 @@
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { AccountBean, AccountTypeEnum } from '../entities/AccountBean';
+import { AccountBean, AccountTypeEnum } from 'base';
 
 const TAG: string = '[AccountManager]';
 const TABLE_NAME: string = 'accounts';
