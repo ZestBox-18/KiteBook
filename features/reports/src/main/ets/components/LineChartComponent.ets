@@ -56,8 +56,6 @@ export struct LineChartComponent {
     }
     
     this.context.clearRect(0, 0, this.chartWidth, this.chartHeight);
-    this.context.fillStyle = '#FFFFFF';
-    this.context.fillRect(0, 0, this.chartWidth, this.chartHeight);
     
     const chartWidth = this.chartWidth - this.PADDING_LEFT - this.PADDING_RIGHT;
     const chartHeight = this.chartHeight - this.PADDING_TOP - this.PADDING_BOTTOM;
@@ -86,8 +84,6 @@ export struct LineChartComponent {
   
   private drawEmptyState(): void {
     this.context.clearRect(0, 0, this.chartWidth, this.chartHeight);
-    this.context.fillStyle = '#FFFFFF';
-    this.context.fillRect(0, 0, this.chartWidth, this.chartHeight);
     this.context.fillStyle = this.TEXT_COLOR;
     this.context.font = '14px sans-serif';
     this.context.textAlign = 'center';
