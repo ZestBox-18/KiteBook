@@ -16,12 +16,12 @@ export function GroupHeader(title: string, subtitle: string = '') {
   Row() {
     Text(title)
       .fontSize(12)
-      .fontColor($r('app.color.text_secondary'))
+      .fontColor($r('[shared_assets].color.text_secondary'))
 
     if (subtitle.length > 0) {
       Text(subtitle)
         .fontSize(12)
-        .fontColor($r('app.color.text_secondary'))
+        .fontColor($r('[shared_assets].color.text_secondary'))
     }
   }
   .width('100%')

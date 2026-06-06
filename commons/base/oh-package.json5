@@ -6,6 +6,6 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "kite_utils": "file:../kite_utils"
+    "shared_assets": "file:../shared_assets"
   }
 }

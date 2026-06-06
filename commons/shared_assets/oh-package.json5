@@ -1,0 +1,9 @@
+{
+  "name": "shared_assets",
+  "version": "1.0.0",
+  "description": "KiteBook 公共资源 HSP，集中承载跨模块共享的颜色和公共媒体资源。",
+  "main": "Index.ets",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {}
+}
