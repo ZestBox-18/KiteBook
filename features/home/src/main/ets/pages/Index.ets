@@ -9,18 +9,16 @@
 import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import {
   AccountBean,
-  AccountManager,
   AppThemeState,
   BillBean,
   BillGroup,
-  BillManager,
-  BudgetManager,
   billSyncController,
   CommonConstants,
   RouterUrlConstants,
   SystemOptions,
   mainTabController
 } from 'base';
+import { AccountManager, BillManager, BudgetManager } from 'data_core';
 import { Assets, Ordinary } from 'record';
 import { AppStorageV2, curves, LengthMetrics, PersistenceV2 } from '@kit.ArkUI';
 import { Clog, WindowUtil } from 'kite_utils';
@@ -452,7 +450,7 @@ export struct Index {
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
-    .backgroundColor($r('app.color.start_window_background'))
+    .backgroundColor($r('[shared_assets].color.start_window_background'))
     .mode(NavigationMode.Stack)
     .navDestination(this.PagesMap)
     .titleBar({
@@ -469,39 +467,39 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
+            backgroundColor: $r('[shared_assets].color.title_bar_bg'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
+            backgroundColor: $r('[shared_assets].color.title_bar_bg'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary'),
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary'),
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              textColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }

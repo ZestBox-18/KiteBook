@@ -270,7 +270,7 @@ export struct UserEditSheet {
         Text('请通过华为账号登录')
           .fontSize(16)
           .fontWeight(FontWeight.Normal)
-          .fontColor($r('app.color.text_secondary'))
+          .fontColor($r('[shared_assets].color.text_secondary'))
           .opacity(this.oldTextOpacity)
           .translate({ x: this.oldTextTranslateX })
           .animation({ curve: curves.springMotion(0.6, 0.9) })
@@ -280,7 +280,7 @@ export struct UserEditSheet {
           Text(this.currentNickname)
             .fontSize(16)
             .fontWeight(this.optionSystem.fontThickness)
-            .fontColor($r('app.color.text_primary'))
+            .fontColor($r('[shared_assets].color.text_primary'))
             .opacity(this.newTextOpacity)
             .translate({ x: this.newTextTranslateX })
             .animation({ curve: curves.springMotion(0.6, 0.9) })
@@ -310,7 +310,7 @@ export struct UserEditSheet {
             }
             .width('100%')
             .height(44)
-            .backgroundColor($r('app.color.huawei_account_red'))
+            .backgroundColor($r('[shared_assets].color.huawei_account_red'))
             .borderRadius(22)
             .onClick(() => this.updateUserInfo())
           }
@@ -356,17 +356,17 @@ export struct UserEditSheet {
               Row({ space: 6 }) {
                 SymbolGlyph($r('sys.symbol.arrow_right_circle'))
                   .fontSize(18)
-                  .fontColor([$r('app.color.text_secondary')])
+                  .fontColor([$r('[shared_assets].color.text_secondary')])
                   .fontWeight(this.optionSystem.iconThickness)
                 Text('退出登录')
                   .fontSize(15)
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor($r('[shared_assets].color.text_secondary'))
                   .fontWeight(this.optionSystem.fontThickness)
               }
             }
             .width('100%')
             .height(44)
-            .backgroundColor($r('app.color.action_bg'))
+            .backgroundColor($r('[shared_assets].color.action_bg'))
             .borderRadius(22)
             .onClick(() => {
               this.profile.reset();

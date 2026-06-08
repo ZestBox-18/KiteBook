@@ -8,21 +8,18 @@
 
 import {
   AccountBean,
-  AccountManager,
   AppThemeState,
   BillBean,
-  BillManager,
   BillTypeEnum,
   BudgetBean,
-  BudgetManager,
   billSyncController,
   CategoryBean,
-  CategoryManager,
   CommonConstants,
   GroupHeader,
   SystemOptions,
   mainTabController
 } from 'base';
+import { AccountManager, BillManager, BudgetManager, CategoryManager } from 'data_core';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
@@ -417,28 +414,28 @@ export struct DataExport {
                   Text('数据导出')
                     .fontSize(16)
                     .fontWeight(this.optionSystem.fontThickness)
-                    .fontColor($r('app.color.text_primary'))
+                    .fontColor($r('[shared_assets].color.text_primary'))
                 }
                 .width('100%')
 
                 Text('将您的记账数据导出为文件，可用于备份或导入其他设备。导出的数据包含账单记录、分类信息等。')
                   .fontSize(14)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor($r('[shared_assets].color.text_secondary'))
                   .margin({ top: 8 })
                   .width('100%')
 
                 Text('JSON 会导出完整账本快照，CSV 会导出当前范围内的账单明细。')
                   .fontSize(12)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor($r('[shared_assets].color.text_secondary'))
                   .margin({ top: 6 })
                   .width('100%')
 
                 Text('导出 JSON 时会同时更新一份“最近备份”，可直接用于本机恢复。')
                   .fontSize(12)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor($r('[shared_assets].color.text_secondary'))
                   .margin({ top: 6 })
                   .width('100%')
               }
@@ -459,7 +456,7 @@ export struct DataExport {
                 Text('CSV 表格')
                   .fontSize(16)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
 
                 Blank()
 
@@ -482,7 +479,7 @@ export struct DataExport {
                 Text('JSON 数据')
                   .fontSize(16)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
 
                 Blank()
 
@@ -512,7 +509,7 @@ export struct DataExport {
                 Text('全部数据')
                   .fontSize(16)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
 
                 Blank()
 
@@ -535,7 +532,7 @@ export struct DataExport {
                 Text('今年数据')
                   .fontSize(16)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
 
                 Blank()
 
@@ -558,7 +555,7 @@ export struct DataExport {
                 Text('本月数据')
                   .fontSize(16)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
 
                 Blank()
 
@@ -686,7 +683,7 @@ export struct DataExport {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.title_bar_bg'))
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
     }
     .titleBar({
       padding: {
@@ -705,28 +702,28 @@ export struct DataExport {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }

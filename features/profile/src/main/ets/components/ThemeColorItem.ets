@@ -26,7 +26,7 @@ export struct ThemeColorItem {
   @Local circleX: number = 12;
   @Local circleY: number = 12;
   @Local circleBorderRadius: number = 12;
-  @Local textColor: ResourceColor = $r('app.color.text_primary');
+  @Local textColor: ResourceColor = $r('[shared_assets].color.text_primary');
   @Local textX: number = 44;
   @Local optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
@@ -55,7 +55,7 @@ export struct ThemeColorItem {
       this.circleX = 12;
       this.circleY = 12;
       this.circleBorderRadius = 12;
-      this.textColor = $r('app.color.text_primary');
+      this.textColor = $r('[shared_assets].color.text_primary');
       this.textX = 44;
     }
   }
@@ -93,7 +93,7 @@ export struct ThemeColorItem {
     .width(100)
     .height(48)
     .borderRadius(12)
-    .backgroundColor($r('app.color.card_background'))
+    .backgroundColor($r('[shared_assets].color.card_background'))
     .clip(true)
     .onClick(() => {
       this.onSelect();

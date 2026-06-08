@@ -304,7 +304,7 @@ export struct UserCard {
           Text('点击登录')
             .fontSize(16)
             .fontWeight(this.optionSystem.fontThickness)
-            .fontColor($r('app.color.text_primary'))
+            .fontColor($r('[shared_assets].color.text_primary'))
             .opacity(this.oldTextOpacity)
             .translate({ x: this.oldTextTranslateX })
             .animation({ curve: curves.springMotion(0.6, 0.9) })
@@ -314,7 +314,7 @@ export struct UserCard {
             Text(this.currentNickname)
               .fontSize(16)
               .fontWeight(this.optionSystem.fontThickness)
-              .fontColor($r('app.color.text_primary'))
+              .fontColor($r('[shared_assets].color.text_primary'))
               .opacity(this.newTextOpacity)
               .translate({ x: this.newTextTranslateX })
               .animation({ curve: curves.springMotion(0.6, 0.9) })
@@ -325,7 +325,7 @@ export struct UserCard {
 
         Text('账号管理')
           .fontSize(12)
-          .fontColor($r('app.color.text_secondary'))
+          .fontColor($r('[shared_assets].color.text_secondary'))
           .margin({ top: 2 })
       }
       .alignItems(HorizontalAlign.Start)
@@ -336,7 +336,7 @@ export struct UserCard {
       SymbolGlyph($r("sys.symbol.chevron_right"))
         .fontSize(18)
         .fontWeight(this.optionSystem.iconThickness)
-        .fontColor([$r('app.color.text_secondary')])
+        .fontColor([$r('[shared_assets].color.text_secondary')])
     }
     .width('100%')
     .padding(16)

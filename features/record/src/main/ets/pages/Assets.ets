@@ -8,7 +8,6 @@
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from "@kit.UIDesignKit";
 import {
   AccountBean,
-  AccountManager,
   AccountTypeEnum,
   AppThemeState,
   billSyncController,
@@ -17,6 +16,7 @@ import {
   SystemOptions,
   mainTabController
 } from 'base';
+import { AccountManager } from 'data_core';
 import { AppStorageV2, LengthMetrics, PersistenceV2 } from '@kit.ArkUI';
 import { WindowUtil, Clog } from 'kite_utils';
 

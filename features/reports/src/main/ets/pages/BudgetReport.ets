@@ -32,7 +32,7 @@ export struct BudgetReport {
       }.width('100%').padding({ left: 16, right: 16, top: 12, bottom: 12 })
       this.SummaryCard();
       this.BudgetList();
-    }.width('100%').height('100%').backgroundColor($r('app.color.page_background'))
+    }.width('100%').height('100%').backgroundColor($r('[shared_assets].color.page_background'))
   }
   
   @Builder

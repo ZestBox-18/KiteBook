@@ -18,7 +18,7 @@ export struct SettingsGroup {
       // 分组标题
       Text(this.title)
         .fontSize(13)
-        .fontColor($r('app.color.text_secondary'))
+        .fontColor($r('[shared_assets].color.text_secondary'))
         .width('100%')
         .padding({ left: 20, bottom: 8 })
 
@@ -27,7 +27,7 @@ export struct SettingsGroup {
         this.content()
       }
       .width('100%')
-      .backgroundColor($r('app.color.card_background'))
+      .backgroundColor($r('[shared_assets].color.card_background'))
       .borderRadius(12)
       .margin({ left: 16, right: 16 })
     }

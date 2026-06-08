@@ -29,7 +29,7 @@ export struct CategoryReport {
       this.TimeDimensionSelector();
       this.PieChartArea();
       this.CategoryList();
-    }.width('100%').height('100%').backgroundColor($r('app.color.page_background'))
+    }.width('100%').height('100%').backgroundColor($r('[shared_assets].color.page_background'))
   }
   
   @Builder

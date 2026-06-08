@@ -11,18 +11,17 @@ import {
   AppThemeState,
   BillBean,
   BillGroup,
-  BillManager,
   BillTypeEnum,
-  Clog,
   CommonConstants,
   SystemOptions,
-  WindowUtil,
   billSyncController
 } from 'base';
+import { BillManager } from 'data_core';
 import { AppStorageV2, LengthMetrics, PersistenceV2, curves } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics } from '@ohos.arkui.node';
 import promptAction from '@ohos.promptAction';
+import { Clog, WindowUtil } from 'kite_utils';
 
 const TAG: string = '[BillingIndex]';
 const FILTER_ALL: string = 'all';
@@ -45,7 +44,6 @@ export struct Index {
   @Local totalBalance: number = 0;
   @Local totalCount: number = 0;
   @Local loading: boolean = false;
-
   private billSyncListenerId: number = -1;
   private readonly filterItems: SegmentButtonV2Items = new SegmentButtonV2Items([
     { text: '全部' },
@@ -385,7 +383,7 @@ export struct Index {
           this.updateFilterByIndex(selectedIndex);
         }
       })
-      .width('100%')
+        .width('100%')
     }
   }
 
@@ -457,7 +455,12 @@ export struct Index {
     }
     .width('100%')
     .justifyContent(FlexAlign.SpaceBetween)
-    .padding({ left: 16, right: 16, top: 14, bottom: 10 })
+    .padding({
+      left: 16,
+      right: 16,
+      top: 14,
+      bottom: 10
+    })
   }
 
   @Builder
@@ -544,7 +547,7 @@ export struct Index {
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
-    .backgroundColor($r('app.color.start_window_background'))
+    .backgroundColor($r('[shared_assets].color.start_window_background'))
     .mode(NavigationMode.Stack)
     .titleBar({
       style: {
@@ -560,23 +563,23 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg')
+            backgroundColor: $r('[shared_assets].color.title_bar_bg')
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             }
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg')
+            backgroundColor: $r('[shared_assets].color.title_bar_bg')
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             }
           }
         }

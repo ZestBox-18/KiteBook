@@ -27,18 +27,18 @@ export struct Sponsorship {
             Text('感谢你的投喂与支持')
               .fontSize(18)
               .fontWeight(this.optionSystem.fontThickness)
-              .fontColor($r('app.color.text_primary'))
+              .fontColor($r('[shared_assets].color.text_primary'))
 
             Text('每一份鼓励都是我持续更新的动力。你可以左右滑动选择支付宝或微信。')
               .fontSize(13)
               .lineHeight(18)
               .fontWeight(this.optionSystem.fontThickness)
-              .fontColor($r('app.color.text_secondary'))
+              .fontColor($r('[shared_assets].color.text_secondary'))
               .margin({ top: 8 })
           }
           .width('100%')
           .padding(16)
-          .backgroundColor($r('app.color.block_background'))
+          .backgroundColor($r('[shared_assets].color.block_background'))
           .borderRadius(16)
           .shadow(ShadowStyle.OUTER_DEFAULT_SM)
 
@@ -58,7 +58,7 @@ export struct Sponsorship {
       .height('100%')
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.Spring)
-      .backgroundColor($r('app.color.title_bar_bg'))
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
       .padding({ top: this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_MINI })
     }
     .titleBar({
@@ -78,28 +78,28 @@ export struct Sponsorship {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }
@@ -122,7 +122,7 @@ export struct Sponsorship {
       Text(title)
         .fontSize(16)
         .fontWeight(this.optionSystem.fontThickness)
-        .fontColor($r('app.color.text_primary'))
+        .fontColor($r('[shared_assets].color.text_primary'))
         .margin({ bottom: 12 })
 
       Image(imageRes)

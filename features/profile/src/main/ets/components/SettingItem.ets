@@ -32,19 +32,19 @@ export struct SettingItem {
           SymbolGlyph(this.icon)
             .fontSize(20)
             .fontWeight(this.optionSystem.iconThickness)
-            .fontColor([$r('app.color.text_primary')])
+            .fontColor([$r('[shared_assets].color.text_primary')])
 
           Text(this.title)
             .fontSize(16)
             .fontWeight(this.optionSystem.fontThickness)
-            .fontColor($r('app.color.text_primary'))
+            .fontColor($r('[shared_assets].color.text_primary'))
         }
 
         // 右侧箭头
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
           .fontWeight(this.optionSystem.iconThickness)
-          .fontColor([$r('app.color.text_primary')])
+          .fontColor([$r('[shared_assets].color.text_primary')])
       }
       .justifyContent(FlexAlign.SpaceBetween)
       .width('100%')

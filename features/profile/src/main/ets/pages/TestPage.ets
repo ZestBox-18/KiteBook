@@ -6,7 +6,8 @@
  * @description: 测试页面 - 用于插入测试数据
  */
 
-import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState, SystemOptions, BillManager, BillBean, BillTypeEnum } from 'base';
+import { CommonConstants, RouterUrlConstants, mainTabController, AppThemeState, SystemOptions, BillBean, BillTypeEnum } from 'base';
+import { BillManager } from 'data_core';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
@@ -155,7 +156,7 @@ export struct TestPage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.title_bar_bg'))
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
     }
     .titleBar({
       padding: {
@@ -174,28 +175,28 @@ export struct TestPage {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }

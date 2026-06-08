@@ -92,7 +92,7 @@ export struct About {
           }) {
             ListItem() {
               Column() {
-                Image($r('app.media.startIcon'))
+                Image($r('[shared_assets].media.appLogo'))
                   .width(80)
                   .height(80)
                   .borderRadius(16)
@@ -100,13 +100,13 @@ export struct About {
                 Text('纸鸢账本')
                   .fontSize(18)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
                   .margin({ top: 12 })
 
                 Text('v1.0.0')
                   .fontSize(14)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_secondary'))
+                  .fontColor($r('[shared_assets].color.text_secondary'))
                   .margin({ top: 4 })
                   .gesture(
                     LongPressGesture()
@@ -141,7 +141,7 @@ export struct About {
             Text('粤ICP备2024282649号-2A')
               .fontSize(12)
               .fontWeight(this.optionSystem.fontThickness)
-              .fontColor($r('app.color.text_secondary'))
+              .fontColor($r('[shared_assets].color.text_secondary'))
               .width('100%')
               .textAlign(TextAlign.Center)
               .onClick(() => {
@@ -165,7 +165,7 @@ export struct About {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.title_bar_bg'))
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
     }
     .titleBar({
       padding: {
@@ -184,28 +184,28 @@ export struct About {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }
@@ -234,14 +234,14 @@ export struct About {
       Text(text)
         .fontSize(16)
         .fontWeight(this.optionSystem.fontThickness)
-        .fontColor($r('app.color.text_primary'))
+        .fontColor($r('[shared_assets].color.text_primary'))
 
       Blank()
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(14)
         .fontWeight(this.optionSystem.iconThickness)
-        .fontColor([$r('app.color.text_secondary')])
+        .fontColor([$r('[shared_assets].color.text_secondary')])
     }
     .width('100%')
     .height(52)
@@ -263,14 +263,14 @@ export struct About {
       Text(label)
         .fontSize(16)
         .fontWeight(this.optionSystem.fontThickness)
-        .fontColor($r('app.color.text_primary'))
+        .fontColor($r('[shared_assets].color.text_primary'))
 
       Blank()
 
       Text(value)
         .fontSize(14)
         .fontWeight(this.optionSystem.fontThickness)
-        .fontColor($r('app.color.text_secondary'))
+        .fontColor($r('[shared_assets].color.text_secondary'))
         .maxLines(1)
         .gesture(
           LongPressGesture()

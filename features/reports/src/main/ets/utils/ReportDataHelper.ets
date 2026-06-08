@@ -6,7 +6,8 @@
  * @description: 报表模块数据聚合工具
  */
 
-import { BillBean, BillManager, BillTypeEnum, CategoryBean, CategoryManager } from 'base';
+import { BillBean, BillTypeEnum, CategoryBean } from 'base';
+import { BillManager, CategoryManager } from 'data_core';
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';

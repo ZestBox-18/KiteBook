@@ -45,13 +45,13 @@ export struct NotificationSettings {
                 SymbolGlyph($r('sys.symbol.bell_fill'))
                   .fontSize(20)
                   .fontWeight(this.optionSystem.iconThickness)
-                  .fontColor([$r('app.color.text_primary')])
+                  .fontColor([$r('[shared_assets].color.text_primary')])
                   .margin({ right: 12 })
 
                 Text('消息通知')
                   .fontSize(16)
                   .fontWeight(this.optionSystem.fontThickness)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
 
                 Blank()
 
@@ -90,7 +90,7 @@ export struct NotificationSettings {
                 )
 
                 Divider()
-                  .color($r('app.color.text_secondary'))
+                  .color($r('[shared_assets].color.text_secondary'))
                   .strokeWidth(0.5)
                   .opacity(0.2)
                   .padding({ left: 48 })
@@ -106,7 +106,7 @@ export struct NotificationSettings {
                 )
 
                 Divider()
-                  .color($r('app.color.text_secondary'))
+                  .color($r('[shared_assets].color.text_secondary'))
                   .strokeWidth(0.5)
                   .opacity(0.2)
                   .padding({ left: 48 })
@@ -122,7 +122,7 @@ export struct NotificationSettings {
                 )
 
                 Divider()
-                  .color($r('app.color.text_secondary'))
+                  .color($r('[shared_assets].color.text_secondary'))
                   .strokeWidth(0.5)
                   .opacity(0.2)
                   .padding({ left: 48 })
@@ -150,7 +150,7 @@ export struct NotificationSettings {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.title_bar_bg'))
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
     }
     .titleBar({
       padding: {
@@ -169,28 +169,28 @@ export struct NotificationSettings {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }
@@ -220,19 +220,19 @@ export struct NotificationSettings {
         SymbolGlyph(icon)
           .fontSize(20)
           .fontWeight(this.optionSystem.iconThickness)
-          .fontColor([$r('app.color.text_primary')])
+          .fontColor([$r('[shared_assets].color.text_primary')])
           .margin({ right: 12 })
 
         Column() {
           Text(title)
             .fontSize(16)
             .fontWeight(this.optionSystem.fontThickness)
-            .fontColor($r('app.color.text_primary'))
+            .fontColor($r('[shared_assets].color.text_primary'))
 
           Text(subtitle)
             .fontSize(12)
             .fontWeight(this.optionSystem.fontThickness)
-            .fontColor($r('app.color.text_secondary'))
+            .fontColor($r('[shared_assets].color.text_secondary'))
             .margin({ top: 2 })
         }
         .alignItems(HorizontalAlign.Start)

@@ -8,15 +8,13 @@
 
 import {
   AccountBean,
-  AccountManager,
   AppThemeState,
   BillBean,
-  BillManager,
   BillTypeEnum,
   CategoryBean,
-  CategoryManager,
   SystemOptions
 } from 'base';
+import { AccountManager, BillManager, CategoryManager } from 'data_core';
 import { curves } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics, LengthMetrics } from '@ohos.arkui.node';

@@ -1,4 +1,5 @@
-import { AccountBean, AccountManager, AppThemeState } from 'base';
+import { AccountBean, AppThemeState } from 'base';
+import { AccountManager } from 'data_core';
 import { AppStorageV2 } from '@kit.ArkUI';
 
 @ComponentV2
@@ -28,7 +29,7 @@ export struct AssetReport {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor($r('app.color.page_background'))
+    .backgroundColor($r('[shared_assets].color.page_background'))
   }
 
   @Builder

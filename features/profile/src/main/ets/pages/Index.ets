@@ -236,7 +236,7 @@ export struct Index {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.start_window_background'))
+      .backgroundColor($r('[shared_assets].color.start_window_background'))
       .padding({ left: 16, right: 16, bottom: 16 })
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.Spring)
@@ -260,41 +260,41 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
+            backgroundColor: $r('[shared_assets].color.title_bar_bg'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              textColor: $r('[shared_assets].color.text_secondary'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg'),
+            backgroundColor: $r('[shared_assets].color.title_bar_bg'),
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary'),
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary'),
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              textColor: $r('[shared_assets].color.text_secondary'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }
@@ -313,7 +313,7 @@ export struct Index {
       showClose: true,
       showInSubWindow: false,
       title: { title: '我的账号' },
-      backgroundColor: $r('app.color.card_background'),
+      backgroundColor: $r('[shared_assets].color.card_background'),
       dragBar: true
     })
   }

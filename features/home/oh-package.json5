@@ -7,6 +7,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "base": "file:../../commons/base",
+    "shared_assets": "file:../../commons/shared_assets",
+    "data_core": "file:../../commons/data_core",
     "kite_utils": "file:../../commons/kite_utils",
     "record": "file:../record",
   }

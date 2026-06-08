@@ -152,23 +152,23 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg')
+            backgroundColor: $r('[shared_assets].color.title_bar_bg')
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             }
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('app.color.title_bar_bg')
+            backgroundColor: $r('[shared_assets].color.title_bar_bg')
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             }
           }
         }
