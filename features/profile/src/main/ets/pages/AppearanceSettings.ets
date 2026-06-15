@@ -9,9 +9,9 @@
 import { SystemOptions, gAppThemes, gAppThemeNames, CommonConstants, mainTabController, AppThemeState, GroupHeader } from 'base';
 import { PersistenceV2 } from '@ohos.arkui.StateManagement';
 import { AppStorageV2, LengthMetrics, ThemeControl } from '@kit.ArkUI';
-import { ConfigurationConstant, common } from '@kit.AbilityKit';
+import { common } from '@kit.AbilityKit';
 import { hdsMaterial, HdsNavDestination, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
-import { WindowUtil } from 'kite_utils';
+import { SystemColorModeUtil, WindowUtil } from 'kite_utils';
 import { ThemeColorItem } from '../components/ThemeColorItem';
 
 @ComponentV2
@@ -65,19 +65,7 @@ export struct AppearanceSettings {
     if (!context) {
       return
     }
-    let colorMode: ConfigurationConstant.ColorMode;
-    switch (mode) {
-      case 'dark':
-        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
-        break;
-      case 'light':
-        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
-        break;
-      default: // 'auto'
-        colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
-        break;
-    }
-    context.getApplicationContext().setColorMode(colorMode);
+    SystemColorModeUtil.applySystemColorMode(context, mode);
   }
 
   /**
@@ -186,7 +174,7 @@ export struct AppearanceSettings {
               Row({ space: 10 }) {
                 Text('字体粗细')
                   .width(80)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
                   .fontWeight(this.optionSystem.fontThickness)
 
                 Slider({
@@ -221,7 +209,7 @@ export struct AppearanceSettings {
 
                 Row() {
                   SymbolGlyph($r('sys.symbol.paintpalette'))
-                    .fontColor([$r('app.color.text_primary')])
+                    .fontColor([$r('[shared_assets].color.text_primary')])
                     .fontSize(28)
                     .fontWeight(this.optionSystem.iconThickness)
                 }.width(80)
@@ -261,7 +249,7 @@ export struct AppearanceSettings {
                   ? $r('sys.symbol.circle_filled_and_circle')
                   : (this.isDarkMode() ? $r('sys.symbol.moon_1') : $r('sys.symbol.sun_min')))
                   .fontSize(20)
-                  .fontColor([$r('app.color.text_primary')])
+                  .fontColor([$r('[shared_assets].color.text_primary')])
                   .margin({ right: 12 })
                   .scale({ x: this.iconScale, y: this.iconScale })
                   .animation({ duration: 250, curve: Curve.EaseInOut })
@@ -269,7 +257,7 @@ export struct AppearanceSettings {
 
                 Text('跟随系统')
                   .fontSize(16)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
                   .fontWeight(this.optionSystem.fontThickness)
 
                 Blank()
@@ -300,7 +288,7 @@ export struct AppearanceSettings {
               Row() {
                 Text('深色模式')
                   .fontSize(16)
-                  .fontColor($r('app.color.text_primary'))
+                  .fontColor($r('[shared_assets].color.text_primary'))
                   .fontWeight(this.optionSystem.fontThickness)
 
                 Blank()
@@ -332,7 +320,7 @@ export struct AppearanceSettings {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor($r('app.color.title_bar_bg'))
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
     }
     .titleBar({
       padding: {
@@ -351,36 +339,36 @@ export struct AppearanceSettings {
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
         },
         originalStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         },
         scrollEffectStyle: {
-          backgroundStyle: { backgroundColor: $r('app.color.title_bar_bg') },
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('app.color.text_primary'),
-              subTitleColor: $r('app.color.text_secondary')
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
             },
             menuStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              textColor: $r('app.color.text_secondary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              textColor: $r('[shared_assets].color.text_secondary')
             },
             backIconStyle: {
-              backgroundColor: $r('app.color.action_bg'),
-              iconColor: $r('app.color.text_primary')
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
             }
           }
         }
@@ -403,7 +391,7 @@ export struct AppearanceSettings {
     Row() {
       Text(label)
         .fontSize(15)
-        .fontColor($r('app.color.text_primary'))
+        .fontColor($r('[shared_assets].color.text_primary'))
 
       Blank()
 

@@ -41,4 +41,6 @@ export { WindowUtil, WindowInfo, ImmersiveType } from './src/main/ets/utils/wind
 
 export { GlobalContext } from './src/main/ets/utils/context/GlobalContext'
 
+export { SystemColorModeUtil } from './src/main/ets/utils/theme/SystemColorModeUtil'
+
 export { HdsMiniBarButton } from './src/main/ets/third-party/hds-button/HdsMiniBarButton'

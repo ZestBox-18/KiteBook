@@ -1,8 +1,18 @@
-import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
+/**
+ * Copyright (C), 2026-06-16
+ * @author ZestBox
+ * @date 2026/06/16
+ * @version 1.0
+ * @description: 应用入口 Ability，负责数据库、窗口和系统颜色模式初始化
+ */
+
+import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppStorageV2, PersistenceV2, window } from '@kit.ArkUI';
-import { GlobalContext, ImmersiveType, WindowUtil } from 'kite_utils';
-import { dbManagerInit, SystemOptions } from 'base';
+import { GlobalContext, ImmersiveType, SystemColorModeUtil, WindowUtil } from 'kite_utils';
+import { SystemOptions } from 'base';
+import { dbManagerInit } from 'data_core';
 
 
 const DOMAIN = 0x0000;
@@ -26,48 +36,38 @@ export default class EntryAbility extends UIAbility {
     try {
       this.windowUtil = new WindowUtil(windowStage.getMainWindowSync());
     } catch (error) {
-      let err = error as BusinessError;
+      const err = error as BusinessError;
       hilog.error(0x0000, 'TestLog', `Failed to get main window. Code: ${err.code}, message: ${err.message}`);
     }
 
     windowStage.loadContent('pages/Index', (err) => {
-      try {
-        GlobalContext.initContext(windowStage.getMainWindowSync().getUIContext())
-      } catch (error) {
-        hilog.error(DOMAIN, 'testTag', 'Failed to get the content. Cause: %{public}s', JSON.stringify(err));
-      }
       if (err.code) {
         hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
         return;
       }
-      hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
-      /**
-       * 窗口管理类创建/设置沉浸式窗口
-       */
-      this.windowUtil!.setUIContext();
-      this.windowUtil!.setImmersiveType(ImmersiveType.IMMERSIVE);
-      this.windowUtil!.updateWindowInfo();
-      AppStorageV2.connect(WindowUtil, 'winUtil', () => this.windowUtil)
-
-      // loadContent 完成后，设置深色模式（此时 PersistenceV2 可以正常工作）
       try {
-        const options = PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
-        const darkMode = options.darkMode;
+        GlobalContext.initContext(windowStage.getMainWindowSync().getUIContext());
+      } catch (error) {
+        hilog.error(DOMAIN, 'testTag', 'Failed to init global UI context. Cause: %{public}s', JSON.stringify(error));
+      }
+      hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
 
-        let colorMode: ConfigurationConstant.ColorMode;
-        switch (darkMode) {
-          case 'dark':
-            colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
-            break;
-          case 'light':
-            colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
-            break;
-          default: // 'auto'
-            colorMode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
-            break;
-        }
+      const winUtil = this.windowUtil;
+      if (!winUtil) {
+        hilog.error(DOMAIN, 'testTag', 'Skip window setup because windowUtil is not initialized.');
+      } else {
+        // 初始化沉浸式窗口信息，并把同一个 WindowUtil 实例挂到全局状态。
+        winUtil.setUIContext();
+        winUtil.setImmersiveType(ImmersiveType.IMMERSIVE);
+        winUtil.updateWindowInfo();
+        AppStorageV2.connect(WindowUtil, 'winUtil', () => winUtil);
+      }
 
-        this.context.getApplicationContext().setColorMode(colorMode);
+      // loadContent 完成后应用持久化系统颜色模式，此时 PersistenceV2 已可正常读取。
+      try {
+        const options: SystemOptions =
+          PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
+        SystemColorModeUtil.applySystemColorMode(this.context, options.darkMode);
       } catch (err) {
         hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
       }
