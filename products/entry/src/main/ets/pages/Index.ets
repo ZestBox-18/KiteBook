@@ -16,6 +16,8 @@ import { Reports } from 'reports';
 import { AppStorageV2, PersistenceV2, ThemeControl, Theme, SymbolGlyphModifier } from '@kit.ArkUI';
 import { DraggableFab } from '../components/DraggableFab';
 
+const TAB_SWITCH_ANIMATION_DURATION: number = 280;
+
 @Entry
 @ComponentV2
 struct Index {
@@ -158,6 +160,7 @@ struct Index {
       .barOverlap(true)
       .barPosition(BarPosition.End)
       .vertical(false)
+      .animationDuration(TAB_SWITCH_ANIMATION_DURATION)
       .barFloatingStyle({
         barBottomMargin: this.winUtil.mainWindowInfo.navIndicatorHeight,
         systemMaterialEffect: {
@@ -166,6 +169,9 @@ struct Index {
         },
         thermoCtrl: true,
         lightColor: this.themeState.brand as ResourceColor
+      })
+      .onSelected((index: number) => {
+        this.currentTabIndex = index;
       })
       .onChange((index: number) => {
         this.currentTabIndex = index;
