@@ -98,7 +98,7 @@ export class AccountManager {
           resolve(accounts);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询账户失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询账户失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -123,7 +123,7 @@ export class AccountManager {
           resolve(AccountManager.mapRowToAccount(rows[0]));
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询账户失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询账户失败, code=${err.code}, msg=${err.message}`);
           reject(null);
         });
     });
@@ -148,7 +148,7 @@ export class AccountManager {
           resolve(AccountManager.mapRowToAccount(rows[0]));
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询账户详情失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询账户详情失败, code=${err.code}, msg=${err.message}`);
           reject(null);
         });
     });
@@ -182,7 +182,7 @@ export class AccountManager {
           resolve(num > 0);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新账户余额失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新账户余额失败, code=${err.code}, msg=${err.message}`);
           reject(false);
         });
     });
@@ -215,7 +215,7 @@ export class AccountManager {
           resolve(num > 0);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新账户余额失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新账户余额失败, code=${err.code}, msg=${err.message}`);
           reject(false);
         });
     });
@@ -257,7 +257,7 @@ export class AccountManager {
           resolve(num);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新账户失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新账户失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -306,7 +306,7 @@ export class AccountManager {
           resolve(num);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 删除账户失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `删除账户失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -345,7 +345,7 @@ export class AccountManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 新增账户失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `新增账户失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -399,7 +399,7 @@ export class AccountManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 写入默认账户失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `写入默认账户失败, code=${err.code}, msg=${err.message}`);
           reject(err);
         });
     });
@@ -420,7 +420,7 @@ export class AccountManager {
           resolve(rows.length > 0);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询账户引用失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询账户引用失败, code=${err.code}, msg=${err.message}`);
           reject(false);
         });
     });

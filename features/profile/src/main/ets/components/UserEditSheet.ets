@@ -8,10 +8,10 @@
 
 import { UserProfile } from '../entities/UserProfile';
 import { authentication } from '@kit.AccountKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { curves, AppStorageV2, PersistenceV2 } from '@kit.ArkUI';
 import { AppThemeState, SystemOptions } from 'base';
+import { Clog } from 'kite_utils';
 
 const TAG = '[UserEditSheet]';
 
@@ -220,12 +220,12 @@ export struct UserEditSheet {
         this.ringScale = 0.8;
       }, 1000);
 
-      hilog.info(0x0000, TAG, 'Login success');
+      Clog.info(TAG, 'Login success');
     } catch (error) {
       clearInterval(rotateInterval);
       this.avatarRotateY = 0;
       const err = error as BusinessError;
-      hilog.error(0x0000, TAG, 'Login failed: %{public}d', err.code);
+      Clog.error(TAG, `Login failed: ${err.code}`);
       this.isLoggingIn = false;
       // 通知 UserCard 停止旋转动画
       this.onLoginFailed();

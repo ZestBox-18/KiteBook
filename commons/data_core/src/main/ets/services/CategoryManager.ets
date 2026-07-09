@@ -121,7 +121,7 @@ export class CategoryManager {
           resolve(categories);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询分类失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询分类失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -147,7 +147,7 @@ export class CategoryManager {
           resolve(categories);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询全部分类失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询全部分类失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -172,7 +172,7 @@ export class CategoryManager {
           resolve(CategoryManager.mapRowToCategory(rows[0]));
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询分类详情失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询分类详情失败, code=${err.code}, msg=${err.message}`);
           reject(null);
         });
     });
@@ -211,7 +211,7 @@ export class CategoryManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 新增分类失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `新增分类失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -255,7 +255,7 @@ export class CategoryManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新分类失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新分类失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -290,7 +290,7 @@ export class CategoryManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新分类名称失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新分类名称失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -323,7 +323,7 @@ export class CategoryManager {
           resolve();
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新分类排序失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新分类排序失败, code=${err.code}, msg=${err.message}`);
           reject(err);
         });
     });
@@ -348,7 +348,7 @@ export class CategoryManager {
           resolve();
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 同步账单分类名称失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `同步账单分类名称失败, code=${err.code}, msg=${err.message}`);
           reject(err);
         });
     });
@@ -395,7 +395,7 @@ export class CategoryManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 写入默认分类失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `写入默认分类失败, code=${err.code}, msg=${err.message}`);
           reject(err);
         });
     });

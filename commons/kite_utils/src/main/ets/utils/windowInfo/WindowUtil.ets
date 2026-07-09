@@ -20,10 +20,12 @@
 
 import { display, UIContext, window } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AbilityConstant, common, StartOptions, Want } from '@kit.AbilityKit';
 import { resourceManager } from '@kit.LocalizationKit';
 import { sensor } from '@kit.SensorServiceKit';
+import { Clog } from '../clog/Clog';
+
+const TAG: string = '[WindowUtil]';
 
 // 定义窗口沉浸模式枚举类型
 export enum ImmersiveType {
@@ -54,7 +56,7 @@ export class WindowUtil {
     this.mainWindowInfo.windowSize = windowSize;
     this.mainWindowInfo.widthBp = uiContext!.getWindowWidthBreakpoint();
     this.mainWindowInfo.heightBp = uiContext!.getWindowHeightBreakpoint();
-    console.log('this.mainWindowInfo.widthBp', this.mainWindowInfo.widthBp)
+    Clog.info(TAG, `width breakpoint: ${this.mainWindowInfo.widthBp}`);
   };
   // 避免区域变化回调函数
   public onAvoidAreaChange: (avoidOptions: window.AvoidAreaOptions) => void =
@@ -103,10 +105,10 @@ export class WindowUtil {
         // 普通模式设置
         this.mainWindow.setWindowLayoutFullScreen(false)
           .then(() => {
-            hilog.info(0x0000, 'testLog', `Succeeded in setting immersive mode.`);
+            Clog.info(TAG, 'Succeeded in setting immersive mode.');
           })
           .catch((err: BusinessError) => {
-            hilog.error(0x0000, 'testLog', `Failed to set immersive mode. Code: ${err.code}, message: ${err.message}`);
+            Clog.error(TAG, `Failed to set immersive mode. Code: ${err.code}, message: ${err.message}`);
           });
         this.setSystemBarEnabled(true);
         this.mainWindow.setWindowDecorVisible(true);
@@ -115,10 +117,10 @@ export class WindowUtil {
         // 沉浸模式设置
         this.mainWindow.setWindowLayoutFullScreen(true)
           .then(() => {
-            hilog.info(0x0000, 'testLog', `Succeeded in setting immersive mode.`);
+            Clog.info(TAG, 'Succeeded in setting immersive mode.');
           })
           .catch((err: BusinessError) => {
-            hilog.error(0x0000, 'testLog', `Failed to set immersive mode. Code: ${err.code}, message: ${err.message}`);
+            Clog.error(TAG, `Failed to set immersive mode. Code: ${err.code}, message: ${err.message}`);
           });
         this.setSystemBarEnabled(true);
         this.mainWindow.setWindowDecorVisible(false);
@@ -127,21 +129,20 @@ export class WindowUtil {
         // 全屏沉浸模式设置
         this.mainWindow.setWindowLayoutFullScreen(true)
           .then(() => {
-            hilog.info(0x0000, 'testLog', `Succeeded in setting immersive mode.`);
+            Clog.info(TAG, 'Succeeded in setting immersive mode.');
           })
           .catch((err: BusinessError) => {
-            hilog.error(0x0000, 'testLog', `Failed to set immersive mode. Code: ${err.code}, message: ${err.message}`);
+            Clog.error(TAG, `Failed to set immersive mode. Code: ${err.code}, message: ${err.message}`);
           });
         if (this.mainWindow.getWindowStatus() === window.WindowStatusType.MAXIMIZE ||
           (this.mainWindow.getWindowStatus() === window.WindowStatusType.FLOATING &&
             this.mainWindow.getWindowDecorHeight() !== 0)) {
           this.mainWindow.maximize()
             .then(() => {
-              hilog.info(0x0000, 'testLog', `Succeeded in maximizing the window.`);
+              Clog.info(TAG, 'Succeeded in maximizing the window.');
             })
             .catch((err: BusinessError) => {
-              hilog.error(0x0000, 'testLog',
-                `Failed to maximize the window. Code: ${err.code}, message: ${err.message}`);
+              Clog.error(TAG, `Failed to maximize the window. Code: ${err.code}, message: ${err.message}`);
             });
         }
         this.setSystemBarEnabled(false);
@@ -150,7 +151,7 @@ export class WindowUtil {
       this.mainWindowInfo.isImmersive = type;
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, 'TestLog', `Failed to set immersive type. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to set immersive type. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -159,7 +160,7 @@ export class WindowUtil {
       this.uiContext = this.mainWindow.getUIContext();
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, 'TestLog', `Failed to set UI context. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to set UI context. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -167,19 +168,17 @@ export class WindowUtil {
   setSystemBarEnabled(isVisible: boolean): void {
     this.mainWindow.setSpecificSystemBarEnabled('status', isVisible)
       .then(() => {
-        hilog.info(0x0000, 'testLog', `Succeeded in setting status bar to be invisible.`);
+        Clog.info(TAG, 'Succeeded in setting status bar visibility.');
       })
       .catch((err: BusinessError) => {
-        hilog.error(0x0000, 'testLog',
-          `Failed to set status bar to be invisible. Code: ${err.code}, message: ${err.message}`);
+        Clog.error(TAG, `Failed to set status bar visibility. Code: ${err.code}, message: ${err.message}`);
       });
     this.mainWindow.setSpecificSystemBarEnabled('navigationIndicator', isVisible)
       .then(() => {
-        hilog.info(0x0000, 'testLog', `Succeeded in setting navigation indicator to be invisible.`);
+        Clog.info(TAG, 'Succeeded in setting navigation indicator visibility.');
       })
       .catch((err: BusinessError) => {
-        hilog.error(0x0000, 'testLog',
-          `Failed to set navigation indicator to be invisible. Code: ${err.code}, message: ${err.message}`);
+        Clog.error(TAG, `Failed to set navigation indicator visibility. Code: ${err.code}, message: ${err.message}`);
       });
   }
 
@@ -189,20 +188,19 @@ export class WindowUtil {
       if (this.mainWindow.getWindowStatus() === window.WindowStatusType.FULL_SCREEN) {
         this.mainWindow.recover()
           .then(() => {
-            hilog.info(0x0000, 'testLog', `Succeeded in recovering the window.`);
+            Clog.info(TAG, 'Succeeded in recovering the window.');
           })
           .catch((err: BusinessError) => {
             if (err.code === 801) {
-              hilog.info(0x0000, 'testLog',
-                `Skip recovering the window because this device does not support the capability.`);
+              Clog.info(TAG, 'Skip recovering the window because this device does not support the capability.');
               return;
             }
-            hilog.error(0x0000, 'testLog', `Failed to recover the window. Code: ${err.code}, message: ${err.message}`);
+            Clog.error(TAG, `Failed to recover the window. Code: ${err.code}, message: ${err.message}`);
           });
       }
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, 'TestLog', `Failed to recover. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to recover. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -210,12 +208,12 @@ export class WindowUtil {
   setWindowOrientation(orientation: window.Orientation): void {
     this.mainWindow.setPreferredOrientation(orientation)
       .then(() => {
-        hilog.info(0x0000, 'testLog', `Succeeded in setting window orientation.`);
+        Clog.info(TAG, 'Succeeded in setting window orientation.');
         // 更新窗口方向信息
         this.mainWindowInfo.orientation = orientation;
       })
       .catch((err: BusinessError) => {
-        hilog.error(0x0000, 'testLog', `Failed to set window orientation. Code: ${err.code}, message: ${err.message}`);
+        Clog.error(TAG, `Failed to set window orientation. Code: ${err.code}, message: ${err.message}`);
       });
   }
 
@@ -249,7 +247,7 @@ export class WindowUtil {
       this.mainWindow.on('avoidAreaChange', this.onAvoidAreaChange);
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, `TestLog`, `Failed to update window info. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to update window info. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -261,7 +259,7 @@ export class WindowUtil {
       this.mainWindow.off('avoidAreaChange');
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, 'TestLog', `Failed to off. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to off. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -271,7 +269,7 @@ export class WindowUtil {
     let option: StartOptions = { windowMode: AbilityConstant.WindowMode.WINDOW_MODE_SPLIT_PRIMARY };
     let want: Want = { bundleName: bundleName, abilityName: abilityName, moduleName: moduleName };
     context.startAbility(want, option).catch((err: BusinessError) => {
-      hilog.error(0x0000, 'TestLog', `Failed to start ability. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to start ability. Code: ${err.code}, message: ${err.message}`);
     });
   }
 
@@ -279,7 +277,7 @@ export class WindowUtil {
   cancelSplitScreen(): void {
     let context = this.uiContext?.getHostContext() as common.UIAbilityContext;
     context.terminateSelf().catch((err: BusinessError) => {
-      hilog.error(0x0000, 'TestLog', `Failed to terminate self. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to terminate self. Code: ${err.code}, message: ${err.message}`);
     });
   }
 
@@ -292,10 +290,9 @@ export class WindowUtil {
       minHeight: minHeight
     }
     this.mainWindow.setWindowLimits(windowLimits).then((data: window.WindowLimits) => {
-      hilog.info(0x0000, 'testLog', `Succeeded in changing the window limits. Cause: ${JSON.stringify(data)}`);
+      Clog.info(TAG, `Succeeded in changing the window limits. Cause: ${JSON.stringify(data)}`);
     }).catch((err: BusinessError) => {
-      hilog.error(0x0000, 'testLog',
-        `Failed to change the window limits. Cause code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to change the window limits. Cause code: ${err.code}, message: ${err.message}`);
     });
   }
 
@@ -304,11 +301,10 @@ export class WindowUtil {
     this.mainWindow.resize(width, height, (err: BusinessError) => {
       const errCode: number = err.code;
       if (errCode) {
-        hilog.error(0x0000, 'testLog',
-          `Failed to change the window size. Cause code: ${err.code}, message: ${err.message}`);
+        Clog.error(TAG, `Failed to change the window size. Cause code: ${err.code}, message: ${err.message}`);
         return;
       }
-      hilog.info(0x0000, 'testLog', 'Succeeded in changing the window size.');
+      Clog.info(TAG, 'Succeeded in changing the window size.');
     });
   }
 
@@ -318,7 +314,7 @@ export class WindowUtil {
       let displayClass: display.Display | null = display.getDefaultDisplaySync();
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, 'testLog', `Failed to query display orientation. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to query display orientation. Code: ${err.code}, message: ${err.message}`);
     }
   }
 
@@ -326,7 +322,7 @@ export class WindowUtil {
   queryOrientationByResourceManager(): void {
     let info: resourceManager.Direction | undefined =
       this.uiContext?.getHostContext()?.resourceManager.getConfigurationSync().direction;
-    hilog.info(0x0000, 'testLog', `The Orientation is ${info}`);
+    Clog.info(TAG, `The Orientation is ${info}`);
   }
 
   queryDegree(): void {
@@ -336,7 +332,7 @@ export class WindowUtil {
       })
     } catch (error) {
       let err = error as BusinessError;
-      hilog.error(0x0000, 'TestLog', `Failed to query degree. Code: ${err.code}, message: ${err.message}`);
+      Clog.error(TAG, `Failed to query degree. Code: ${err.code}, message: ${err.message}`);
     }
   }
 

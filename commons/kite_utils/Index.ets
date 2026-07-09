@@ -30,7 +30,7 @@ export { dbManager, DatabaseCallbacks } from './src/main/ets/utils/database/Data
 
 export { resultSet2Record } from './src/main/ets/utils/database/DatabaseResultHandle'
 
-export { Clog } from './src/main/ets/utils/clog/Clog';
+export { Clog, ClogExceptionInfo, ClogLogEntry } from './src/main/ets/utils/clog/Clog';
 
 
 export { BreakPoint } from './src/main/ets/utils/breakpoint/BreakPoint'

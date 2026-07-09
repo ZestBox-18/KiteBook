@@ -10,6 +10,10 @@
  * copies of the Software...
  */
 
+import { Clog } from '../../../utils/clog/Clog';
+
+const TAG: string = '[ColorSlider]';
+
 export enum SlideDirection {
   Vertical,
   Horizontal,
@@ -105,7 +109,7 @@ export struct ColorSlider {
       this._dragX = e.touches[0].x - this.realBlockSize / 2
       this._dragY = e.touches[0].y - this.realBlockSize / 2
     } catch {
-      console.warn('no touch point detected')
+      Clog.warn(TAG, 'no touch point detected')
     }
 
     setTimeout(() => {

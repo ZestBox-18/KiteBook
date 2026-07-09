@@ -8,15 +8,18 @@
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { common } from '@kit.AbilityKit';
+import { common, errorManager } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 /**
  * 支持的日志内容类型
  */
 type LogContent = string | number | boolean | null | undefined | object | Array<LogContent>;
+type LogLevel = 'info' | 'warn' | 'error';
+type LogFileKind = 'info' | 'warn' | 'error' | 'all';
 
 interface LogEntry {
-  level: 'info' | 'warn' | 'error';
+  level: LogLevel;
   tag: string;
   message: string;
   time: number;
@@ -27,12 +30,36 @@ interface WriteOptions {
   encoding: string;
 }
 
+export class ClogLogEntry {
+  level: string = 'info';
+  tag: string = '';
+  message: string = '';
+  time: number = 0;
+}
+
+export class ClogExceptionInfo {
+  name: string = '';
+  message: string = '';
+  stack: string = '';
+  time: number = 0;
+}
+
+type ClogExceptionCallback = (info: ClogExceptionInfo) => void;
 
 export class Clog {
   private static CHARACTECH_PREFIX: string = '[Charactech]';
   private static LOG_DOMAIN = 0x0fff;
   private static SAVE_DIR?: string;
+  private static SAVE_ENABLED: boolean = false;
   private static DISABLE_NON_ERROR_SAVE: boolean = false;
+  private static BUFFER: LogEntry[] = [];
+  private static FLUSH_TIMER_ID: number = -1;
+  private static FLUSH_DELAY_MS: number = 2000;
+  private static MAX_BUFFER_SIZE: number = 20;
+  private static MAX_LOG_FILE_SIZE: number = 2 * 1024 * 1024;
+  private static MAX_COMMON_FILE_COUNT: number = 5;
+  private static MAX_ERROR_FILE_COUNT: number = 10;
+  private static CRASH_OBSERVER_ID?: number;
 
   // 日志格式：TAG message
   private static TWO_PLACEHOLDER_FORMAT: string = '%{public}s    %{public}s';
@@ -62,21 +89,23 @@ export class Clog {
   }
 
   /**
-   * 关闭除 error 外的落盘
-   * 调用后：info/warn 不再写入本地文件；error 仍会写入
-   * 不会清空或删除已有目录与文件
+   * 关闭详细日志落盘
+   * 关闭后仅保留 error 级别本地日志
    */
   public static disableSave(): void {
-    Clog.DISABLE_NON_ERROR_SAVE = true;
+    Clog.flush();
+    Clog.SAVE_ENABLED = false;
+    Clog.cancelFlushTimer();
   }
 
   /**
    * 开启所有级别落盘
-   * 调用后：info/warn/error 均会写入对应文件及汇总文件（在目录已配置的情况下）
+   * 调用后：info/warn/error 均会进入本地日志
    */
   public static enableSave(): void {
-  Clog.DISABLE_NON_ERROR_SAVE = false;
-}
+    Clog.SAVE_ENABLED = true;
+    Clog.DISABLE_NON_ERROR_SAVE = false;
+  }
 
   /**
    * 获取当前保存目录路径
@@ -87,6 +116,80 @@ export class Clog {
       return Clog.SAVE_DIR
     }
     return ''
+  }
+
+  /**
+   * 判断当前是否开启本地日志落盘
+   */
+  public static isSaveEnabled(): boolean {
+    return Clog.SAVE_ENABLED;
+  }
+
+  private static createExceptionInfo(name: string, message: string, stack: string): ClogExceptionInfo {
+    const info = new ClogExceptionInfo();
+    info.name = name;
+    info.message = message;
+    info.stack = stack;
+    info.time = Date.now();
+    return info;
+  }
+
+  /**
+   * 开启全局 JS crash 捕获。捕获到的异常会统一进入 Clog error 日志。
+   */
+  public static enableCrashCapture(callback?: ClogExceptionCallback): void {
+    try {
+      if (Clog.CRASH_OBSERVER_ID !== undefined) {
+        return;
+      }
+
+      Clog.CRASH_OBSERVER_ID = errorManager.on('error', {
+        onUnhandledException(errMsg: string): void {
+          const info: ClogExceptionInfo =
+            Clog.createExceptionInfo('UnhandledException', errMsg, '');
+          Clog.error('[Crash]', info);
+          if (callback) {
+            callback(info);
+          }
+        },
+        onException(errObject: Error): void {
+          const stack: string = errObject.stack ? errObject.stack : '';
+          const info: ClogExceptionInfo =
+            Clog.createExceptionInfo(errObject.name, errObject.message, stack);
+          Clog.error('[Crash]', info);
+          if (callback) {
+            callback(info);
+          }
+        }
+      });
+    } catch (error) {
+      Clog.error('[Crash]', error as object);
+    }
+  }
+
+  /**
+   * 关闭全局 JS crash 捕获。
+   */
+  public static disableCrashCapture(): void {
+    try {
+      const observerId = Clog.CRASH_OBSERVER_ID;
+      if (observerId === undefined) {
+        return;
+      }
+      errorManager.off('error', observerId, (err: BusinessError) => {
+        if (err) {
+          Clog.error('[Crash]', err);
+          return;
+        }
+        Clog.CRASH_OBSERVER_ID = undefined;
+      });
+    } catch (error) {
+      Clog.error('[Crash]', error as object);
+    }
+  }
+
+  public static isCrashCaptureEnabled(): boolean {
+    return Clog.CRASH_OBSERVER_ID !== undefined;
   }
 
 
@@ -131,22 +234,236 @@ export class Clog {
    * 根据日志级别返回对应的文件路径
    * 未配置保存目录时返回 undefined
    */
-  private static getFilePath(level: 'info' | 'warn' | 'error'): string | undefined {
+  private static getFileCount(kind: LogFileKind): number {
+    if (kind === 'error') {
+      return Clog.MAX_ERROR_FILE_COUNT;
+    }
+    return Clog.MAX_COMMON_FILE_COUNT;
+  }
+
+  private static getIndexedFilePath(kind: LogFileKind, index: number): string | undefined {
     if (!Clog.SAVE_DIR) {
       return undefined;
     }
-    return `${Clog.SAVE_DIR}/clog_${level}.json`;
+    return `${Clog.SAVE_DIR}/clog_${kind}_${index}.jsonl`;
   }
 
   /**
-   * 返回汇总日志文件路径（包含 info/warn/error 的合并内容）
+   * 根据日志级别返回当前写入文件路径
    * 未配置保存目录时返回 undefined
    */
-  private static getCombinedFilePath(): string | undefined {
+  private static getFilePath(level: LogLevel): string | undefined {
+    return Clog.getIndexedFilePath(level, 0);
+  }
+
+  private static getLegacyJsonlFilePath(kind: LogFileKind): string | undefined {
     if (!Clog.SAVE_DIR) {
       return undefined;
     }
-    return `${Clog.SAVE_DIR}/clog_all.json`;
+    return `${Clog.SAVE_DIR}/clog_${kind}.jsonl`;
+  }
+
+  private static getLegacyJsonFilePath(kind: LogFileKind): string | undefined {
+    if (!Clog.SAVE_DIR) {
+      return undefined;
+    }
+    return `${Clog.SAVE_DIR}/clog_${kind}.json`;
+  }
+
+  /**
+   * 返回当前汇总日志文件路径
+   * 未配置保存目录时返回 undefined
+   */
+  private static getCombinedFilePath(): string | undefined {
+    return Clog.getIndexedFilePath('all', 0);
+  }
+
+  private static isFileExist(path: string): boolean {
+    try {
+      fs.statSync(path);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private static deleteFileIfExists(path: string): void {
+    if (!Clog.isFileExist(path)) {
+      return;
+    }
+    try {
+      fs.unlinkSync(path);
+    } catch {
+    }
+  }
+
+  private static getFileSize(path: string): number {
+    try {
+      return fs.statSync(path).size;
+    } catch {
+      return 0;
+    }
+  }
+
+  private static writeText(path: string, content: string): void {
+    try {
+      Clog.deleteFileIfExists(path);
+      const file = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      try {
+        fs.writeSync(file.fd, content, { offset: 0, encoding: 'utf-8' });
+      } finally {
+        fs.closeSync(file);
+      }
+    } catch {
+    }
+  }
+
+  private static moveFileIfExists(sourcePath: string, targetPath: string): void {
+    if (!Clog.isFileExist(sourcePath)) {
+      return;
+    }
+    try {
+      const content: string = fs.readTextSync(sourcePath);
+      Clog.writeText(targetPath, content);
+      Clog.deleteFileIfExists(sourcePath);
+    } catch {
+    }
+  }
+
+  private static rotateIfNeeded(kind: LogFileKind, incomingLength: number): void {
+    const activePath = Clog.getIndexedFilePath(kind, 0);
+    if (!activePath) {
+      return;
+    }
+    const currentSize: number = Clog.getFileSize(activePath);
+    if (currentSize + incomingLength <= Clog.MAX_LOG_FILE_SIZE) {
+      return;
+    }
+    const maxCount: number = Clog.getFileCount(kind);
+    const oldestPath = Clog.getIndexedFilePath(kind, maxCount - 1);
+    if (oldestPath) {
+      Clog.deleteFileIfExists(oldestPath);
+    }
+    for (let index = maxCount - 2; index >= 0; index--) {
+      const sourcePath = Clog.getIndexedFilePath(kind, index);
+      const targetPath = Clog.getIndexedFilePath(kind, index + 1);
+      if (sourcePath && targetPath) {
+        Clog.moveFileIfExists(sourcePath, targetPath);
+      }
+    }
+  }
+
+  private static hasSavedLogForKind(kind: LogFileKind): boolean {
+    const maxCount: number = Clog.getFileCount(kind);
+    for (let index = 0; index < maxCount; index++) {
+      const path = Clog.getIndexedFilePath(kind, index);
+      if (path && Clog.isFileExist(path)) {
+        return true;
+      }
+    }
+    const legacyJsonlPath = Clog.getLegacyJsonlFilePath(kind);
+    if (legacyJsonlPath && Clog.isFileExist(legacyJsonlPath)) {
+      return true;
+    }
+    const legacyJsonPath = Clog.getLegacyJsonFilePath(kind);
+    if (legacyJsonPath && Clog.isFileExist(legacyJsonPath)) {
+      return true;
+    }
+    return false;
+  }
+
+  private static clearSavedLogForKind(kind: LogFileKind): void {
+    const maxCount: number = Clog.getFileCount(kind);
+    for (let index = 0; index < maxCount; index++) {
+      const path = Clog.getIndexedFilePath(kind, index);
+      if (path) {
+        Clog.deleteFileIfExists(path);
+      }
+    }
+    const legacyJsonlPath = Clog.getLegacyJsonlFilePath(kind);
+    if (legacyJsonlPath) {
+      Clog.deleteFileIfExists(legacyJsonlPath);
+    }
+    const legacyJsonPath = Clog.getLegacyJsonFilePath(kind);
+    if (legacyJsonPath) {
+      Clog.deleteFileIfExists(legacyJsonPath);
+    }
+  }
+
+  private static appendRecentLogsFromPath(path: string, logs: ClogLogEntry[], level: string): void {
+    if (!Clog.isFileExist(path)) {
+      return;
+    }
+    try {
+      const content: string = fs.readTextSync(path);
+      const lines: string[] = content.split('\n');
+      lines.forEach((line: string) => {
+        const text: string = line.trim();
+        if (text.length === 0) {
+          return;
+        }
+        try {
+          const entry: ClogLogEntry = JSON.parse(text);
+          if (level !== 'all' && entry.level !== level) {
+            return;
+          }
+          logs.push(entry);
+        } catch {
+        }
+      });
+    } catch {
+    }
+  }
+
+  /**
+   * 读取最近日志。底层仍使用 JSONL 存储，页面展示时再转成人类友好的列表。
+   */
+  public static readRecentLogs(limit: number, level: string = 'all'): ClogLogEntry[] {
+    Clog.flush();
+    const logs: ClogLogEntry[] = [];
+    const maxCount: number = Clog.getFileCount('all');
+    for (let index = 0; index < maxCount; index++) {
+      const path = Clog.getIndexedFilePath('all', index);
+      if (path) {
+        Clog.appendRecentLogsFromPath(path, logs, level);
+      }
+    }
+    const legacyPath = Clog.getLegacyJsonlFilePath('all');
+    if (legacyPath) {
+      Clog.appendRecentLogsFromPath(legacyPath, logs, level);
+    }
+    logs.sort((left: ClogLogEntry, right: ClogLogEntry): number => {
+      return right.time - left.time;
+    });
+    if (logs.length <= limit) {
+      return logs;
+    }
+    return logs.slice(0, limit);
+  }
+
+  /**
+   * 判断是否已有可导出的日志文件
+   */
+  public static hasSavedLogs(): boolean {
+    if (Clog.BUFFER.length > 0) {
+      return true;
+    }
+    return Clog.hasSavedLogForKind('info') ||
+      Clog.hasSavedLogForKind('warn') ||
+      Clog.hasSavedLogForKind('error') ||
+      Clog.hasSavedLogForKind('all');
+  }
+
+  /**
+   * 清空已保存的本地日志文件
+   */
+  public static clearSavedLogs(): void {
+    Clog.BUFFER = [];
+    Clog.cancelFlushTimer();
+    Clog.clearSavedLogForKind('info');
+    Clog.clearSavedLogForKind('warn');
+    Clog.clearSavedLogForKind('error');
+    Clog.clearSavedLogForKind('all');
   }
 
   /**
@@ -187,32 +504,96 @@ export class Clog {
     }
   }
 
-  /**
-   * 将数据写入文件并关闭文件
-   * 以 JSON 数组形式维护文件：
-   * - 空文件写入为 `[{...}]`
-   * - 非空文件在末尾 `]` 前插入 `,{...}]`
-   */
-  private static writeStr(path: string, str: string): number {
-    const file = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
-    let offset = fs.statSync(file.fd).size;
-    if (offset === 0) {
-      str = `[${str}]`;
-    } else {
-      offset = offset - 1;
-      str = `,${str}]`;
+  private static appendText(kind: LogFileKind, path: string, content: string): number {
+    if (content.length === 0) {
+      return 0;
     }
-    const options: WriteOptions = { offset: offset, encoding: 'utf-8' };
-    const result = fs.writeSync(file.fd, str, options);
-    fs.closeSync(file);
-    return result;
+    Clog.rotateIfNeeded(kind, content.length);
+    try {
+      const file = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      try {
+        const offset = fs.statSync(file.fd).size;
+        const options: WriteOptions = { offset: offset, encoding: 'utf-8' };
+        return fs.writeSync(file.fd, content, options);
+      } finally {
+        fs.closeSync(file);
+      }
+    } catch {
+      return 0;
+    }
+  }
+
+  private static cancelFlushTimer(): void {
+    if (Clog.FLUSH_TIMER_ID < 0) {
+      return;
+    }
+    clearTimeout(Clog.FLUSH_TIMER_ID);
+    Clog.FLUSH_TIMER_ID = -1;
+  }
+
+  private static scheduleFlush(): void {
+    if (Clog.FLUSH_TIMER_ID >= 0) {
+      return;
+    }
+    Clog.FLUSH_TIMER_ID = setTimeout(() => {
+      Clog.FLUSH_TIMER_ID = -1;
+      Clog.flush();
+    }, Clog.FLUSH_DELAY_MS);
+  }
+
+  /**
+   * 将缓冲日志批量追加到 JSONL 文件
+   */
+  public static flush(): void {
+    if (Clog.BUFFER.length === 0) {
+      return;
+    }
+    const entries: LogEntry[] = Clog.BUFFER;
+    Clog.BUFFER = [];
+    Clog.cancelFlushTimer();
+
+    let infoContent: string = '';
+    let warnContent: string = '';
+    let errorContent: string = '';
+    let allContent: string = '';
+    entries.forEach((entry: LogEntry) => {
+      const line: string = `${JSON.stringify(entry)}\n`;
+      allContent += line;
+      if (entry.level === 'info') {
+        infoContent += line;
+      } else if (entry.level === 'warn') {
+        warnContent += line;
+      } else {
+        errorContent += line;
+      }
+    });
+
+    const infoPath = Clog.getFilePath('info');
+    const warnPath = Clog.getFilePath('warn');
+    const errorPath = Clog.getFilePath('error');
+    const allPath = Clog.getCombinedFilePath();
+    if (infoPath) {
+      Clog.appendText('info', infoPath, infoContent);
+    }
+    if (warnPath) {
+      Clog.appendText('warn', warnPath, warnContent);
+    }
+    if (errorPath) {
+      Clog.appendText('error', errorPath, errorContent);
+    }
+    if (allPath) {
+      Clog.appendText('all', allPath, allContent);
+    }
   }
 
   /**
    * 根据开关与级别将日志写入对应文件及汇总文件
-   * 当 `disableSave()` 已启用时，仅 `error` 级别会落盘
+   * 当 `disableSave()` 已启用时，仅 error 级别继续落盘
    */
   private static writeLog(level: 'info' | 'warn' | 'error', tag: string, message: string): void {
+    if (!Clog.SAVE_ENABLED && level !== 'error') {
+      return;
+    }
     if (Clog.DISABLE_NON_ERROR_SAVE && level !== 'error') {
       return;
     }
@@ -221,13 +602,12 @@ export class Clog {
       return;
     }
     const entry: LogEntry = { level, tag, message, time: Date.now() };
-    const json = JSON.stringify(entry);
-    Clog.writeStr(filePath, json);
-
-    const allPath = Clog.getCombinedFilePath();
-    if (allPath) {
-      Clog.writeStr(allPath, json);
+    Clog.BUFFER.push(entry);
+    if (level === 'error' || Clog.BUFFER.length >= Clog.MAX_BUFFER_SIZE) {
+      Clog.flush();
+      return;
     }
+    Clog.scheduleFlush();
   }
 
   /**

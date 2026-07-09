@@ -65,7 +65,7 @@ export class BudgetManager {
           resolve(BudgetManager.mapRowsToBudgets(rows));
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询预算失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询预算失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -87,7 +87,7 @@ export class BudgetManager {
           resolve(BudgetManager.mapRowsToBudgets(rows));
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询全部预算失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询全部预算失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -114,7 +114,7 @@ export class BudgetManager {
           resolve(budgets[0]);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询分类预算失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询分类预算失败, code=${err.code}, msg=${err.message}`);
           reject(null);
         });
     });
@@ -177,7 +177,7 @@ export class BudgetManager {
           resolve(id);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 新增预算失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `新增预算失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -201,7 +201,7 @@ export class BudgetManager {
           resolve(num);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新预算失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新预算失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -226,7 +226,7 @@ export class BudgetManager {
           resolve(num);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 删除预算失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `删除预算失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });

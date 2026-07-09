@@ -34,6 +34,8 @@ export class SystemOptions {
   @Trace weeklyMonthlyReportEnabled: boolean = true
   // 深色模式：auto, light, dark
   @Trace darkMode: string = 'auto'
+  // 本地日志记录
+  @Trace logRecording: boolean = false
 
   /**
    * 从另一个 SystemOptions 对象更新当前实例的所有属性
@@ -51,6 +53,7 @@ export class SystemOptions {
     this.dailyReminderEnabled = data.dailyReminderEnabled
     this.weeklyMonthlyReportEnabled = data.weeklyMonthlyReportEnabled
     this.darkMode = data.darkMode
+    this.logRecording = data.logRecording
   }
 
   @Monitor(
@@ -63,7 +66,8 @@ export class SystemOptions {
     'budgetAlertEnabled',
     'dailyReminderEnabled',
     'weeklyMonthlyReportEnabled',
-    'darkMode'
+    'darkMode',
+    'logRecording'
   )
   onDataChange(monitor: IMonitor) {
     DebounceManager.getInstance().execute('SystemOptions', () => {

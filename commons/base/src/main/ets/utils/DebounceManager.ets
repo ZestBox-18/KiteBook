@@ -6,6 +6,8 @@
  * @description: 防抖管理器
  */
 
+import { Clog } from 'kite_utils';
+
 const TAG: string = '[DebounceManager]';
 
 
@@ -56,7 +58,7 @@ export class DebounceManager {
     const lastExecutionTime = DebounceManager.methodsMap.get(methodName);
 
     if (lastExecutionTime && (now - lastExecutionTime) < delayMs) {
-      console.info(`[DebounceManager] ${methodName}方法在${delayMs}毫秒内已执行过，跳过`);
+      Clog.info(TAG, `${methodName}方法在${delayMs}毫秒内已执行过，跳过`);
       return true;
     } else {
       DebounceManager.methodsMap.set(methodName, now);
@@ -75,16 +77,16 @@ export class DebounceManager {
     const existingTimer = DebounceManager.debounceTimers.get(methodName);
     if (existingTimer) {
       clearTimeout(existingTimer.timerId);
-      console.info(`[DebounceManager] ${methodName}方法的前一次定时器已被清除`);
+      Clog.info(TAG, `${methodName}方法的前一次定时器已被清除`);
     }
 
     // 创建新的定时器
     const timerId = setTimeout(() => {
       try {
         callback();
-        console.info(`[DebounceManager] ${methodName}方法延迟${delayMs}毫秒后执行完成`);
+        Clog.info(TAG, `${methodName}方法延迟${delayMs}毫秒后执行完成`);
       } catch (error) {
-        console.error(`[DebounceManager] ${methodName}方法执行出错:`, error);
+        Clog.error(TAG, `${methodName}方法执行出错`, error);
       } finally {
         // 执行完成后清除定时器记录
         DebounceManager.debounceTimers.delete(methodName);
@@ -97,7 +99,7 @@ export class DebounceManager {
       callback: callback
     });
 
-    console.info(`[DebounceManager] ${methodName}方法已设置${delayMs}毫秒延迟执行`);
+    Clog.info(TAG, `${methodName}方法已设置${delayMs}毫秒延迟执行`);
   }
 
   /**
@@ -109,7 +111,7 @@ export class DebounceManager {
     if (existingTimer) {
       clearTimeout(existingTimer.timerId);
       DebounceManager.debounceTimers.delete(methodName);
-      console.info(`[DebounceManager] ${methodName}方法的防抖定时器已被取消`);
+      Clog.info(TAG, `${methodName}方法的防抖定时器已被取消`);
     }
   }
 
@@ -119,7 +121,7 @@ export class DebounceManager {
   public clearAll(): void {
     DebounceManager.debounceTimers.forEach((timer, methodName) => {
       clearTimeout(timer.timerId);
-      console.info(`[DebounceManager] ${methodName}方法的防抖定时器已被清除`);
+      Clog.info(TAG, `${methodName}方法的防抖定时器已被清除`);
     });
     DebounceManager.debounceTimers.clear();
   }
@@ -138,7 +140,7 @@ export class DebounceManager {
   public reset(): void {
     this.clearAll();
     DebounceManager.methodsMap.clear();
-    console.info('[DebounceManager] 防抖管理器状态已重置');
+    Clog.info(TAG, '防抖管理器状态已重置');
   }
 }
 

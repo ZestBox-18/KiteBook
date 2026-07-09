@@ -164,7 +164,7 @@ export class BillManager {
           resolve(bills[0]);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询账单详情失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询账单详情失败, code=${err.code}, msg=${err.message}`);
           reject(null);
         });
     });
@@ -254,7 +254,7 @@ export class BillManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 添加账单失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `添加账单失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -290,7 +290,7 @@ export class BillManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 删除账单失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `删除账单失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -380,7 +380,7 @@ export class BillManager {
           }
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 更新账单失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `更新账单失败, code=${err.code}, msg=${err.message}`);
           reject(-1);
         });
     });
@@ -415,7 +415,7 @@ export class BillManager {
           resolve(groups);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询最近账单失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询最近账单失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -453,7 +453,7 @@ export class BillManager {
           resolve(groups);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询月份账单失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询月份账单失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -482,7 +482,7 @@ export class BillManager {
           resolve(bills);
         })
         .catch((err: BusinessError) => {
-          console.error(`${TAG} 查询区间账单失败, code=${err.code}, msg=${err.message}`);
+          Clog.error(TAG, `查询区间账单失败, code=${err.code}, msg=${err.message}`);
           reject([]);
         });
     });
@@ -602,6 +602,6 @@ export class BillManager {
     for (const bill of sampleBills) {
       await BillManager.addBill(bill);
     }
-    console.info(`${TAG} 示例数据插入完成`);
+    Clog.info(TAG, `示例数据插入完成`);
   }
 }

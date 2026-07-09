@@ -11,7 +11,9 @@
  */
 
 import { mediaquery } from '@kit.ArkUI';
+import { Clog } from '../clog/Clog';
 
+const TAG: string = '[BreakpointSystem]';
 
 // 定义常量（保持不变）
 export class BreakpointConstants {
@@ -35,7 +37,7 @@ export class BreakpointSystem {
   private updateCurrentBreakpoint(breakpoint: string): void {
     if (this.currentBreakpoint !== breakpoint) {
       this.currentBreakpoint = breakpoint;
-      console.info(`[BreakpointSystem] Switched to: ${breakpoint}`);
+      Clog.info(TAG, `Switched to: ${breakpoint}`);
     }
   }
 
