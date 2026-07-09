@@ -18,10 +18,9 @@ import { AccountManager, BillManager, CategoryManager } from 'data_core';
 import { curves } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics, LengthMetrics } from '@ohos.arkui.node';
-import promptAction from '@ohos.promptAction';
 
 const KEYBOARD_CORNER_RADIUS: number = 22;
-const CATEGORY_CARD_SIZE: number = 74;
+const CATEGORY_CARD_SIZE: number = 40;
 const KEYBOARD_KEYS_PER_ROW: number = 4;
 const ACCOUNT_VIEWPORT_EXPANDED_WIDTH: number = 196;
 const ACCOUNT_PILL_HEIGHT: number = 34;
@@ -65,9 +64,12 @@ class KeypadKey {
 export struct AddBillSheetComponent {
   @Require @Param themeState: AppThemeState;
   @Require @Param optionSystem: SystemOptions;
+  @Param editingBillId: number = 0;
   @Event onClose: () => void = () => {
   };
   @Event onSaved: () => void = () => {
+  };
+  @Event onManageCategory: () => void = () => {
   };
 
   @Local amountText: string = '0';
@@ -84,11 +86,10 @@ export struct AddBillSheetComponent {
   @Local isAccountSelectorExpanded: boolean = false;
   @Local isAccountSelectorClosing: boolean = false;
   @Local accountOptions: string[] = [];
+  @Local isDateSheetVisible: boolean = false;
+  @Local dateDraft: number = Date.now();
   @Local expenseCategories: CategoryOption[] = [];
   @Local incomeCategories: CategoryOption[] = [];
-  @Local isCategoryEditorVisible: boolean = false;
-  @Local isEditingCurrentCategory: boolean = false;
-  @Local categoryDraftLabel: string = '';
 
   private scroller: Scroller = new Scroller();
   private accountScroller: ListScroller = new ListScroller();
@@ -120,8 +121,26 @@ export struct AddBillSheetComponent {
    * 半模态出现时从数据库加载分类，确保新用户和老用户都走同一套数据源。
    */
   aboutToAppear(): void {
-    this.loadAccounts();
-    this.loadCategories();
+    this.initializeForm();
+  }
+
+  /**
+   * 当前是否处于编辑账单模式。
+   */
+  private isEditingMode(): boolean {
+    return this.editingBillId > 0;
+  }
+
+  /**
+   * 初始化录入表单；编辑模式会回填原账单数据。
+   */
+  private async initializeForm(): Promise<void> {
+    await Promise.all([this.loadAccounts(), this.loadCategories()]);
+    if (this.isEditingMode()) {
+      await this.fillFormByBillId();
+      return;
+    }
+    this.resetForm();
   }
 
   /**
@@ -160,6 +179,13 @@ export struct AddBillSheetComponent {
     .width('100%')
     .height('100%')
     .backgroundColor(this.themeState.backgroundPrimary)
+    .bindSheet($$this.isDateSheetVisible, this.DatePickerSheet(), {
+      height: 380,
+      preferType: SheetType.BOTTOM,
+      title: {
+        title: '选择日期'
+      }
+    })
   }
 
   /**
@@ -275,10 +301,35 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 根据当前选中名称找到分类对象，供编辑分类时拿到数据库主键。
+   * 根据账单详情回填编辑表单，保证首页和账单页共用同一套录入体验。
    */
-  private getSelectedCategoryOption(): CategoryOption | undefined {
-    return this.getCurrentCategoryOptions().find((item: CategoryOption) => item.label === this.selectedCategory);
+  private async fillFormByBillId(): Promise<void> {
+    try {
+      const bill: BillBean | null = await BillManager.getBillById(this.editingBillId);
+      if (bill === null) {
+        this.showToast('账单不存在或已删除');
+        return;
+      }
+      this.selectedType = bill.type;
+      if (bill.type === BillTypeEnum.INCOME) {
+        this.activeMode = RECORD_MODE_INCOME;
+      } else if (bill.type === BillTypeEnum.TRANSFER) {
+        this.activeMode = RECORD_MODE_TRANSFER;
+      } else {
+        this.activeMode = RECORD_MODE_EXPENSE;
+      }
+      this.selectedCategory = bill.category;
+      this.amountText = bill.amount.toFixed(2);
+      this.selectedAccount = bill.account;
+      this.targetAccount = bill.targetAccount;
+      this.selectedDate = bill.date;
+      this.dateDraft = bill.date;
+      this.remarkText = bill.remark;
+      this.updateCategoryForCurrentType();
+      this.updateSelectedAccount();
+    } catch {
+      this.showToast('账单加载失败');
+    }
   }
 
   /**
@@ -541,70 +592,14 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 打开分类管理菜单，支持新增和编辑当前分类。
+   * 打开分类管理面板，按当前收支类型展示可拖拽排序的分类。
    */
-  private async showCategoryManageMenu(): Promise<void> {
+  private showCategoryManageMenu(): void {
     if (this.activeMode === RECORD_MODE_TRANSFER) {
       this.showToast('转账使用系统分类，无需编辑');
       return;
     }
-    try {
-      const result: promptAction.ActionMenuSuccessResponse = await promptAction.showActionMenu({
-        title: '管理分类',
-        buttons: [
-          { text: '新增分类', color: '#191919' },
-          { text: '编辑当前分类', color: '#191919' }
-        ]
-      });
-      if (result.index === 0) {
-        this.isEditingCurrentCategory = false;
-        this.categoryDraftLabel = '';
-      } else {
-        this.isEditingCurrentCategory = true;
-        this.categoryDraftLabel = this.selectedCategory;
-      }
-      this.isCategoryEditorVisible = true;
-    } catch {
-    }
-  }
-
-  /**
-   * 保存新增或编辑后的分类名称。
-   */
-  private async saveCategoryDraft(): Promise<void> {
-    const draftLabel: string = this.categoryDraftLabel.trim();
-    if (draftLabel.length === 0) {
-      this.showToast('请输入分类名称');
-      return;
-    }
-    try {
-      if (this.isEditingCurrentCategory) {
-        const selectedCategory: CategoryOption | undefined = this.getSelectedCategoryOption();
-        if (!selectedCategory || selectedCategory.id <= 0) {
-          this.showToast('当前分类不可编辑');
-          return;
-        }
-        const categoryPatch: CategoryBean = new CategoryBean();
-        categoryPatch.name = draftLabel;
-        await CategoryManager.updateCategory(selectedCategory.id, categoryPatch);
-      } else {
-        await CategoryManager.addCategory(draftLabel, this.selectedType, 'ellipsis_circle');
-      }
-      this.selectedCategory = draftLabel;
-      await this.loadCategories();
-      this.categoryDraftLabel = '';
-      this.isCategoryEditorVisible = false;
-    } catch {
-      this.showToast(this.isEditingCurrentCategory ? '分类修改失败' : '分类添加失败');
-    }
-  }
-
-  /**
-   * 关闭分类编辑器并清理草稿状态。
-   */
-  private closeCategoryEditor(): void {
-    this.categoryDraftLabel = '';
-    this.isCategoryEditorVisible = false;
+    this.onManageCategory();
   }
 
   /**
@@ -762,8 +757,14 @@ export struct AddBillSheetComponent {
 
     this.isSaving = true;
     try {
-      await BillManager.addBill(this.buildBill(amountValue));
-      this.showToast('已保存账单');
+      if (this.isEditingMode()) {
+        const bill: BillBean = this.buildBill(amountValue);
+        await BillManager.updateBill(this.editingBillId, bill);
+        this.showToast('已更新账单');
+      } else {
+        await BillManager.addBill(this.buildBill(amountValue));
+        this.showToast('已保存账单');
+      }
       this.onSaved();
       this.resetForm();
       if (closeAfterSave) {
@@ -829,7 +830,7 @@ export struct AddBillSheetComponent {
   }
 
   /**
-   * 打开日期选择弹窗，并在确认后回写当前账单日期。
+   * 打开底部日期选择面板，并在确认后回写当前账单日期。
    */
   private showDatePickerDialog(): void {
     if (this.isRemarkExpanded) {
@@ -838,19 +839,8 @@ export struct AddBillSheetComponent {
     if (this.isAccountSelectorVisible) {
       this.collapseAccountSelector();
     }
-    try {
-      this.getUIContext().showDatePickerDialog({
-        selected: new Date(this.selectedDate),
-        start: new Date('2000-01-01'),
-        end: new Date('2100-12-31'),
-        mode: DatePickerMode.DATE,
-        onDateAccept: (value: Date) => {
-          this.selectedDate = value.getTime();
-        }
-      });
-    } catch {
-      this.showToast('暂时无法打开日期选择');
-    }
+    this.dateDraft = this.selectedDate;
+    this.isDateSheetVisible = true;
   }
 
   /**
@@ -872,6 +862,12 @@ export struct AddBillSheetComponent {
   @Builder
   private TopActionSection() {
     Row() {
+      Text(this.isEditingMode() ? '编辑账单' : '记一笔')
+        .fontSize(17)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(this.themeState.fontPrimary)
+        .layoutWeight(1)
+
       CapsuleSegmentButtonV2({
         items: this.modeSegmentItems,
         selectedIndex: this.getModeSelectedIndex(),
@@ -892,7 +888,7 @@ export struct AddBillSheetComponent {
           this.updateModeByIndex(selectedIndex);
         }
       })
-      .layoutWeight(1)
+      .layoutWeight(2)
 
       Button() {
         SymbolGlyph($r('sys.symbol.xmark'))
@@ -912,6 +908,70 @@ export struct AddBillSheetComponent {
     .width('100%')
     .padding({ left: 16, right: 16, top: 16, bottom: 10 })
     .alignItems(VerticalAlign.Center)
+  }
+
+  /**
+   * 构建参考 MoneyTrack1 的日期选择 Sheet，避免使用系统弹窗打断录入流。
+   */
+  @Builder
+  private DatePickerSheet() {
+    Column() {
+      DatePicker({
+        start: new Date('2000-01-01'),
+        end: new Date('2100-12-31'),
+        selected: new Date(this.dateDraft)
+      })
+        .disappearTextStyle({
+          font: { size: 14, weight: FontWeight.Regular }
+        })
+        .textStyle({
+          color: this.themeState.fontPrimary,
+          font: { size: 16, weight: FontWeight.Regular }
+        })
+        .selectedTextStyle({
+          color: this.themeState.fontPrimary,
+          font: { size: 20, weight: FontWeight.Medium }
+        })
+        .onDateChange((value: Date) => {
+          this.dateDraft = value.getTime();
+        })
+        .width('78%')
+
+      Row({ space: 12 }) {
+        Button('取消')
+          .layoutWeight(1)
+          .height(46)
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.themeState.fontPrimary)
+          .backgroundColor(this.themeState.compBackgroundPrimary)
+          .borderRadius(16)
+          .border({ width: 1, color: this.themeState.compDivider })
+          .onClick(() => {
+            this.isDateSheetVisible = false;
+          })
+
+        Button('确定')
+          .layoutWeight(1)
+          .height(46)
+          .fontSize(16)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(this.themeState.fontOnPrimary)
+          .backgroundColor(this.themeState.brand as ResourceColor)
+          .borderRadius(16)
+          .onClick(() => {
+            this.selectedDate = this.dateDraft;
+            this.isDateSheetVisible = false;
+          })
+      }
+      .width('100%')
+      .margin({ top: 24 })
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 16, right: 16, bottom: 16 })
+    .backgroundColor(this.themeState.backgroundPrimary)
+    .alignItems(HorizontalAlign.Center)
   }
 
   /**
@@ -957,10 +1017,6 @@ export struct AddBillSheetComponent {
     Column({ space: 14 }) {
       this.CategoryHeaderSection();
 
-      if (this.isCategoryEditorVisible) {
-        this.CategoryEditorSection();
-      }
-
       Flex({ wrap: FlexWrap.Wrap, direction: FlexDirection.Row }) {
         ForEach(this.getCurrentCategoryOptions(), (item: CategoryOption) => {
           this.CategoryCard(item);
@@ -998,69 +1054,6 @@ export struct AddBillSheetComponent {
     .width('100%')
     .justifyContent(FlexAlign.SpaceBetween)
     .alignItems(VerticalAlign.Center)
-  }
-
-  /**
-   * 构建分类新增/编辑面板。
-   */
-  @Builder
-  private CategoryEditorSection() {
-    Column({ space: 10 }) {
-      Text(this.isEditingCurrentCategory ? '编辑当前分类' : '新增自定义分类')
-        .fontSize(14)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.themeState.fontPrimary);
-
-      TextInput({
-        text: this.categoryDraftLabel,
-        placeholder: this.isEditingCurrentCategory ? '输入新的分类名称' : '输入自定义分类名称'
-      })
-        .fontSize(15)
-        .fontWeight(this.optionSystem.fontThickness)
-        .fontColor(this.themeState.fontPrimary)
-        .placeholderColor(this.themeState.fontSecondary)
-        .height(44)
-        .width('100%')
-        .padding({ left: 14, right: 14 })
-        .backgroundColor(this.themeState.backgroundPrimary)
-        .borderRadius(14)
-        .onChange((value: string) => {
-          this.categoryDraftLabel = value;
-        });
-
-      Row({ space: 10 }) {
-        Button('取消')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(14)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.themeState.fontPrimary)
-          .backgroundColor(this.themeState.backgroundPrimary)
-          .borderRadius(14)
-          .border({ width: 1, color: this.themeState.compDivider })
-          .onClick(() => {
-            this.closeCategoryEditor();
-          });
-        Button(this.isEditingCurrentCategory ? '保存修改' : '添加分类')
-          .layoutWeight(1)
-          .height(40)
-          .fontSize(14)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(this.themeState.fontOnPrimary)
-          .backgroundColor(this.themeState.brand as ResourceColor)
-          .borderRadius(14)
-          .onClick(() => {
-            this.saveCategoryDraft();
-          });
-      }
-      .width('100%')
-    }
-    .width('100%')
-    .padding(14)
-    .backgroundColor(this.themeState.compBackgroundPrimary)
-    .borderRadius(18)
-    .border({ width: 1, color: this.themeState.compDivider })
-    .alignItems(HorizontalAlign.Start)
   }
 
   /**
@@ -1127,7 +1120,7 @@ export struct AddBillSheetComponent {
       Column({ space: 8 }) {
         Row() {
           SymbolGlyph(item.icon)
-            .fontSize(28)
+            .fontSize(25)
             .fontWeight(this.optionSystem.iconThickness)
             .fontColor([this.selectedCategory === item.label ? this.themeState.fontOnPrimary as ResourceColor :
               this.themeState.brand as ResourceColor]);
@@ -1135,7 +1128,7 @@ export struct AddBillSheetComponent {
         .width(CATEGORY_CARD_SIZE)
         .height(CATEGORY_CARD_SIZE)
         .justifyContent(FlexAlign.Center)
-        .borderRadius(24)
+        .borderRadius(20)
         .backgroundColor(this.selectedCategory === item.label ? this.themeState.brand as ResourceColor :
           this.themeState.compBackgroundPrimary)
         .border({

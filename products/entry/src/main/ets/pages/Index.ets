@@ -5,16 +5,23 @@
  * @version 1.0
  * @description: 主入口页面，包含底部 Tab 导航
  */
-import { hdsMaterial, HdsTabs } from '@kit.UIDesignKit';
-import { billSyncController, mainTabController, SystemOptions, gAppThemes, AppThemeState } from 'base';
+import { hdsMaterial, HdsAnimationMode, HdsTabs } from '@kit.UIDesignKit';
+import {
+  billSyncController,
+  CommonConstants,
+  mainTabController,
+  RouterUrlConstants,
+  SystemOptions,
+  gAppThemes,
+  AppThemeState
+} from 'base';
 import { Billing } from 'billing';
 import { Home } from 'home';
-import { AddBillSheetComponent } from 'record';
-import { WindowUtil, BreakpointSystem } from 'kite_utils';
+import { AddBillSheetComponent, CategoryManage } from 'record';
+import { WindowUtil, BreakpointSystem, ImmersiveDraggableFab } from 'kite_utils';
 import { Profile } from 'profile';
 import { Reports } from 'reports';
 import { AppStorageV2, PersistenceV2, ThemeControl, Theme, SymbolGlyphModifier } from '@kit.ArkUI';
-import { DraggableFab } from '../components/DraggableFab';
 
 const TAB_SWITCH_ANIMATION_DURATION: number = 280;
 
@@ -26,6 +33,7 @@ struct Index {
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   @Local isBillingSheetShown: boolean = false
   @Local currentTabIndex: number = 0
+  @Local pageInfos: NavPathStack = new NavPathStack()
   // 断点系统
   @Local breakpointSystem: BreakpointSystem =
     AppStorageV2.connect(BreakpointSystem, 'breakpointSystem', () => new BreakpointSystem())!;
@@ -95,6 +103,27 @@ struct Index {
   }
 
   /**
+   * 全局页面路由映射。
+   */
+  @Builder
+  PagesMap(name: string) {
+    if (name === RouterUrlConstants.CATEGORY_MANAGE) {
+      CategoryManage()
+    }
+  }
+
+  /**
+   * 从记账半模态进入分类管理页。
+   */
+  private navigateToCategoryManage(): void {
+    this.closeBillingModal();
+    mainTabController.applyHideAnimation(HdsAnimationMode.SCROLL_ANIMATION);
+    setTimeout(() => {
+      this.pageInfos.pushPath({ name: RouterUrlConstants.CATEGORY_MANAGE });
+    }, 120);
+  }
+
+  /**
    * 在新增账单成功后通知首页刷新数据。
    */
   private handleBillSaved(): void {
@@ -114,89 +143,109 @@ struct Index {
       },
       onSaved: () => {
         this.handleBillSaved();
+      },
+      onManageCategory: () => {
+        this.navigateToCategoryManage();
       }
     })
   }
 
-  build() {
-    Stack({ alignContent: Alignment.BottomEnd }) {
-      HdsTabs({ controller: mainTabController }) {
-        TabContent() {
-          Home()
-        }
-        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.house')), '首页')
-          .labelStyle({
-            selectedColor: this.themeState.brand,
-            unselectedColor: this.themeState.fontSecondary
-          }))
-
-        TabContent() {
-          Billing()
-        }
-        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.creditcard')), '账单')
-          .labelStyle({
-            selectedColor: this.themeState.brand,
-            unselectedColor: this.themeState.fontSecondary
-          }))
-
-        TabContent() {
-          Reports()
-        }
-        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.list_bullet')), '报表')
-          .labelStyle({
-            selectedColor: this.themeState.brand,
-            unselectedColor: this.themeState.fontSecondary
-          }))
-
-        TabContent() {
-          Profile()
-        }
-        .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.person')), '我的')
-          .labelStyle({
-            selectedColor: this.themeState.brand,
-            unselectedColor: this.themeState.fontSecondary
-          }))
+  @Builder
+  private AddBillFabBuilder() {
+    ImmersiveDraggableFab({
+      icon: $r('sys.symbol.plus'),
+      label: '记',
+      iconColor: this.themeState.brand as ResourceColor,
+      labelColor: this.themeState.brand as ResourceColor,
+      lightColor: this.themeState.brand as ResourceColor,
+      iconFontWeight: this.optionSystem.iconThickness,
+      bottomReserve: this.winUtil.mainWindowInfo.navIndicatorHeight + CommonConstants.TAB_HEIGHT + 22,
+      onFabClick: () => {
+        this.openBillingModal();
       }
-      .barOverlap(true)
-      .barPosition(BarPosition.End)
-      .vertical(false)
-      .animationDuration(TAB_SWITCH_ANIMATION_DURATION)
-      .barFloatingStyle({
-        barBottomMargin: this.winUtil.mainWindowInfo.navIndicatorHeight,
-        systemMaterialEffect: {
-          materialType: hdsMaterial.MaterialType.IMMERSIVE,
-          materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
-        },
-        thermoCtrl: true,
-        lightColor: this.themeState.brand as ResourceColor
-      })
-      .onSelected((index: number) => {
-        this.currentTabIndex = index;
-      })
-      .onChange((index: number) => {
-        this.currentTabIndex = index;
-      })
+    })
+    .bindSheet($$this.isBillingSheetShown, this.AddBillSheetBuilder(), {
+      detents: [SheetSize.LARGE],
+      preferType: SheetType.BOTTOM,
+      title: { title: '记一笔' },
+      showClose: false,
+      enableFloatingDragBar: true,
+    })
+  }
+
+  build() {
+    Navigation(this.pageInfos) {
+      Stack({ alignContent: Alignment.TopStart }) {
+        HdsTabs({ controller: mainTabController }) {
+          TabContent() {
+            Home()
+          }
+          .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.house')), '首页')
+            .labelStyle({
+              selectedColor: this.themeState.brand,
+              unselectedColor: this.themeState.fontSecondary
+            }))
+
+          TabContent() {
+            Billing()
+          }
+          .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.creditcard')), '账单')
+            .labelStyle({
+              selectedColor: this.themeState.brand,
+              unselectedColor: this.themeState.fontSecondary
+            }))
+
+          TabContent() {
+            Reports()
+          }
+          .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.list_bullet')), '报表')
+            .labelStyle({
+              selectedColor: this.themeState.brand,
+              unselectedColor: this.themeState.fontSecondary
+            }))
+
+          TabContent() {
+            Profile()
+          }
+          .tabBar(new BottomTabBarStyle(this.createTabBarSymbol($r('sys.symbol.person')), '我的')
+            .labelStyle({
+              selectedColor: this.themeState.brand,
+              unselectedColor: this.themeState.fontSecondary
+            }))
+        }
+        .barOverlap(true)
+        .barPosition(BarPosition.End)
+        .vertical(false)
+        .animationDuration(TAB_SWITCH_ANIMATION_DURATION)
+        .barFloatingStyle({
+          barBottomMargin: this.winUtil.mainWindowInfo.navIndicatorHeight,
+          systemMaterialEffect: {
+            materialType: hdsMaterial.MaterialType.IMMERSIVE,
+            materialLevel: hdsMaterial.MaterialLevel.EXQUISITE
+          },
+          thermoCtrl: true,
+          lightColor: this.themeState.brand as ResourceColor
+        })
+        .onSelected((index: number) => {
+          this.currentTabIndex = index;
+        })
+        .onChange((index: number) => {
+          this.currentTabIndex = index;
+        })
+        .width('100%')
+        .height('100%')
+
+        if (this.currentTabIndex !== 3) {
+          this.AddBillFabBuilder()
+        }
+      }
       .width('100%')
       .height('100%')
-
-      // 悬浮记账按钮 - 固定在右下角，比 TabBar 高一点
-      if (this.currentTabIndex !== 3) {
-        DraggableFab({
-          optionSystem: this.optionSystem,
-          themeState: this.themeState,
-          onFabClick: () => {
-            this.openBillingModal();
-          }
-        })
-          .margin({ bottom: 100, right: 24 })
-          .bindSheet($$this.isBillingSheetShown, this.AddBillSheetBuilder(), {
-            detents: [SheetSize.LARGE],
-            showClose: false,
-            enableFloatingDragBar: true,
-          })
-      }
     }
     .width('100%')
     .height('100%')
+    .mode(NavigationMode.Stack)
+    .hideTitleBar(true)
+    .navDestination(this.PagesMap)
   }
 }

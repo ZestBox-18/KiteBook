@@ -257,6 +257,72 @@ export class CategoryManager {
   }
 
   /**
+   * 仅更新分类名称，并同步历史账单分类名。
+   */
+  static async updateCategoryName(id: number, name: string): Promise<number> {
+    const originalCategory: CategoryBean | null = await CategoryManager.getCategoryById(id);
+    if (originalCategory === null) {
+      return -1;
+    }
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+    const data: relationalStore.ValuesBucket = {
+      name: name,
+      updated_at: Date.now()
+    };
+
+    return new Promise<number>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then(async (num: number) => {
+          if (num === -1) {
+            reject(-1);
+          } else {
+            if (name !== originalCategory.name) {
+              await CategoryManager.renameBillsForCategory(originalCategory, name);
+            }
+            resolve(num);
+          }
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 更新分类名称失败, code=${err.code}, msg=${err.message}`);
+          reject(-1);
+        });
+    });
+  }
+
+  /**
+   * 批量更新分类排序。传入数组顺序即最终展示顺序。
+   */
+  static async updateCategorySortOrders(categoryIds: number[]): Promise<void> {
+    for (let index: number = 0; index < categoryIds.length; index++) {
+      await CategoryManager.updateCategorySortOrder(categoryIds[index], index);
+    }
+  }
+
+  /**
+   * 更新单个分类排序值，供拖拽排序后批量落库。
+   */
+  private static async updateCategorySortOrder(id: number, sortOrder: number): Promise<void> {
+    const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('id', id);
+    const data: relationalStore.ValuesBucket = {
+      sort_order: sortOrder,
+      updated_at: Date.now()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      dbManager.dbStore?.update(data, predicates)
+        .then(() => {
+          resolve();
+        })
+        .catch((err: BusinessError) => {
+          console.error(`${TAG} 更新分类排序失败, code=${err.code}, msg=${err.message}`);
+          reject(err);
+        });
+    });
+  }
+
+  /**
    * 分类改名后同步历史账单中的分类名称，避免列表和统计出现断层。
    */
   private static async renameBillsForCategory(category: CategoryBean, nextName: string): Promise<void> {

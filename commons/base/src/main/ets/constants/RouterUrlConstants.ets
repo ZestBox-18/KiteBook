@@ -33,6 +33,18 @@ export class RouterUrlConstants {
    * 资产
    */
   static readonly ASSETS: string = 'Assets';
+  /**
+   * 资产详情
+   */
+  static readonly ASSET_DETAIL: string = 'AssetDetail';
+  /**
+   * 分类管理
+   */
+  static readonly CATEGORY_MANAGE: string = 'CategoryManage';
+  /**
+   * 全部待确认识别记录
+   */
+  static readonly PENDING_CONFIRM_BILLS: string = 'PendingConfirmBills';
 
   // ===== 个人中心子页面 =====
   /**
@@ -59,6 +71,14 @@ export class RouterUrlConstants {
    * 预算管理
    */
   static readonly BUDGET_SETTINGS: string = 'BudgetSettings';
+  /**
+   * 本月预算详情
+   */
+  static readonly BUDGET_DETAIL: string = 'BudgetDetail';
+  /**
+   * 切换账本
+   */
+  static readonly LEDGER_SWITCH: string = 'LedgerSwitch';
   /**
    * 关于
    */
