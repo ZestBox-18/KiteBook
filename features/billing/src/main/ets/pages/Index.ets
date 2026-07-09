@@ -8,6 +8,7 @@
 
 import { hdsMaterial, HdsNavigation, ScrollEffectType } from '@kit.UIDesignKit';
 import {
+  AccountBean,
   AppThemeState,
   BillBean,
   BillGroup,
@@ -16,8 +17,9 @@ import {
   SystemOptions,
   billSyncController
 } from 'base';
-import { BillManager } from 'data_core';
-import { AppStorageV2, LengthMetrics, PersistenceV2, curves } from '@kit.ArkUI';
+import { AccountManager, BillManager } from 'data_core';
+import { AddBillSheetComponent } from 'record';
+import { AppStorageV2, LengthMetrics, PersistenceV2, curves, uiMaterial } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics } from '@ohos.arkui.node';
 import promptAction from '@ohos.promptAction';
@@ -27,6 +29,7 @@ const TAG: string = '[BillingIndex]';
 const FILTER_ALL: string = 'all';
 const FILTER_EXPENSE: string = BillTypeEnum.EXPENSE;
 const FILTER_INCOME: string = BillTypeEnum.INCOME;
+const ACCOUNT_FILTER_ALL: string = '全部账户';
 
 @Entry
 @ComponentV2
@@ -44,6 +47,10 @@ export struct Index {
   @Local totalBalance: number = 0;
   @Local totalCount: number = 0;
   @Local loading: boolean = false;
+  @Local accountList: AccountBean[] = [];
+  @Local selectedAccountName: string = ACCOUNT_FILTER_ALL;
+  @Local isBillEditorVisible: boolean = false;
+  @Local editingBillId: number = 0;
   private billSyncListenerId: number = -1;
   private readonly filterItems: SegmentButtonV2Items = new SegmentButtonV2Items([
     { text: '全部' },
@@ -54,9 +61,11 @@ export struct Index {
   aboutToAppear(): void {
     if (this.billSyncListenerId < 0) {
       this.billSyncListenerId = billSyncController.register(() => {
+        this.loadAccounts();
         this.loadBills();
       });
     }
+    this.loadAccounts();
     this.loadBills();
   }
 
@@ -102,13 +111,144 @@ export struct Index {
     try {
       const queryType: string = this.billFilter === FILTER_ALL ? '' : this.billFilter;
       const groups: BillGroup[] = await BillManager.getBillsByMonth(this.monthAnchor, queryType);
-      this.billGroups = groups;
+      this.billGroups = this.filterBillGroupsByAccount(groups);
       this.updateSummary();
     } catch (err) {
       Clog.error(TAG, '加载账单失败', err);
       this.showToast('账单加载失败');
     } finally {
       this.loading = false;
+    }
+  }
+
+  /**
+   * 加载账户菜单数据，账单页右上角只承担账户筛选，不再混用为账本概念。
+   */
+  private async loadAccounts(): Promise<void> {
+    try {
+      const accounts: AccountBean[] = await AccountManager.getAccounts();
+      this.accountList = accounts;
+      if (this.selectedAccountName !== ACCOUNT_FILTER_ALL && !this.hasAccount(this.selectedAccountName, accounts)) {
+        this.selectedAccountName = ACCOUNT_FILTER_ALL;
+      }
+    } catch (err) {
+      Clog.error(TAG, '加载账户失败', err);
+    }
+  }
+
+  private hasAccount(accountName: string, accounts: AccountBean[]): boolean {
+    for (let index: number = 0; index < accounts.length; index++) {
+      if (accounts[index].name === accountName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private filterBillGroupsByAccount(groups: BillGroup[]): BillGroup[] {
+    if (this.selectedAccountName === ACCOUNT_FILTER_ALL) {
+      return groups;
+    }
+    const filteredGroups: BillGroup[] = [];
+    groups.forEach((group: BillGroup) => {
+      const nextBills: BillBean[] = group.bills.filter((bill: BillBean) =>
+        bill.account === this.selectedAccountName || bill.targetAccount === this.selectedAccountName);
+      if (nextBills.length > 0) {
+        const nextGroup: BillGroup = new BillGroup();
+        nextGroup.date = group.date;
+        nextGroup.dateTimestamp = group.dateTimestamp;
+        nextGroup.bills = nextBills;
+        nextBills.forEach((bill: BillBean) => {
+          if (bill.type === BillTypeEnum.EXPENSE) {
+            nextGroup.totalExpense += bill.amount;
+          } else if (bill.type === BillTypeEnum.INCOME) {
+            nextGroup.totalIncome += bill.amount;
+          }
+        });
+        filteredGroups.push(nextGroup);
+      }
+    });
+    return filteredGroups;
+  }
+
+  /**
+   * 打开账户筛选菜单，用于切换当前账单列表的账户视角。
+   */
+  private async showAccountSwitcher(): Promise<void> {
+    try {
+      await this.loadAccounts();
+      const accountCount: number = Math.min(this.accountList.length, 5);
+      let result: promptAction.ActionMenuSuccessResponse;
+      if (accountCount === 0) {
+        result = await promptAction.showActionMenu({
+          title: '筛选账户',
+          buttons: [{ text: ACCOUNT_FILTER_ALL, color: '#191919' }]
+        });
+      } else if (accountCount === 1) {
+        result = await promptAction.showActionMenu({
+          title: '筛选账户',
+          buttons: [
+            { text: ACCOUNT_FILTER_ALL, color: '#191919' },
+            { text: this.accountList[0].name, color: '#191919' }
+          ]
+        });
+      } else if (accountCount === 2) {
+        result = await promptAction.showActionMenu({
+          title: '筛选账户',
+          buttons: [
+            { text: ACCOUNT_FILTER_ALL, color: '#191919' },
+            { text: this.accountList[0].name, color: '#191919' },
+            { text: this.accountList[1].name, color: '#191919' }
+          ]
+        });
+      } else if (accountCount === 3) {
+        result = await promptAction.showActionMenu({
+          title: '筛选账户',
+          buttons: [
+            { text: ACCOUNT_FILTER_ALL, color: '#191919' },
+            { text: this.accountList[0].name, color: '#191919' },
+            { text: this.accountList[1].name, color: '#191919' },
+            { text: this.accountList[2].name, color: '#191919' }
+          ]
+        });
+      } else if (accountCount === 4) {
+        result = await promptAction.showActionMenu({
+          title: '筛选账户',
+          buttons: [
+            { text: ACCOUNT_FILTER_ALL, color: '#191919' },
+            { text: this.accountList[0].name, color: '#191919' },
+            { text: this.accountList[1].name, color: '#191919' },
+            { text: this.accountList[2].name, color: '#191919' },
+            { text: this.accountList[3].name, color: '#191919' }
+          ]
+        });
+      } else {
+        result = await promptAction.showActionMenu({
+          title: '筛选账户',
+          buttons: [
+            { text: ACCOUNT_FILTER_ALL, color: '#191919' },
+            { text: this.accountList[0].name, color: '#191919' },
+            { text: this.accountList[1].name, color: '#191919' },
+            { text: this.accountList[2].name, color: '#191919' },
+            { text: this.accountList[3].name, color: '#191919' },
+            { text: this.accountList[4].name, color: '#191919' }
+          ]
+        });
+      }
+      this.applyAccountMenuResult(result.index);
+      await this.loadBills();
+    } catch {
+    }
+  }
+
+  private applyAccountMenuResult(index: number): void {
+    if (index === 0) {
+      this.selectedAccountName = ACCOUNT_FILTER_ALL;
+      return;
+    }
+    const accountIndex: number = index - 1;
+    if (accountIndex >= 0 && accountIndex < this.accountList.length) {
+      this.selectedAccountName = this.accountList[accountIndex].name;
     }
   }
 
@@ -241,6 +381,31 @@ export struct Index {
   }
 
   /**
+   * 打开账单编辑半模态，复用记账组件保持录入体验一致。
+   */
+  private openBillEditor(billId: number): void {
+    this.editingBillId = billId;
+    this.isBillEditorVisible = true;
+  }
+
+  /**
+   * 关闭账单编辑半模态。
+   */
+  private closeBillEditor(): void {
+    this.isBillEditorVisible = false;
+    this.editingBillId = 0;
+  }
+
+  /**
+   * 编辑账单保存后刷新当前月份数据。
+   */
+  private async handleBillEdited(): Promise<void> {
+    this.closeBillEditor();
+    billSyncController.notifyBillChanged();
+    await this.loadBills();
+  }
+
+  /**
    * 统一弹出提示文案。
    */
   private showToast(message: string): void {
@@ -306,6 +471,12 @@ export struct Index {
         .width('100%')
 
         Row() {
+          this.AccountFilterPill()
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.End)
+
+        Row() {
           this.SummaryMetric('支出', this.getCurrencyText(this.totalExpense), '#E55454')
           this.SummaryDivider()
           this.SummaryMetric('收入', this.getCurrencyText(this.totalIncome), '#10B981')
@@ -333,6 +504,52 @@ export struct Index {
       .backgroundColor(this.themeState.compBackgroundPrimary)
       .borderRadius(22)
     }
+  }
+
+  @Builder
+  private AccountFilterPill() {
+    Row({ space: 4 }) {
+      SymbolGlyph($r('sys.symbol.creditcard'))
+        .fontSize(14)
+        .fontWeight(this.optionSystem.iconThickness)
+        .fontColor([this.themeState.brand as ResourceColor])
+      Text(this.selectedAccountName)
+        .fontSize(12)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.brand)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width(112)
+    .height(32)
+    .justifyContent(FlexAlign.Center)
+    .borderRadius(16)
+    .backgroundColor('#00000000')
+    .systemMaterial(new uiMaterial.ImmersiveMaterial({
+      style: uiMaterial.ImmersiveStyle.ULTRA_THIN,
+      interactive: true,
+      lightEffect: {
+        color: this.themeState.brand as ResourceColor
+      }
+    }))
+    .onClick(() => {
+      this.showAccountSwitcher();
+    })
+  }
+
+  @Builder
+  private BillEditorSheetBuilder() {
+    AddBillSheetComponent({
+      themeState: this.themeState,
+      optionSystem: this.optionSystem,
+      editingBillId: this.editingBillId,
+      onClose: () => {
+        this.closeBillEditor();
+      },
+      onSaved: () => {
+        this.handleBillEdited();
+      }
+    })
   }
 
   @Builder
@@ -424,6 +641,9 @@ export struct Index {
               delay: (groupIndex * 3 + billIndex) * 45,
               curve: curves.springMotion(0.6, 0.9)
             })
+            .swipeAction({
+              end: this.BillSwipeAction(bill)
+            })
             .gesture(
               LongPressGesture()
                 .onAction(() => {
@@ -510,6 +730,37 @@ export struct Index {
     .backgroundColor(this.themeState.compBackgroundPrimary)
   }
 
+  @Builder
+  private BillSwipeAction(bill: BillBean) {
+    Row({ space: 8 }) {
+      Button('编辑')
+        .width(72)
+        .height(40)
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.themeState.brand)
+        .backgroundColor('#EAF2FF')
+        .borderRadius(12)
+        .onClick(() => {
+          this.openBillEditor(bill.id);
+        })
+
+      Button('删除')
+        .width(72)
+        .height(40)
+        .fontSize(14)
+        .fontWeight(FontWeight.Medium)
+        .fontColor('#FFFFFF')
+        .backgroundColor('#E55454')
+        .borderRadius(12)
+        .onClick(() => {
+          this.deleteBill(bill.id);
+        })
+    }
+    .padding({ right: 4 })
+    .alignItems(VerticalAlign.Center)
+  }
+
   private getBillTintColor(bill: BillBean): ResourceColor {
     if (bill.type === BillTypeEnum.EXPENSE) {
       return '#E55454';
@@ -548,6 +799,13 @@ export struct Index {
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
     .backgroundColor($r('[shared_assets].color.start_window_background'))
+    .bindSheet($$this.isBillEditorVisible, this.BillEditorSheetBuilder(), {
+      detents: [SheetSize.LARGE],
+      preferType: SheetType.BOTTOM,
+      title: {
+        title: '编辑账单'
+      }
+    })
     .mode(NavigationMode.Stack)
     .titleBar({
       style: {
@@ -569,6 +827,10 @@ export struct Index {
             titleStyle: {
               mainTitleColor: $r('[shared_assets].color.text_primary'),
               subTitleColor: $r('[shared_assets].color.text_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              textColor: $r('[shared_assets].color.text_secondary')
             }
           }
         },
@@ -580,6 +842,10 @@ export struct Index {
             titleStyle: {
               mainTitleColor: $r('[shared_assets].color.text_primary'),
               subTitleColor: $r('[shared_assets].color.text_secondary')
+            },
+            menuStyle: {
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              textColor: $r('[shared_assets].color.text_secondary')
             }
           }
         }
@@ -587,8 +853,8 @@ export struct Index {
       content: {
         title: {
           mainTitle: '账单',
-          subTitle: '按月份查看流水'
-        }
+          subTitle: this.selectedAccountName === ACCOUNT_FILTER_ALL ? '按月份查看流水' : this.selectedAccountName
+        },
       },
       avoidLayoutSafeArea: true
     })

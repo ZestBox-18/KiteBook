@@ -9,6 +9,7 @@
     "base": "file:../../commons/base",
     "shared_assets": "file:../../commons/shared_assets",
     "data_core": "file:../../commons/data_core",
+    "record": "file:../record",
     "kite_utils": "file:../../commons/kite_utils"
   }
 }
