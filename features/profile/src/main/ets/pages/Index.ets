@@ -17,6 +17,7 @@ import { UserEditSheet } from '../components/UserEditSheet';
 import { AppearanceSettings } from './AppearanceSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { DataExport } from './DataExport';
+import { LogRecording } from './LogRecording';
 import { BudgetSettings } from './BudgetSettings';
 import { About } from './About';
 import { Sponsorship } from './Sponsorship';
@@ -63,6 +64,8 @@ export struct Index {
       NotificationSettings()
     } else if (name === RouterUrlConstants.DATA_EXPORT) {
       DataExport()
+    } else if (name === RouterUrlConstants.LOG_RECORDING) {
+      LogRecording()
     } else if (name === RouterUrlConstants.BUDGET_SETTINGS) {
       BudgetSettings()
     } else if (name === RouterUrlConstants.ABOUT) {
@@ -173,6 +176,16 @@ export struct Index {
               title: '数据导出',
               onItemClick: () => {
                 this.navigateToSubPage(RouterUrlConstants.DATA_EXPORT)
+              }
+            })
+          }
+
+          ListItem() {
+            SettingItem({
+              icon: $r('sys.symbol.doc_text'),
+              title: '日志记录',
+              onItemClick: () => {
+                this.navigateToSubPage(RouterUrlConstants.LOG_RECORDING)
               }
             })
           }

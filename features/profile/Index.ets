@@ -10,4 +10,5 @@ export { Index as Profile } from './src/main/ets/pages/Index';
 export { AppearanceSettings } from './src/main/ets/pages/AppearanceSettings';
 export { NotificationSettings } from './src/main/ets/pages/NotificationSettings';
 export { DataExport } from './src/main/ets/pages/DataExport';
+export { LogRecording } from './src/main/ets/pages/LogRecording';
 export { About } from './src/main/ets/pages/About';
