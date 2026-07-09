@@ -147,8 +147,11 @@ KiteBook/
 
 - 新增业务代码不要使用 `any`、`unknown`、无类型上下文对象字面量或动态属性访问。
 - 避免新增 `as` 类型断言；确实需要和系统 API 交互时，优先封装在小范围内，并用具体类型承接结果。
-- 使用 `this.getUIContext().animateTo(...)` 或传入的 `UIContext.animateTo(...)`，不要使用全局 `animateTo`。
+- 使用当前页面的 `UIContext.animateTo(...)`，不要使用全局 `animateTo`。页面已缓存 `uiContext` 时优先使用 `this.uiContext?.animateTo(...)`；未缓存时再调用 `this.getUIContext().animateTo(...)`。
 - `Promise`、回调和集合类型都要写清楚泛型或函数签名，便于 ArkTS 编译和 lint 检查。
+- `@Builder` 只适合抽取稳定结构。会随 `@Local`、`@Param`、`@Trace` 变化的展示文本、按钮启用态、颜色等，优先在 Builder 内部直接读取当前组件状态，不要把动态值预先拼成字符串或布尔值作为 Builder 参数传入，否则在 `ListItemGroup`、弹窗回调等场景下可能出现部分 UI 不刷新。
+- 如果确实要复用带动态状态的行组件，优先拆成语义明确的 Builder，例如 `RecentLogActionRow()`、`ClearLogActionRow()`，在内部读取 `this.hasLogs`、`this.clearing` 等状态；不要写成 `ActionRow(..., enabled)` 后到处传动态布尔值。
+- 系统弹窗、Picker、半模态等非组件直接事件回调中修改页面状态时，优先使用已缓存的当前页面 `UIContext` 提交状态变化，例如 `this.uiContext?.animateTo({ duration: 0 }, () => { ... })`。这里不是为了做动画，而是确保状态更新发生在当前 UIContext 的刷新上下文里；如果页面没有缓存 `uiContext`，再退回 `this.getUIContext().animateTo(...)`。
 
 ### kite_utils 工具库
 
@@ -265,6 +268,30 @@ uiContext: UIContext = this.getUIContext();
 // UIAbilityContext 类型命名为 context
 context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
 ```
+
+**使用边界**：
+
+- 页面和组件里的 UI 操作优先使用当前组件的 `UIContext`，包括 Toast、弹窗、Picker、动画、状态提交等。页面已缓存 `uiContext` 时优先使用缓存字段；未缓存时使用 `this.getUIContext()`。不要为了方便把 UI 操作绕到全局 Context。
+- 页面中可以缓存当前页面上下文，但应在 `aboutToAppear`、`onReady` 或明确的生命周期方法中初始化，不要在字段初始化阶段直接依赖 `this.getUIContext()`。
+- 推荐页面字段命名：
+
+```typescript
+private uiContext: UIContext | undefined = undefined
+private context: common.UIAbilityContext | undefined = undefined
+
+aboutToAppear(): void {
+  this.uiContext = this.getUIContext();
+  const hostContext = this.uiContext.getHostContext();
+  if (hostContext) {
+    this.context = hostContext as common.UIAbilityContext;
+  }
+}
+```
+
+- `UIContext` 用于 UI 行为：`showAlertDialog`、`getPromptAction().showToast`、`animateTo`、组件快照、弹窗等。
+- `common.UIAbilityContext` 用于 Ability 级能力：`filesDir`、资源访问、应用级目录、权限、启动 Ability 等。
+- `GlobalContext` 只用于非组件层、工具层、Manager 层等无法直接拿到页面 `UIContext` 的场景，适合保存应用级 `UIAbilityContext`、全局单例或跨层运行时对象。不要在页面组件里优先使用 `GlobalContext` 替代 `this.getUIContext()`。
+- `EntryAbility.onCreate` 中不要读取 `PersistenceV2` 后直接应用会被页面持久化覆盖的设置。应用级设置应在页面容器加载完成后，由专门的 Runtime/Startup 类统一应用，入口文件保持轻量。
 
 **重要**：使用 `UIContext.animateTo` 而非全局 `animateTo`（已弃用）：
 
@@ -410,6 +437,25 @@ Clog.info(TAG, '信息日志');
 Clog.warn(TAG, '警告信息');
 Clog.error(TAG, '错误信息', errorObject);
 ```
+
+#### 日志级别使用规范
+
+- `Clog.info`：记录正常业务流程中的关键节点，只用于开发排查需要的低频信息，例如功能开关变更、导出成功、初始化完成、一次重要流程开始/结束。不要在列表渲染、循环、频繁手势、每条账单计算等高频路径里输出 info。
+- `Clog.warn`：记录可恢复但需要关注的异常状态，例如非关键数据缺失、使用默认值兜底、可忽略的文件不存在、降级逻辑、生效失败但不阻塞主流程的情况。
+- `Clog.error`：记录真实失败或不可预期异常，例如数据库操作失败、文件读写失败、导入导出失败、网络请求失败、全局 JS crash、会影响用户完成当前操作的问题。捕获到的 `error` 对象应尽量作为第三个参数传入。
+- 不要使用 `hilog` 直接输出项目业务日志；全局统一走 `Clog`，便于本地落盘、导出和问题排查。
+- 日志内容应避免记录用户隐私、完整账单明细、Token、手机号、银行卡号、精确定位等敏感信息。需要定位问题时，只记录状态、数量、类型、错误码、脱敏后的关键字段。
+
+#### 日志落盘规范
+
+- `Clog.init(context)` 只负责初始化日志目录，目录为 `context.filesDir/logs`；不要在页面或组件中重复自建日志目录。
+- 关闭详细日志时，本地仍保留 `error` 级别日志；开启详细日志时，`info`、`warn`、`error` 均可落盘，用于开发人员排查问题。
+- 页面或设置项只控制“详细日志”开关，不应阻止错误日志落盘。错误日志是问题排查的最低保障。
+- 日志文件使用 JSONL 形式按行记录，并按文件大小轮转。导出时打包日志目录，不要在页面中拼接单个日志文件内容。
+- 全局 JS crash 捕获应统一进入 `Clog.error('[Crash]', exceptionInfo)`，不要再维护一套独立的 `CrashUtil` 或 `ExceptionLog.json`，除非有明确兼容需求。
+- 日志清空只清理本机日志文件和临时导出压缩包，不影响账单、账户、预算等业务数据。页面显示的“本地占用”和“最近更新”如果统计整个日志目录，则清空逻辑也必须覆盖同一目录，避免统计范围和清理范围不一致。
+- 清空日志成功后，页面应直接把展示状态置为 `暂无`、`0 KB`、不可导出；再次进入页面时再从文件系统重新计算真实状态。
+- 日志导出成功、清空失败、压缩失败等操作要通过 `Clog.info/warn/error` 记录结果，但清空成功后不要立即写入新的 info 日志到同一日志目录，否则会出现刚清空又生成新日志的体验问题。
 
 ### 错误处理
 
