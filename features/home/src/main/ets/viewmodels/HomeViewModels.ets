@@ -6,7 +6,7 @@
  * @description: 首页视图模型
  */
 
-import { BillBean, BillGroup } from 'base';
+import { BillBean } from 'base';
 
 export class AssetAccountBean {
   name: string = '';
@@ -33,11 +33,6 @@ export enum BillSortTypeEnum {
   AMOUNT_DESC = 'amount_desc'
 }
 
-export class HomeHeaderState {
-  title: string = '本周账单';
-  action: string = '按日总额排序';
-}
-
 export class HomeMonthlySummary {
   currentMonthText: string = '';
   monthlyExpense: number = 0;
@@ -58,6 +53,4 @@ export class HomeAssetSummary {
 
 export class HomeWeeklyDisplayState {
   sortedWeekBills: BillBean[] = [];
-  sortedWeekBillGroups: BillGroup[] = [];
-  billSortModeText: string = '按时间倒序';
 }

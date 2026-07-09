@@ -8,7 +8,6 @@
 
 import { hdsMaterial, HdsNavigation, ScrollEffectType, HdsAnimationMode } from '@kit.UIDesignKit';
 import {
-  AccountBean,
   AppThemeState,
   BillBean,
   BillGroup,
@@ -18,34 +17,30 @@ import {
   SystemOptions,
   mainTabController
 } from 'base';
-import { AccountManager, BillManager, BudgetManager } from 'data_core';
-import { Assets, Ordinary } from 'record';
-import { AppStorageV2, curves, LengthMetrics, PersistenceV2 } from '@kit.ArkUI';
+import { BillManager, BudgetManager } from 'data_core';
+import { AddBillSheetComponent, Assets, Ordinary } from 'record';
+import { AppStorageV2, LengthMetrics, PersistenceV2 } from '@kit.ArkUI';
 import { Clog, WindowUtil } from 'kite_utils';
 import {
-  AssetAccountListSectionComponent,
-  AssetOverviewCardComponent,
-  BudgetOverviewCardComponent,
-  IncomeExpenseCardComponent,
-  SectionHeaderComponent,
-  WeeklyBillListSectionComponent
+  HomeAssetBudgetCardsComponent,
+  NetAssetOverviewCardComponent,
+  PendingBillPreviewCardComponent,
+  RecentAutoBillsCardComponent,
+  RecognitionCenterCardComponent,
+  WeeklyOverviewCardComponent
 } from '../components/index';
+import { AssetDetail } from './AssetDetail';
+import { BudgetDetail } from './BudgetDetail';
+import { LedgerSwitch } from './LedgerSwitch';
+import { PendingConfirmBills } from './PendingConfirmBills';
 import {
-  AssetAccountBean,
   BillSortTypeEnum,
-  HomeAssetSummary,
-  HomeHeaderState,
   HomeMonthlySummary,
   HomeWeeklyDisplayState
 } from '../viewmodels/index';
-import { HomeIndexCalculator } from '../utils/index';
+import { HomeAmountFormatter, HomeIndexCalculator } from '../utils/index';
 
 const TAG: string = '[HomeIndex]';
-const CARD_COUNT: number = 3;
-const MIN_SCALE: number = 0.85;
-const MAX_ROTATE: number = 5;
-const HOME_SWIPER_CARD_HEIGHT: number = 236;
-const HOME_SWIPER_SECTION_HEIGHT: number = 274;
 
 @Entry
 @ComponentV2
@@ -57,14 +52,7 @@ export struct Index {
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
   @Local weekBillGroups: BillGroup[] = [];
   @Local monthBillGroups: BillGroup[] = [];
-  @Local swiperIndex: number = 0;
-  @Local opacityList: number[] = [1, 1, 1];
-  @Local scaleList: number[] = [1, 1, 1];
-  @Local rotateList: number[] = [0, 0, 0];
-  @Local zIndexList: number[] = [0, 0, 0];
   @Local billSortType: BillSortTypeEnum = BillSortTypeEnum.DATE_DESC;
-  @Local hideIncomeExpenseAmount: boolean = false;
-  @Local hideAssetAmount: boolean = false;
   @Local currentMonthText: string = '';
   @Local monthlyExpense: number = 0;
   @Local monthlyIncome: number = 0;
@@ -75,30 +63,31 @@ export struct Index {
   @Local dailyBudgetRemaining: number = 0;
   @Local budgetProgressValue: number = 0;
   @Local budgetUsagePercent: number = 0;
-  @Local totalAssets: number = 0;
-  @Local totalLiabilities: number = 0;
-  @Local netAssets: number = 0;
   @Local sortedWeekBills: BillBean[] = [];
-  @Local sortedWeekBillGroups: BillGroup[] = [];
-  @Local headerTitle: string = '本周账单';
-  @Local headerAction: string = '按日总额排序';
-  @Local billSortModeText: string = '按时间倒序';
-  @Local assetAccounts: AssetAccountBean[] = [];
+  @Local selectedAssetRouteAccountId: number = 0;
+  @Local isBillEditorVisible: boolean = false;
+  @Local editingBillId: number = 0;
 
-  private indicatorController: IndicatorComponentController = new IndicatorComponentController();
-  private swiperController: SwiperController = new SwiperController();
+  private overviewIndicatorController: IndicatorComponentController = new IndicatorComponentController();
   private billSyncListenerId: number = -1;
 
-  @Builder
   /**
    * 根据导航路由名映射到首页可跳转的子页面。
    */
-  PagesMap(name: string) {
+  @Builder
+  PagesMap(name: string, param?: object) {
     if (name === RouterUrlConstants.ORDINARY) {
       Ordinary()
-    }
-    if (name === RouterUrlConstants.ASSETS) {
+    } else if (name === RouterUrlConstants.ASSETS) {
       Assets()
+    } else if (name === RouterUrlConstants.ASSET_DETAIL) {
+      AssetDetail({ accountId: this.selectedAssetRouteAccountId })
+    } else if (name === RouterUrlConstants.BUDGET_DETAIL) {
+      BudgetDetail()
+    } else if (name === RouterUrlConstants.LEDGER_SWITCH) {
+      LedgerSwitch()
+    } else if (name === RouterUrlConstants.PENDING_CONFIRM_BILLS) {
+      PendingConfirmBills()
     }
   }
 
@@ -111,23 +100,41 @@ export struct Index {
   }
 
   /**
-   * 根据当前卡片和排序模式刷新列表区标题文案。
+   * 待确认列表属于主流程同级页面，进入时收起底部 Tab。
    */
-  private updateHeaderState(): void {
-    const headerState: HomeHeaderState = HomeIndexCalculator.buildHeaderState(this.swiperIndex, this.billSortType);
-    this.headerTitle = headerState.title;
-    this.headerAction = headerState.action;
+  private navigateToPendingConfirmBills(): void {
+    this.navigateToSubPage(RouterUrlConstants.PENDING_CONFIRM_BILLS);
   }
 
   /**
-   * 处理列表区右上角操作，资产卡进入资产页，其余卡切换排序方式。
+   * 进入资产详情页；未指定账户时展示总资产视角。
    */
-  private handleHeaderAction(): void {
-    if (this.swiperIndex === 2) {
-      this.navigateToSubPage(RouterUrlConstants.ASSETS);
-      return;
-    }
-    this.billSortType = HomeIndexCalculator.getNextBillSortType(this.billSortType);
+  private navigateToAssetDetail(accountId: number = 0): void {
+    this.selectedAssetRouteAccountId = accountId;
+    this.navigateToSubPage(RouterUrlConstants.ASSET_DETAIL);
+  }
+
+  /**
+   * 进入本月预算详情页。
+   */
+  private navigateToBudgetDetail(): void {
+    this.navigateToSubPage(RouterUrlConstants.BUDGET_DETAIL);
+  }
+
+  /**
+   * 打开首页账单编辑半模态，复用全局记账组件。
+   */
+  private openBillEditor(billId: number): void {
+    this.editingBillId = billId;
+    this.isBillEditorVisible = true;
+  }
+
+  /**
+   * 关闭首页账单编辑半模态，并清空当前编辑态。
+   */
+  private closeBillEditor(): void {
+    this.isBillEditorVisible = false;
+    this.editingBillId = 0;
   }
 
   /**
@@ -147,18 +154,6 @@ export struct Index {
   }
 
   /**
-   * 从账户数据库加载首页资产账户列表，避免继续使用本地示例数据。
-   */
-  private async loadAssetAccounts(): Promise<void> {
-    try {
-      const accounts: AccountBean[] = await AccountManager.getAccounts();
-      this.assetAccounts = accounts.map((item: AccountBean) => this.buildAssetAccount(item));
-    } catch (err) {
-      Clog.error(TAG, '加载资产账户失败', err);
-    }
-  }
-
-  /**
    * 加载当前月份总预算，供首页预算卡和摘要计算复用。
    */
   private async loadBudgetData(): Promise<void> {
@@ -171,106 +166,46 @@ export struct Index {
   }
 
   /**
-   * 将数据库账户实体转换为首页资产列表使用的展示模型。
-   */
-  private buildAssetAccount(account: AccountBean): AssetAccountBean {
-    return new AssetAccountBean(
-      account.name,
-      account.getSubtitleText(),
-      account.balance,
-      account.getIconResource(),
-      account.isLiability()
-    );
-  }
-
-  /**
    * 删除账单后重新拉取首页账单数据，确保统计区和列表区同步。
    */
   private async deleteBill(billId: number): Promise<void> {
     try {
       await BillManager.deleteBill(billId);
       await this.loadBillData();
-      await this.loadAssetAccounts();
+      billSyncController.notifyBillChanged();
     } catch (err) {
       Clog.error(TAG, '删除账单失败', err);
     }
   }
 
   /**
-   * 将日期文案委托给计算器，统一首页日期显示规则。
+   * 编辑账单后刷新首页数据，并同步关闭编辑半模态。
    */
-  private formatDateTitle(dateStr: string): string {
-    return HomeIndexCalculator.formatDateTitle(dateStr);
-  }
-
-  /**
-   * 返回某一天的总流水，供分组头部展示。
-   */
-  private getGroupTurnover(group: BillGroup): number {
-    return HomeIndexCalculator.getGroupTurnover(group);
+  private async handleBillEdited(): Promise<void> {
+    await this.loadBillData();
+    this.closeBillEditor();
+    billSyncController.notifyBillChanged();
   }
 
   /**
    * 按显隐状态格式化普通金额文本。
    */
   private getAmountText(amount: number, hidden: boolean): string {
-    if (hidden) {
-      return '****';
-    }
-    return `¥${this.formatAmount(amount)}`;
+    return HomeAmountFormatter.getAmountText(amount, hidden);
   }
 
   /**
    * 按显隐状态格式化带正负号的金额文本。
    */
   private getSignedAmountText(amount: number, hidden: boolean): string {
-    if (hidden) {
-      return '****';
-    }
-    const prefix: string = amount >= 0 ? '+' : '-';
-    return `${prefix}¥${this.formatAmount(Math.abs(amount))}`;
-  }
-
-  /**
-   * 将资产条目类型映射为中文标签。
-   */
-  private getAssetSignText(isLiability: boolean): string {
-    return isLiability ? '负债' : '资产';
-  }
-
-  /**
-   * 为资产列表返回对应的金额颜色。
-   */
-  private getAssetAmountColor(isLiability: boolean): ResourceColor {
-    if (isLiability) {
-      return '#F97316';
-    }
-    return this.themeState.fontPrimary as ResourceColor;
+    return HomeAmountFormatter.getSignedAmountText(amount, hidden);
   }
 
   /**
    * 统一首页金额千分位格式，避免多处实现。
    */
   private formatAmount(amount: number): string {
-    return HomeIndexCalculator.formatAmount(amount);
-  }
-
-  /**
-   * 读取窗口宽度并转换为 vp，用于判断卡片紧凑布局。
-   */
-  private getSwiperViewportWidth(): number {
-    const windowWidthPx: number = this.winUtil.mainWindowInfo.windowSize.width;
-    if (windowWidthPx <= 0) {
-      return 360;
-    }
-    return this.getUIContext().px2vp(windowWidthPx);
-  }
-
-  /**
-   * 当宽度较小时切换到紧凑卡片布局。
-   */
-  private isCompactSwiperLayout(): boolean {
-    return this.getSwiperViewportWidth() < 380;
+    return HomeAmountFormatter.formatAmount(amount);
   }
 
   /**
@@ -297,28 +232,14 @@ export struct Index {
     const displayState: HomeWeeklyDisplayState =
       HomeIndexCalculator.buildWeeklyDisplayState(this.weekBillGroups, this.billSortType);
     this.sortedWeekBills = displayState.sortedWeekBills;
-    this.sortedWeekBillGroups = displayState.sortedWeekBillGroups;
-    this.billSortModeText = displayState.billSortModeText;
-  }
-
-  /**
-   * 刷新资产总额、负债和净资产摘要。
-   */
-  private updateAssetSummary(): void {
-    const summary: HomeAssetSummary = HomeIndexCalculator.buildAssetSummary(this.assetAccounts);
-    this.totalAssets = summary.totalAssets;
-    this.totalLiabilities = summary.totalLiabilities;
-    this.netAssets = summary.netAssets;
   }
 
   /**
    * 首次进入首页时批量初始化所有派生展示数据。
    */
   private refreshStaticDerivedState(): void {
-    this.updateAssetSummary();
     this.updateWeeklyDisplayData();
     this.updateMonthlySummary();
-    this.updateHeaderState();
   }
 
   @Monitor('weekBillGroups')
@@ -351,23 +272,6 @@ export struct Index {
    */
   onBillSortTypeChanged(): void {
     this.updateWeeklyDisplayData();
-    this.updateHeaderState();
-  }
-
-  @Monitor('assetAccounts')
-  /**
-   * 资产账户变化后同步刷新资产概览卡片摘要。
-   */
-  onAssetAccountsChanged(): void {
-    this.updateAssetSummary();
-  }
-
-  @Monitor('swiperIndex')
-  /**
-   * 卡片切换后刷新列表区标题和操作文案。
-   */
-  onSwiperIndexChanged(): void {
-    this.updateHeaderState();
   }
 
   /**
@@ -377,13 +281,11 @@ export struct Index {
     if (this.billSyncListenerId < 0) {
       this.billSyncListenerId = billSyncController.register(async () => {
         await this.loadBillData();
-        await this.loadAssetAccounts();
         await this.loadBudgetData();
       })
     }
     this.refreshStaticDerivedState();
     this.loadBillData();
-    this.loadAssetAccounts();
     this.loadBudgetData();
   }
 
@@ -398,7 +300,7 @@ export struct Index {
   }
 
   /**
-   * 构建首页主容器，负责组合卡片区、标题区和列表区。
+   * 构建首页主容器，按照识别中心和财务概览仪表盘组织首屏信息。
    */
   build() {
     HdsNavigation(this.pageInfos) {
@@ -406,47 +308,118 @@ export struct Index {
         ListItem().height(this.winUtil.mainWindowInfo.safeAreaTop + CommonConstants.TITLE_BAR_HEIGHT_FREE)
 
         ListItem() {
-          this.SwiperSection()
+          Stack({ alignContent: Alignment.Top }) {
+            Swiper() {
+              Column() {
+                RecognitionCenterCardComponent()
+              }
+              .width('100%')
+              .height(204)
+              .padding({ left: 16, right: 16 })
+
+              Column() {
+                NetAssetOverviewCardComponent({
+                  onAssetClick: () => {
+                    this.navigateToAssetDetail();
+                  }
+                })
+              }
+              .width('100%')
+              .height(204)
+              .padding({ left: 16, right: 16 })
+            }
+            .width('100%')
+            .height(204)
+            .autoPlay(false)
+            .indicator(this.overviewIndicatorController)
+
+            Row() {
+              IndicatorComponent(this.overviewIndicatorController)
+                .initialIndex(0)
+                .style(new DotIndicator()
+                  .itemWidth(5)
+                  .itemHeight(5)
+                  .selectedItemWidth(16)
+                  .selectedItemHeight(5)
+                  .color(this.themeState.compDivider)
+                  .selectedColor(this.themeState.brand))
+                .loop(false)
+                .count(2)
+            }
+            .width('100%')
+            .height(8)
+            .justifyContent(FlexAlign.Center)
+            .position({ x: 0, y: 207 })
+          }
+          .width('100%')
+          .height(216)
         }
 
         ListItem() {
-          SectionHeaderComponent({
-            title: this.headerTitle,
-            action: this.headerAction,
-            onAction: () => this.handleHeaderAction(),
-            themeState: this.themeState
-          })
+          Column() {
+            PendingBillPreviewCardComponent({
+              pendingCountText: '1',
+              onViewAll: () => {
+                this.navigateToPendingConfirmBills();
+              }
+            })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16 })
         }
 
-        if (this.swiperIndex === 2) {
-          AssetAccountListSectionComponent({
-            themeState: this.themeState,
-            assetAccounts: this.assetAccounts,
-            hideAssetAmount: this.hideAssetAmount,
-            getAssetSignText: (isLiability: boolean): string => this.getAssetSignText(isLiability),
-            getAmountText: (amount: number, hidden: boolean): string => this.getAmountText(amount, hidden),
-            getAssetAmountColor: (isLiability: boolean): ResourceColor => this.getAssetAmountColor(isLiability)
+        ListItem() {
+          Column() {
+            WeeklyOverviewCardComponent({
+              incomeText: this.getAmountText(this.monthlyIncome, false),
+              expenseText: this.getAmountText(this.monthlyExpense, false),
+              balanceText: this.getSignedAmountText(this.monthlyBalance, false),
+              balancePositive: this.monthlyBalance >= 0
+            })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16 })
+        }
+
+        ListItem() {
+          HomeAssetBudgetCardsComponent({
+            currentMonthText: this.currentMonthText,
+            budgetRemainingText: this.getAmountText(this.budgetRemaining, false),
+            usedBudgetText: this.getAmountText(this.monthlyExpense, false),
+            totalBudgetText: this.getAmountText(this.totalBudget, false),
+            dailyAvailableText: this.getAmountText(this.dailyBudgetRemaining, false),
+            budgetUsagePercent: this.budgetUsagePercent,
+            remainingDaysText: `剩余 ${this.remainingDaysOfMonth} 天`,
+            onBudgetClick: () => {
+              this.navigateToBudgetDetail();
+            }
           })
-        } else {
-          WeeklyBillListSectionComponent({
-            themeState: this.themeState,
-            isAmountSortMode: this.billSortType === BillSortTypeEnum.AMOUNT_DESC,
-            sortedWeekBills: this.sortedWeekBills,
-            sortedWeekBillGroups: this.sortedWeekBillGroups,
-            billSortModeText: this.billSortModeText,
-            onDeleteBill: (billId: number): void => {
-              this.deleteBill(billId);
-            },
-            formatDateTitle: (dateStr: string): string => this.formatDateTitle(dateStr),
-            formatGroupTurnover: (group: BillGroup): string => `¥${this.formatAmount(this.getGroupTurnover(group))}`
-          })
+            .width('100%')
+            .padding({ left: 16, right: 16 })
+        }
+
+        ListItem() {
+          Column() {
+            RecentAutoBillsCardComponent({
+              recentBills: this.sortedWeekBills,
+              onEditBill: (billId: number): void => {
+                this.openBillEditor(billId);
+              },
+              onDeleteBill: (billId: number): void => {
+                this.deleteBill(billId);
+              }
+            })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, bottom: 8 })
         }
       }
       .width('100%')
       .height('100%')
-      .contentEndOffset(this.winUtil.mainWindowInfo.navIndicatorHeight + CommonConstants.TAB_HEIGHT + 8)
+      .contentEndOffset(this.winUtil.mainWindowInfo.navIndicatorHeight + CommonConstants.TAB_HEIGHT + 16)
       .scrollBar(BarState.Off)
       .edgeEffect(EdgeEffect.Spring)
+      .backgroundColor($r('[shared_assets].color.start_window_background'))
     }
     .width(CommonConstants.FULL_WIN)
     .height(CommonConstants.FULL_WIN)
@@ -467,39 +440,40 @@ export struct Index {
         },
         originalStyle: {
           backgroundStyle: {
-            backgroundColor: $r('[shared_assets].color.title_bar_bg'),
+            backgroundColor: this.themeState.backgroundPrimary,
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('[shared_assets].color.text_primary'),
-              subTitleColor: $r('[shared_assets].color.text_secondary')
+              mainTitleColor: this.themeState.fontPrimary,
+              subTitleColor: this.themeState.fontSecondary
             },
             menuStyle: {
               backgroundColor: $r('[shared_assets].color.action_bg'),
               iconColor: $r('[shared_assets].color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: $r('[shared_assets].color.action_bg'),
-              iconColor: $r('[shared_assets].color.text_primary')
+              backgroundColor: this.themeState.compBackgroundNeutral,
+              iconColor: this.themeState.fontPrimary
             },
           }
         },
         scrollEffectStyle: {
           backgroundStyle: {
-            backgroundColor: $r('[shared_assets].color.title_bar_bg'),
+            backgroundColor: this.themeState.backgroundPrimary,
           },
           contentStyle: {
             titleStyle: {
-              mainTitleColor: $r('[shared_assets].color.text_primary'),
-              subTitleColor: $r('[shared_assets].color.text_secondary'),
+              mainTitleColor: this.themeState.fontPrimary,
+              subTitleColor: this.themeState.fontSecondary,
             },
             menuStyle: {
               backgroundColor: $r('[shared_assets].color.action_bg'),
-              textColor: $r('[shared_assets].color.text_secondary')
+              textColor: $r('[shared_assets].color.text_secondary'),
+              iconColor: $r('[shared_assets].color.text_primary')
             },
             backIconStyle: {
-              backgroundColor: $r('[shared_assets].color.action_bg'),
-              iconColor: $r('[shared_assets].color.text_primary')
+              backgroundColor: this.themeState.compBackgroundNeutral,
+              iconColor: this.themeState.fontPrimary
             }
           }
         }
@@ -507,14 +481,15 @@ export struct Index {
       content: {
         title: {
           mainTitle: '纸鸢账本',
-          subTitle: '个人账本'
+          subTitle: '智能识别记账'
         },
         menu: {
           value: [{
             content: {
-              icon: $r('sys.symbol.house'),
-              label: 'logo',
+              icon: $r('sys.symbol.book'),
+              label: '账本',
               action: () => {
+                this.navigateToSubPage(RouterUrlConstants.LEDGER_SWITCH);
               },
             }
           }]
@@ -523,124 +498,27 @@ export struct Index {
       avoidLayoutSafeArea: true
     })
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP, LayoutSafeAreaEdge.BOTTOM])
+    .bindSheet($$this.isBillEditorVisible, this.BillEditorSheetBuilder(), {
+      detents: [SheetSize.LARGE],
+      preferType: SheetType.BOTTOM,
+      title: {
+        title: '编辑账单'
+      }
+    })
   }
 
   @Builder
-  /**
-   * 构建首页顶部统计卡片轮播区与指示器。
-   */
-  SwiperSection() {
-    Column() {
-      Swiper(this.swiperController) {
-        BudgetOverviewCardComponent({
-          themeState: this.themeState,
-          compactLayout: this.isCompactSwiperLayout(),
-          currentMonthText: this.currentMonthText,
-          budgetProgressValue: this.budgetProgressValue,
-          budgetUsagePercent: this.budgetUsagePercent,
-          dailyBudgetText: this.getAmountText(this.dailyBudgetRemaining, false),
-          budgetRemainingText: this.getAmountText(this.budgetRemaining, false),
-          totalBudgetText: this.getAmountText(this.totalBudget, false),
-          monthlyExpenseText: this.getAmountText(this.monthlyExpense, false),
-          remainingDaysText: `剩余 ${this.remainingDaysOfMonth} 天`,
-          opacityValue: this.opacityList[0],
-          scaleValue: this.scaleList[0],
-          rotateValue: this.rotateList[0],
-          zIndexValue: this.zIndexList[0],
-          totalBudgetValue: this.totalBudget > 0 ? this.totalBudget : 1
-        })
-        IncomeExpenseCardComponent({
-          themeState: this.themeState,
-          compactLayout: this.isCompactSwiperLayout(),
-          hiddenAmount: this.hideIncomeExpenseAmount,
-          expenseText: this.getAmountText(this.monthlyExpense, this.hideIncomeExpenseAmount),
-          incomeText: this.getAmountText(this.monthlyIncome, this.hideIncomeExpenseAmount),
-          balanceText: this.getSignedAmountText(this.monthlyBalance, this.hideIncomeExpenseAmount),
-          opacityValue: this.opacityList[1],
-          scaleValue: this.scaleList[1],
-          rotateValue: this.rotateList[1],
-          zIndexValue: this.zIndexList[1],
-          onToggleHidden: () => {
-            this.hideIncomeExpenseAmount = !this.hideIncomeExpenseAmount;
-          }
-        })
-        AssetOverviewCardComponent({
-          themeState: this.themeState,
-          compactLayout: this.isCompactSwiperLayout(),
-          hiddenAmount: this.hideAssetAmount,
-          netAssetsText: this.getAmountText(this.netAssets, this.hideAssetAmount),
-          totalAssetsText: this.getAmountText(this.totalAssets, this.hideAssetAmount),
-          totalLiabilitiesText: this.getAmountText(this.totalLiabilities, this.hideAssetAmount),
-          opacityValue: this.opacityList[2],
-          scaleValue: this.scaleList[2],
-          rotateValue: this.rotateList[2],
-          zIndexValue: this.zIndexList[2],
-          onToggleHidden: () => {
-            this.hideAssetAmount = !this.hideAssetAmount;
-          }
-        })
+  private BillEditorSheetBuilder() {
+    AddBillSheetComponent({
+      themeState: this.themeState,
+      optionSystem: this.optionSystem,
+      editingBillId: this.editingBillId,
+      onClose: () => {
+        this.closeBillEditor();
+      },
+      onSaved: () => {
+        this.handleBillEdited();
       }
-      .prevMargin(6)
-      .nextMargin(6)
-      .index(this.swiperIndex)
-      .autoPlay(false)
-      .indicator(this.indicatorController)
-      .itemSpace(16)
-      .height(HOME_SWIPER_CARD_HEIGHT)
-      .customContentTransition({
-        timeout: 1000,
-        transition: (proxy: SwiperContentTransitionProxy) => {
-          const pageDistance: number = Math.abs(proxy.position);
-          if (proxy.index === proxy.selectedIndex) {
-            const progress = Math.min(pageDistance, 1);
-            this.opacityList[proxy.index] = 1 - 0.5 * progress;
-            this.scaleList[proxy.index] = 1 - (1 - MIN_SCALE) * progress;
-            this.rotateList[proxy.index] = MAX_ROTATE * progress * (proxy.position < 0 ? -1 : 1);
-            this.zIndexList[proxy.index] = 1;
-          } else if (pageDistance < 1) {
-            const progress = 1 - pageDistance;
-            this.opacityList[proxy.index] = 0.5 + 0.5 * progress;
-            this.scaleList[proxy.index] = MIN_SCALE + (1 - MIN_SCALE) * progress;
-            this.rotateList[proxy.index] = MAX_ROTATE * (1 - progress) * (proxy.position < 0 ? 1 : -1);
-            this.zIndexList[proxy.index] = 0;
-          } else {
-            this.opacityList[proxy.index] = 0;
-            this.scaleList[proxy.index] = MIN_SCALE;
-            this.rotateList[proxy.index] = 0;
-            this.zIndexList[proxy.index] = 0;
-          }
-        }
-      })
-      .onChange((index: number) => {
-        this.swiperIndex = index;
-        this.getUIContext().animateTo({
-          duration: 300,
-          curve: curves.springMotion(0.6, 0.9)
-        }, () => {
-          for (let i = 0; i < CARD_COUNT; i++) {
-            this.opacityList[i] = 1;
-            this.scaleList[i] = 1;
-            this.rotateList[i] = 0;
-            this.zIndexList[i] = 0;
-          }
-        });
-      })
-
-      IndicatorComponent(this.indicatorController)
-        .initialIndex(0)
-        .style(new DotIndicator()
-          .itemWidth(8)
-          .itemHeight(8)
-          .selectedItemWidth(16)
-          .selectedItemHeight(8)
-          .color(this.themeState.compDivider)
-          .selectedColor(this.themeState.brand))
-        .loop(false)
-        .count(CARD_COUNT)
-        .margin({ top: 14 })
-    }
-    .width('100%')
-    .height(HOME_SWIPER_SECTION_HEIGHT)
+    })
   }
-
 }
