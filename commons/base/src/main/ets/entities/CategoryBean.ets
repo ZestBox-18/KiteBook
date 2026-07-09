@@ -13,11 +13,17 @@ import { BillTypeEnum } from './BillBean';
  */
 export class CategoryBean {
   id: number = 0;
+  uuid: string = '';
+  remoteId: string = '';
+  ledgerId: number = 1;
   name: string = '';
   type: string = BillTypeEnum.EXPENSE;
   icon: string = 'ellipsis_circle';
   sortOrder: number = 0;
   isSystem: boolean = false;
+  syncStatus: string = 'pending';
+  syncVersion: number = 0;
+  deletedAt: number = 0;
   createdAt: number = 0;
   updatedAt: number = 0;
 

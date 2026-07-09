@@ -9,7 +9,16 @@
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { AccountBean, AccountTypeEnum, BillBean, BillGroup, BillTypeEnum, CategoryBean } from 'base';
+import {
+  AccountBean,
+  AccountTypeEnum,
+  BillBean,
+  BillGroup,
+  BillSplitModeEnum,
+  BillTypeEnum,
+  CategoryBean,
+  SyncStatusEnum
+} from 'base';
 import { AccountManager } from './AccountManager';
 import { CategoryManager } from './CategoryManager';
 
@@ -17,21 +26,42 @@ const TAG: string = '[BillManager]';
 const TABLE_NAME: string = 'bills';
 
 export class BillManager {
+  private static createLocalUuid(): string {
+    return `bill-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  }
+
   /**
    * 将查询结果行映射为账单实体，避免不同查询重复手写转换逻辑。
    */
-  private static mapRowsToBills(rows: Record<string, object>[], categories: CategoryBean[]): BillBean[] {
+  private static mapRowsToBills(
+    rows: Record<string, object>[],
+    categories: CategoryBean[],
+    accounts: AccountBean[]
+  ): BillBean[] {
     return rows.map((row: Record<string, object>) => {
       const bill: BillBean = new BillBean();
       bill.id = Number(row['id']);
+      bill.uuid = String(row['uuid'] ?? '');
+      bill.remoteId = String(row['remote_id'] ?? '');
+      bill.ledgerId = Number(row['ledger_id'] ?? 1);
       bill.type = String(row['type']);
       bill.category = String(row['category']);
       bill.categoryIconKey = BillManager.resolveCategoryIconKey(String(row['category']), String(row['type']), categories);
       bill.amount = Number(row['amount']);
-      bill.account = String(row['account']);
-      bill.targetAccount = String(row['target_account'] ?? '');
+      bill.accountId = Number(row['account_id'] ?? 0);
+      bill.targetAccountId = Number(row['target_account_id'] ?? 0);
+      bill.account = BillManager.resolveAccountName(bill.accountId, accounts);
+      bill.targetAccount = BillManager.resolveAccountName(bill.targetAccountId, accounts);
+      bill.paidByMemberId = Number(row['paid_by_member_id'] ?? 1);
+      bill.createdByMemberId = Number(row['created_by_member_id'] ?? 1);
+      bill.splitMode = String(row['split_mode'] ?? BillSplitModeEnum.NONE);
+      bill.affectAsset = Number(row['affect_asset'] ?? 1) === 1;
+      bill.currency = String(row['currency'] ?? 'CNY');
       bill.date = Number(row['date']);
       bill.remark = String(row['remark'] ?? '');
+      bill.syncStatus = String(row['sync_status'] ?? SyncStatusEnum.PENDING);
+      bill.syncVersion = Number(row['sync_version'] ?? 0);
+      bill.deletedAt = Number(row['deleted_at'] ?? 0);
       bill.createdAt = Number(row['created_at']);
       bill.updatedAt = Number(row['updated_at']);
       return bill;
@@ -51,11 +81,26 @@ export class BillManager {
     return '';
   }
 
+  private static resolveAccountName(accountId: number, accounts: AccountBean[]): string {
+    if (accountId <= 0) {
+      return '';
+    }
+    for (let index: number = 0; index < accounts.length; index++) {
+      if (accounts[index].id === accountId) {
+        return accounts[index].name;
+      }
+    }
+    return '';
+  }
+
   /**
    * 根据账单和账户类型计算余额变动值。
    */
   private static async calculateAccountBalanceDelta(bill: BillBean): Promise<number> {
-    const account: AccountBean | null = await AccountManager.getAccountByName(bill.account);
+    if (!bill.affectAsset) {
+      return 0;
+    }
+    const account: AccountBean | null = await AccountManager.getAccountById(bill.accountId);
     if (account === null) {
       return 0;
     }
@@ -69,13 +114,16 @@ export class BillManager {
    * 将转账账单同步到转出和转入账户余额。
    */
   private static async applyTransferBill(bill: BillBean, reverse: boolean = false): Promise<void> {
-    if (bill.targetAccount.trim().length === 0 || bill.targetAccount === bill.account) {
+    if (!bill.affectAsset) {
+      return;
+    }
+    if (bill.targetAccountId <= 0 || bill.targetAccountId === bill.accountId) {
       return;
     }
     const sourceDelta: number = reverse ? bill.amount : -bill.amount;
     const targetDelta: number = reverse ? -bill.amount : bill.amount;
-    await AccountManager.updateAccountBalanceByName(bill.account, sourceDelta);
-    await AccountManager.updateAccountBalanceByName(bill.targetAccount, targetDelta);
+    await AccountManager.updateAccountBalanceById(bill.accountId, sourceDelta);
+    await AccountManager.updateAccountBalanceById(bill.targetAccountId, targetDelta);
   }
 
   /**
@@ -91,7 +139,7 @@ export class BillManager {
       return;
     }
     const balanceDelta: number = reverse ? -delta : delta;
-    await AccountManager.updateAccountBalanceByName(bill.account, balanceDelta);
+    await AccountManager.updateAccountBalanceById(bill.accountId, balanceDelta);
   }
 
   /**
@@ -100,6 +148,7 @@ export class BillManager {
   static async getBillById(id: number): Promise<BillBean | null> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('id', id);
+    predicates.equalTo('deleted_at', 0);
 
     return new Promise<BillBean | null>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
@@ -110,7 +159,8 @@ export class BillManager {
             return;
           }
           const categories: CategoryBean[] = await CategoryManager.getAllCategories();
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
+          const accounts: AccountBean[] = await AccountManager.getAccounts();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories, accounts);
           resolve(bills[0]);
         })
         .catch((err: BusinessError) => {
@@ -126,13 +176,29 @@ export class BillManager {
   private static buildUpdatedBill(originalBill: BillBean, patch: Partial<BillBean>): BillBean {
     const nextBill: BillBean = new BillBean();
     nextBill.id = originalBill.id;
+    nextBill.uuid = originalBill.uuid;
+    nextBill.remoteId = originalBill.remoteId;
+    nextBill.ledgerId = patch.ledgerId !== undefined ? patch.ledgerId : originalBill.ledgerId;
     nextBill.type = patch.type !== undefined ? patch.type : originalBill.type;
     nextBill.category = patch.category !== undefined ? patch.category : originalBill.category;
     nextBill.amount = patch.amount !== undefined ? patch.amount : originalBill.amount;
     nextBill.account = patch.account !== undefined ? patch.account : originalBill.account;
+    nextBill.accountId = patch.accountId !== undefined ? patch.accountId : originalBill.accountId;
     nextBill.targetAccount = patch.targetAccount !== undefined ? patch.targetAccount : originalBill.targetAccount;
+    nextBill.targetAccountId =
+      patch.targetAccountId !== undefined ? patch.targetAccountId : originalBill.targetAccountId;
+    nextBill.paidByMemberId =
+      patch.paidByMemberId !== undefined ? patch.paidByMemberId : originalBill.paidByMemberId;
+    nextBill.createdByMemberId =
+      patch.createdByMemberId !== undefined ? patch.createdByMemberId : originalBill.createdByMemberId;
+    nextBill.splitMode = patch.splitMode !== undefined ? patch.splitMode : originalBill.splitMode;
+    nextBill.affectAsset = patch.affectAsset !== undefined ? patch.affectAsset : originalBill.affectAsset;
+    nextBill.currency = patch.currency !== undefined ? patch.currency : originalBill.currency;
     nextBill.date = patch.date !== undefined ? patch.date : originalBill.date;
     nextBill.remark = patch.remark !== undefined ? patch.remark : originalBill.remark;
+    nextBill.syncStatus = SyncStatusEnum.PENDING;
+    nextBill.syncVersion = originalBill.syncVersion;
+    nextBill.deletedAt = originalBill.deletedAt;
     nextBill.createdAt = originalBill.createdAt;
     nextBill.updatedAt = Date.now();
     return nextBill;
@@ -145,14 +211,32 @@ export class BillManager {
    */
   static async addBill(bill: BillBean): Promise<number> {
     const now = Date.now();
+    const account: AccountBean | null = bill.accountId > 0 ? null : await AccountManager.getAccountByName(bill.account);
+    const targetAccount: AccountBean | null =
+      bill.targetAccountId > 0 || bill.targetAccount.length === 0 ? null :
+        await AccountManager.getAccountByName(bill.targetAccount);
+    const accountId: number = bill.accountId > 0 ? bill.accountId : (account === null ? 0 : account.id);
+    const targetAccountId: number =
+      bill.targetAccountId > 0 ? bill.targetAccountId : (targetAccount === null ? 0 : targetAccount.id);
     const data: relationalStore.ValuesBucket = {
+      uuid: bill.uuid.length > 0 ? bill.uuid : BillManager.createLocalUuid(),
+      remote_id: bill.remoteId,
+      ledger_id: bill.ledgerId,
       type: bill.type,
       category: bill.category,
       amount: bill.amount,
-      account: bill.account,
-      target_account: bill.targetAccount,
+      account_id: accountId,
+      target_account_id: targetAccountId,
+      paid_by_member_id: bill.paidByMemberId,
+      created_by_member_id: bill.createdByMemberId,
+      split_mode: bill.splitMode,
+      affect_asset: bill.affectAsset ? 1 : 0,
+      currency: bill.currency,
       date: bill.date,
       remark: bill.remark,
+      sync_status: SyncStatusEnum.PENDING,
+      sync_version: bill.syncVersion,
+      deleted_at: 0,
       created_at: now,
       updated_at: now
     };
@@ -163,6 +247,8 @@ export class BillManager {
           if (id === -1) {
             reject(-1);
           } else {
+            bill.accountId = accountId;
+            bill.targetAccountId = targetAccountId;
             await BillManager.applyBillToAccountBalance(bill);
             resolve(id);
           }
@@ -187,8 +273,14 @@ export class BillManager {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('id', id);
 
+    const data: relationalStore.ValuesBucket = {
+      deleted_at: Date.now(),
+      updated_at: Date.now(),
+      sync_status: SyncStatusEnum.PENDING
+    };
+
     return new Promise<number>((resolve, reject) => {
-      dbManager.dbStore?.delete(predicates)
+      dbManager.dbStore?.update(data, predicates)
         .then(async (num: number) => {
           if (num === -1) {
             reject(-1);
@@ -216,9 +308,22 @@ export class BillManager {
       return -1;
     }
     const updatedBill: BillBean = BillManager.buildUpdatedBill(originalBill, patch);
+    if (patch.account !== undefined && patch.accountId === undefined) {
+      const nextAccount: AccountBean | null = await AccountManager.getAccountByName(patch.account);
+      updatedBill.accountId = nextAccount === null ? 0 : nextAccount.id;
+    }
+    if (patch.targetAccount !== undefined && patch.targetAccountId === undefined) {
+      const nextTargetAccount: AccountBean | null = patch.targetAccount.length === 0 ? null :
+        await AccountManager.getAccountByName(patch.targetAccount);
+      updatedBill.targetAccountId = nextTargetAccount === null ? 0 : nextTargetAccount.id;
+    }
     const data: relationalStore.ValuesBucket = {
-      updated_at: Date.now()
+      updated_at: Date.now(),
+      sync_status: SyncStatusEnum.PENDING
     };
+    if (patch.ledgerId !== undefined) {
+      data.ledger_id = patch.ledgerId;
+    }
     if (patch.type !== undefined) {
       data.type = patch.type;
     }
@@ -228,11 +333,30 @@ export class BillManager {
     if (patch.amount !== undefined) {
       data.amount = patch.amount;
     }
-    if (patch.account !== undefined) {
-      data.account = patch.account;
+    if (patch.accountId !== undefined) {
+      data.account_id = patch.accountId;
+    } else if (patch.account !== undefined) {
+      data.account_id = updatedBill.accountId;
     }
-    if (patch.targetAccount !== undefined) {
-      data.target_account = patch.targetAccount;
+    if (patch.targetAccountId !== undefined) {
+      data.target_account_id = patch.targetAccountId;
+    } else if (patch.targetAccount !== undefined) {
+      data.target_account_id = updatedBill.targetAccountId;
+    }
+    if (patch.paidByMemberId !== undefined) {
+      data.paid_by_member_id = patch.paidByMemberId;
+    }
+    if (patch.createdByMemberId !== undefined) {
+      data.created_by_member_id = patch.createdByMemberId;
+    }
+    if (patch.splitMode !== undefined) {
+      data.split_mode = patch.splitMode;
+    }
+    if (patch.affectAsset !== undefined) {
+      data.affect_asset = patch.affectAsset ? 1 : 0;
+    }
+    if (patch.currency !== undefined) {
+      data.currency = patch.currency;
     }
     if (patch.date !== undefined) {
       data.date = patch.date;
@@ -274,6 +398,7 @@ export class BillManager {
 
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.greaterThanOrEqualTo('date', startTime);
+    predicates.equalTo('deleted_at', 0);
     predicates.orderByDesc('date');
 
     return new Promise<BillGroup[]>((resolve, reject) => {
@@ -281,7 +406,8 @@ export class BillManager {
         .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
           const categories: CategoryBean[] = await CategoryManager.getAllCategories();
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
+          const accounts: AccountBean[] = await AccountManager.getAccounts();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories, accounts);
 
           // 按日期分组
           const groups = BillManager.groupBillsByDate(bills);
@@ -306,6 +432,7 @@ export class BillManager {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.greaterThanOrEqualTo('date', startDate.getTime());
     predicates.lessThan('date', endDate.getTime());
+    predicates.equalTo('deleted_at', 0);
     if (type.length > 0) {
       predicates.equalTo('type', type);
     }
@@ -316,7 +443,8 @@ export class BillManager {
         .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
           const categories: CategoryBean[] = await CategoryManager.getAllCategories();
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
+          const accounts: AccountBean[] = await AccountManager.getAccounts();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories, accounts);
           const groups: BillGroup[] = BillManager.groupBillsByDate(bills);
           const monthText: string =
             `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -338,6 +466,7 @@ export class BillManager {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.greaterThanOrEqualTo('date', startTime);
     predicates.lessThan('date', endTime);
+    predicates.equalTo('deleted_at', 0);
     if (type.length > 0) {
       predicates.equalTo('type', type);
     }
@@ -348,7 +477,8 @@ export class BillManager {
         .then(async (result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
           const categories: CategoryBean[] = await CategoryManager.getAllCategories();
-          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories);
+          const accounts: AccountBean[] = await AccountManager.getAccounts();
+          const bills: BillBean[] = BillManager.mapRowsToBills(rows, categories, accounts);
           resolve(bills);
         })
         .catch((err: BusinessError) => {

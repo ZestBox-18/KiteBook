@@ -9,12 +9,16 @@
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { BudgetBean } from 'base';
+import { BudgetBean, SyncStatusEnum } from 'base';
 
 const TAG: string = '[BudgetManager]';
 const TABLE_NAME: string = 'budgets';
 
 export class BudgetManager {
+  private static createLocalUuid(): string {
+    return `budget-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  }
+
   /**
    * 将查询结果行转换为预算实体。
    */
@@ -22,9 +26,15 @@ export class BudgetManager {
     return rows.map((row: Record<string, object>) => {
       const budget: BudgetBean = new BudgetBean();
       budget.id = Number(row['id']);
+      budget.uuid = String(row['uuid'] ?? '');
+      budget.remoteId = String(row['remote_id'] ?? '');
+      budget.ledgerId = Number(row['ledger_id'] ?? 1);
       budget.category = String(row['category']);
       budget.amount = Number(row['amount']);
       budget.month = String(row['month']);
+      budget.syncStatus = String(row['sync_status'] ?? SyncStatusEnum.PENDING);
+      budget.syncVersion = Number(row['sync_version'] ?? 0);
+      budget.deletedAt = Number(row['deleted_at'] ?? 0);
       budget.createdAt = Number(row['created_at']);
       budget.updatedAt = Number(row['updated_at']);
       return budget;
@@ -45,6 +55,7 @@ export class BudgetManager {
   static async getBudgetsByMonth(month: string): Promise<BudgetBean[]> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('month', month);
+    predicates.equalTo('deleted_at', 0);
     predicates.orderByAsc('id');
 
     return new Promise<BudgetBean[]>((resolve, reject) => {
@@ -65,6 +76,7 @@ export class BudgetManager {
    */
   static async getAllBudgets(): Promise<BudgetBean[]> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('deleted_at', 0);
     predicates.orderByAsc('month');
     predicates.orderByAsc('id');
 
@@ -88,6 +100,7 @@ export class BudgetManager {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('month', month);
     predicates.equalTo('category', category);
+    predicates.equalTo('deleted_at', 0);
 
     return new Promise<BudgetBean | null>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
@@ -145,9 +158,15 @@ export class BudgetManager {
   private static async addBudget(category: string, amount: number, month: string): Promise<number> {
     const now: number = Date.now();
     const data: relationalStore.ValuesBucket = {
+      uuid: BudgetManager.createLocalUuid(),
+      remote_id: '',
+      ledger_id: 1,
       category: category,
       amount: amount,
       month: month,
+      sync_status: SyncStatusEnum.PENDING,
+      sync_version: 0,
+      deleted_at: 0,
       created_at: now,
       updated_at: now
     };
@@ -172,6 +191,7 @@ export class BudgetManager {
     predicates.equalTo('id', id);
     const data: relationalStore.ValuesBucket = {
       amount: amount,
+      sync_status: SyncStatusEnum.PENDING,
       updated_at: Date.now()
     };
 
@@ -193,9 +213,15 @@ export class BudgetManager {
   private static async deleteBudget(id: number): Promise<number> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('id', id);
+    const now: number = Date.now();
+    const data: relationalStore.ValuesBucket = {
+      deleted_at: now,
+      updated_at: now,
+      sync_status: SyncStatusEnum.PENDING
+    };
 
     return new Promise<number>((resolve, reject) => {
-      dbManager.dbStore?.delete(predicates)
+      dbManager.dbStore?.update(data, predicates)
         .then((num: number) => {
           resolve(num);
         })

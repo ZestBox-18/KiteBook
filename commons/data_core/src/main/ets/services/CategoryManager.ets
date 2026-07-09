@@ -9,7 +9,7 @@
 import { dbManager, resultSet2Record, Clog } from 'kite_utils';
 import { relationalStore } from '@kit.ArkData';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { BillTypeEnum, CategoryBean } from 'base';
+import { BillTypeEnum, CategoryBean, SyncStatusEnum } from 'base';
 
 const TAG: string = '[CategoryManager]';
 const TABLE_NAME: string = 'categories';
@@ -32,6 +32,29 @@ class CategorySeed {
  * 分类数据库操作管理类，统一处理默认分类、查询以及新增编辑。
  */
 export class CategoryManager {
+  private static createLocalUuid(): string {
+    return `category-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  }
+
+  private static mapRowToCategory(row: Record<string, object>): CategoryBean {
+    const category: CategoryBean = new CategoryBean();
+    category.id = Number(row['id']);
+    category.uuid = String(row['uuid'] ?? '');
+    category.remoteId = String(row['remote_id'] ?? '');
+    category.ledgerId = Number(row['ledger_id'] ?? 1);
+    category.name = String(row['name']);
+    category.type = String(row['type']);
+    category.icon = String(row['icon']);
+    category.sortOrder = Number(row['sort_order']);
+    category.isSystem = Number(row['is_system']) === 1;
+    category.syncStatus = String(row['sync_status'] ?? SyncStatusEnum.PENDING);
+    category.syncVersion = Number(row['sync_version'] ?? 0);
+    category.deletedAt = Number(row['deleted_at'] ?? 0);
+    category.createdAt = Number(row['created_at']);
+    category.updatedAt = Number(row['updated_at']);
+    return category;
+  }
+
   /**
    * 构建默认分类列表，用于新用户首次建库时写入初始化数据。
    */
@@ -83,6 +106,7 @@ export class CategoryManager {
   static async getCategoriesByType(type: string): Promise<CategoryBean[]> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('type', type);
+    predicates.equalTo('deleted_at', 0);
     predicates.orderByAsc('sort_order');
     predicates.orderByAsc('id');
 
@@ -91,16 +115,7 @@ export class CategoryManager {
         .then((result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
           const categories: CategoryBean[] = rows.map((row: Record<string, object>) => {
-            const category: CategoryBean = new CategoryBean();
-            category.id = Number(row['id']);
-            category.name = String(row['name']);
-            category.type = String(row['type']);
-            category.icon = String(row['icon']);
-            category.sortOrder = Number(row['sort_order']);
-            category.isSystem = Number(row['is_system']) === 1;
-            category.createdAt = Number(row['created_at']);
-            category.updatedAt = Number(row['updated_at']);
-            return category;
+            return CategoryManager.mapRowToCategory(row);
           });
           Clog.info(TAG, `查询分类成功: type=${type}, count=${categories.length}`);
           resolve(categories);
@@ -117,6 +132,7 @@ export class CategoryManager {
    */
   static async getAllCategories(): Promise<CategoryBean[]> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
+    predicates.equalTo('deleted_at', 0);
     predicates.orderByAsc('type');
     predicates.orderByAsc('sort_order');
     predicates.orderByAsc('id');
@@ -126,16 +142,7 @@ export class CategoryManager {
         .then((result) => {
           const rows = resultSet2Record(result) as Record<string, object>[];
           const categories: CategoryBean[] = rows.map((row: Record<string, object>) => {
-            const category: CategoryBean = new CategoryBean();
-            category.id = Number(row['id']);
-            category.name = String(row['name']);
-            category.type = String(row['type']);
-            category.icon = String(row['icon']);
-            category.sortOrder = Number(row['sort_order']);
-            category.isSystem = Number(row['is_system']) === 1;
-            category.createdAt = Number(row['created_at']);
-            category.updatedAt = Number(row['updated_at']);
-            return category;
+            return CategoryManager.mapRowToCategory(row);
           });
           resolve(categories);
         })
@@ -152,6 +159,7 @@ export class CategoryManager {
   static async getCategoryById(id: number): Promise<CategoryBean | null> {
     const predicates = new relationalStore.RdbPredicates(TABLE_NAME);
     predicates.equalTo('id', id);
+    predicates.equalTo('deleted_at', 0);
 
     return new Promise<CategoryBean | null>((resolve, reject) => {
       dbManager.dbStore?.query(predicates)
@@ -161,17 +169,7 @@ export class CategoryManager {
             resolve(null);
             return;
           }
-          const row: Record<string, object> = rows[0];
-          const category: CategoryBean = new CategoryBean();
-          category.id = Number(row['id']);
-          category.name = String(row['name']);
-          category.type = String(row['type']);
-          category.icon = String(row['icon']);
-          category.sortOrder = Number(row['sort_order']);
-          category.isSystem = Number(row['is_system']) === 1;
-          category.createdAt = Number(row['created_at']);
-          category.updatedAt = Number(row['updated_at']);
-          resolve(category);
+          resolve(CategoryManager.mapRowToCategory(rows[0]));
         })
         .catch((err: BusinessError) => {
           console.error(`${TAG} 查询分类详情失败, code=${err.code}, msg=${err.message}`);
@@ -188,11 +186,17 @@ export class CategoryManager {
     const categories: CategoryBean[] = await CategoryManager.getCategoriesByType(type);
     const sortOrder: number = categories.length;
     const data: relationalStore.ValuesBucket = {
+      uuid: CategoryManager.createLocalUuid(),
+      remote_id: '',
+      ledger_id: 1,
       name: name,
       type: type,
       icon: icon,
       sort_order: sortOrder,
       is_system: 0,
+      sync_status: SyncStatusEnum.PENDING,
+      sync_version: 0,
+      deleted_at: 0,
       created_at: now,
       updated_at: now
     };
@@ -222,6 +226,7 @@ export class CategoryManager {
       return -1;
     }
     const data: relationalStore.ValuesBucket = {
+      sync_status: SyncStatusEnum.PENDING,
       updated_at: Date.now()
     };
     if (patch.name !== undefined) {
@@ -268,6 +273,7 @@ export class CategoryManager {
     predicates.equalTo('id', id);
     const data: relationalStore.ValuesBucket = {
       name: name,
+      sync_status: SyncStatusEnum.PENDING,
       updated_at: Date.now()
     };
 
@@ -307,6 +313,7 @@ export class CategoryManager {
     predicates.equalTo('id', id);
     const data: relationalStore.ValuesBucket = {
       sort_order: sortOrder,
+      sync_status: SyncStatusEnum.PENDING,
       updated_at: Date.now()
     };
 
@@ -331,6 +338,7 @@ export class CategoryManager {
     predicates.equalTo('type', category.type);
     const data: relationalStore.ValuesBucket = {
       category: nextName,
+      sync_status: SyncStatusEnum.PENDING,
       updated_at: Date.now()
     };
 
@@ -362,11 +370,17 @@ export class CategoryManager {
   private static async addSeedCategory(category: CategoryBean): Promise<void> {
     const now: number = Date.now();
     const data: relationalStore.ValuesBucket = {
+      uuid: category.uuid.length > 0 ? category.uuid : CategoryManager.createLocalUuid(),
+      remote_id: category.remoteId,
+      ledger_id: category.ledgerId,
       name: category.name,
       type: category.type,
       icon: category.icon,
       sort_order: category.sortOrder,
       is_system: category.isSystem ? 1 : 0,
+      sync_status: category.syncStatus,
+      sync_version: category.syncVersion,
+      deleted_at: 0,
       created_at: now,
       updated_at: now
     };

@@ -11,15 +11,29 @@ export enum AccountTypeEnum {
   LIABILITY = 'liability'
 }
 
+export enum AccountOwnerTypeEnum {
+  USER = 'user',
+  LEDGER = 'ledger'
+}
+
 /**
  * 账户数据实体，负责承载数据库中的账户记录。
  */
 export class AccountBean {
   id: number = 0;
+  uuid: string = '';
+  remoteId: string = '';
   name: string = '';
   balance: number = 0;
   type: string = AccountTypeEnum.ASSET;
   icon: string = 'creditcard';
+  ownerType: string = AccountOwnerTypeEnum.USER;
+  ownerId: string = 'local_user';
+  ledgerId: number = 1;
+  currency: string = 'CNY';
+  syncStatus: string = 'pending';
+  syncVersion: number = 0;
+  deletedAt: number = 0;
   createdAt: number = 0;
   updatedAt: number = 0;
 

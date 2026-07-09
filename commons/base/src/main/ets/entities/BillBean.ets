@@ -20,14 +20,27 @@ export enum BillTypeEnum {
  */
 export class BillBean {
   id: number = 0;
+  uuid: string = '';
+  remoteId: string = '';
+  ledgerId: number = 1;
   type: string = BillTypeEnum.EXPENSE;
   category: string = '';
   categoryIconKey: string = '';
   amount: number = 0;
   account: string = '';
+  accountId: number = 0;
   targetAccount: string = '';
+  targetAccountId: number = 0;
+  paidByMemberId: number = 1;
+  createdByMemberId: number = 1;
+  splitMode: string = 'none';
+  affectAsset: boolean = true;
+  currency: string = 'CNY';
   date: number = 0;
   remark: string = '';
+  syncStatus: string = 'pending';
+  syncVersion: number = 0;
+  deletedAt: number = 0;
   createdAt: number = 0;
   updatedAt: number = 0;
 
