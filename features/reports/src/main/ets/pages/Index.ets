@@ -7,8 +7,16 @@
  */
 
 import { hdsMaterial, HdsNavigation, ScrollEffectType } from '@kit.UIDesignKit';
-import { AppThemeState, BillBean, BillTypeEnum, CommonConstants, billSyncController } from 'base';
-import { BillManager } from 'data_core';
+import {
+  AppThemeState,
+  BillBean,
+  BillTypeEnum,
+  BudgetBean,
+  CommonConstants,
+  budgetSyncController,
+  billSyncController
+} from 'base';
+import { BillManager, BudgetManager } from 'data_core';
 import { AppStorageV2, LengthMetrics } from '@kit.ArkUI';
 import { CapsuleSegmentButtonV2, SegmentButtonV2Items } from '@ohos.arkui.advanced.SegmentButtonV2';
 import { ColorMetrics } from '@ohos.arkui.node';
@@ -105,6 +113,8 @@ export struct Index {
   @Local totalBillCount: number = 0;
   @Local autoBillCount: number = 0;
   @Local pendingCount: number = 0;
+  @Local totalMonthBudget: number = 0;
+  @Local budgetCategoryCount: number = 0;
   @Local trendPoints: ReportTrendPoint[] = [];
   @Local categoryInsights: CategoryInsight[] = [];
   @Local channelShares: ChannelShare[] = [];
@@ -115,6 +125,7 @@ export struct Index {
   @Local selectedDateBills: BillBean[] = [];
 
   private billSyncListenerId: number = -1;
+  private budgetSyncListenerId: number = -1;
   private trendSettings: RenderingContextSettings = new RenderingContextSettings(true);
   private trendContext: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.trendSettings);
   private donutSettings: RenderingContextSettings = new RenderingContextSettings(true);
@@ -135,6 +146,11 @@ export struct Index {
         this.loadReportData();
       });
     }
+    if (this.budgetSyncListenerId < 0) {
+      this.budgetSyncListenerId = budgetSyncController.register(() => {
+        this.loadReportData();
+      });
+    }
     this.loadReportData();
   }
 
@@ -142,6 +158,10 @@ export struct Index {
     if (this.billSyncListenerId >= 0) {
       billSyncController.unregister(this.billSyncListenerId);
       this.billSyncListenerId = -1;
+    }
+    if (this.budgetSyncListenerId >= 0) {
+      budgetSyncController.unregister(this.budgetSyncListenerId);
+      this.budgetSyncListenerId = -1;
     }
   }
 
@@ -159,12 +179,27 @@ export struct Index {
     try {
       const startTime: number = this.getRangeStartTime();
       const endTime: number = this.getRangeEndTime();
-      const bills: BillBean[] = await BillManager.getBillsByRange(startTime, endTime, '');
-      this.rebuildReportData(bills);
+      const result: [BillBean[], BudgetBean[]] = await Promise.all([
+        BillManager.getBillsByRange(startTime, endTime, ''),
+        BudgetManager.getBudgetsByMonth(BudgetManager.buildMonthKey(this.monthAnchor))
+      ]);
+      this.rebuildReportData(result[0]);
+      this.rebuildBudgetSummary(result[1]);
     } catch (err) {
       Clog.error(TAG, '加载报表数据失败', err);
       this.rebuildReportData([]);
+      this.totalMonthBudget = 0;
+      this.budgetCategoryCount = 0;
     }
+  }
+
+  private rebuildBudgetSummary(budgets: BudgetBean[]): void {
+    let totalBudget: number = 0;
+    budgets.forEach((budget: BudgetBean) => {
+      totalBudget += budget.amount;
+    });
+    this.totalMonthBudget = totalBudget;
+    this.budgetCategoryCount = budgets.length;
   }
 
   private rebuildReportData(bills: BillBean[]): void {
@@ -641,6 +676,9 @@ export struct Index {
             this.CalendarReportContent()
           } else {
             this.TrendCard()
+            if (this.periodIndex === PERIOD_MONTH) {
+              this.BudgetExecutionCard()
+            }
             this.CategoryCard()
             this.AiInsightCard()
             this.ChannelCard()
@@ -1164,6 +1202,44 @@ export struct Index {
     .padding(16)
     .borderRadius(CARD_RADIUS)
     .backgroundColor(this.themeState.compBackgroundPrimary)
+  }
+
+  @Builder
+  private BudgetExecutionCard() {
+    Column({ space: 14 }) {
+      this.SectionTitle($r('sys.symbol.list_bullet'), '本月预算执行', this.themeState.brand as ResourceColor)
+      if (this.totalMonthBudget <= 0) {
+        this.EmptyHint('本月还没有设置分类预算')
+      } else {
+        Row() {
+          this.SummaryMetric('总预算', this.getAmountText(this.totalMonthBudget), this.themeState.fontPrimary)
+          Divider().vertical(true).height(40).color(this.themeState.compDivider)
+          this.SummaryMetric('已支出', this.getAmountText(this.totalExpense), EXPENSE_COLOR)
+          Divider().vertical(true).height(40).color(this.themeState.compDivider)
+          this.SummaryMetric('剩余', this.getAmountText(this.totalMonthBudget - this.totalExpense, true),
+            this.totalMonthBudget >= this.totalExpense ? INCOME_COLOR : WARNING_COLOR)
+        }
+        .width('100%')
+        Progress({ value: Math.min(this.totalExpense, this.totalMonthBudget), total: this.totalMonthBudget,
+          type: ProgressType.Linear })
+          .width('100%').height(8)
+          .color(this.totalExpense > this.totalMonthBudget ? WARNING_COLOR : this.themeState.brand)
+          .backgroundColor(this.themeState.compDivider)
+        Row() {
+          Text(`已用 ${this.getBudgetUsagePercent()}%`).fontSize(12).fontColor(this.themeState.fontSecondary)
+          Blank()
+          Text(`${this.budgetCategoryCount} 个分类已设预算`).fontSize(12).fontColor(this.themeState.fontSecondary)
+        }.width('100%')
+      }
+    }
+    .width('100%').padding(16).borderRadius(CARD_RADIUS).backgroundColor(this.themeState.compBackgroundPrimary)
+  }
+
+  private getBudgetUsagePercent(): string {
+    if (this.totalMonthBudget <= 0) {
+      return '0';
+    }
+    return (this.totalExpense / this.totalMonthBudget * 100).toFixed(0);
   }
 
   @Builder

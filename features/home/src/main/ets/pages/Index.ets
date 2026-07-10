@@ -11,6 +11,7 @@ import {
   AppThemeState,
   BillBean,
   BillGroup,
+  budgetSyncController,
   billSyncController,
   CommonConstants,
   RouterUrlConstants,
@@ -70,6 +71,7 @@ export struct Index {
 
   private overviewIndicatorController: IndicatorComponentController = new IndicatorComponentController();
   private billSyncListenerId: number = -1;
+  private budgetSyncListenerId: number = -1;
 
   /**
    * 根据导航路由名映射到首页可跳转的子页面。
@@ -284,6 +286,11 @@ export struct Index {
         await this.loadBudgetData();
       })
     }
+    if (this.budgetSyncListenerId < 0) {
+      this.budgetSyncListenerId = budgetSyncController.register(() => {
+        this.loadBudgetData();
+      });
+    }
     this.refreshStaticDerivedState();
     this.loadBillData();
     this.loadBudgetData();
@@ -296,6 +303,10 @@ export struct Index {
     if (this.billSyncListenerId >= 0) {
       billSyncController.unregister(this.billSyncListenerId)
       this.billSyncListenerId = -1
+    }
+    if (this.budgetSyncListenerId >= 0) {
+      budgetSyncController.unregister(this.budgetSyncListenerId);
+      this.budgetSyncListenerId = -1;
     }
   }
 

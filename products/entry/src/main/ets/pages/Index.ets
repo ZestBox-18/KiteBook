@@ -9,6 +9,7 @@ import { hdsMaterial, HdsAnimationMode, HdsTabs } from '@kit.UIDesignKit';
 import {
   billSyncController,
   CommonConstants,
+  FabVisibilityState,
   mainTabController,
   RouterUrlConstants,
   SystemOptions,
@@ -33,7 +34,10 @@ struct Index {
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!
   @Local isBillingSheetShown: boolean = false
   @Local currentTabIndex: number = 0
+  @Local isMainPageVisible: boolean = true
   @Local pageInfos: NavPathStack = new NavPathStack()
+  @Local fabVisibilityState: FabVisibilityState =
+    AppStorageV2.connect(FabVisibilityState, 'fabVisibilityState', () => new FabVisibilityState())!;
   // 断点系统
   @Local breakpointSystem: BreakpointSystem =
     AppStorageV2.connect(BreakpointSystem, 'breakpointSystem', () => new BreakpointSystem())!;
@@ -234,7 +238,7 @@ struct Index {
         .width('100%')
         .height('100%')
 
-        if (this.currentTabIndex !== 3) {
+        if (this.currentTabIndex !== 3 && this.isMainPageVisible && this.fabVisibilityState.visible) {
           this.AddBillFabBuilder()
         }
       }
@@ -245,6 +249,9 @@ struct Index {
     .height('100%')
     .mode(NavigationMode.Stack)
     .hideTitleBar(true)
+    .onNavBarStateChange((isVisible: boolean) => {
+      this.isMainPageVisible = isVisible;
+    })
     .navDestination(this.PagesMap)
   }
 }
