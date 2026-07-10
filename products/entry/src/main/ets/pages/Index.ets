@@ -167,7 +167,6 @@ struct Index {
     .bindSheet($$this.isBillingSheetShown, this.AddBillSheetBuilder(), {
       detents: [SheetSize.LARGE],
       preferType: SheetType.BOTTOM,
-      title: { title: '记一笔' },
       showClose: false,
       enableFloatingDragBar: true,
     })

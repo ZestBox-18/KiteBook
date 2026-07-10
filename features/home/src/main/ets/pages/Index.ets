@@ -501,9 +501,8 @@ export struct Index {
     .bindSheet($$this.isBillEditorVisible, this.BillEditorSheetBuilder(), {
       detents: [SheetSize.LARGE],
       preferType: SheetType.BOTTOM,
-      title: {
-        title: '编辑账单'
-      }
+      showClose: false,
+      enableFloatingDragBar: true,
     })
   }
 
