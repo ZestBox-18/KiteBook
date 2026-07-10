@@ -419,15 +419,19 @@ SettingsPage
 {
   @
   Local
-  option_system: SystemOptions =
+  optionSystem: SystemOptions =
     PersistenceV2.connect(SystemOptions, 'SystemOptions', () => new SystemOptions())!;
 
   build()
   {
-    // 修改 option_system.theme 等属性会自动保存
+    // 修改 optionSystem.theme 等 @Trace 属性会自动保存
   }
 }
 ```
+
+设置项命名统一使用 `optionSystem`，不要再使用 `option_system`。`SystemOptions` 这类通过 `@ObservedV2 + @Trace + PersistenceV2.connect`
+管理的设置对象，字段变更会跟随 `PersistenceV2` 持久化；不要额外在实体里添加 `@Monitor + DebounceManager + PersistenceV2.save`
+做重复保存。页面中修改 `optionSystem.xxx` 后也不需要再手动调用 `PersistenceV2.save('SystemOptions')`，除非后续官方 API 或业务批处理方案明确要求手动落盘。
 
 ### 日志规范
 

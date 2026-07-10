@@ -327,7 +327,6 @@ export struct DataExport {
       await this.restoreSnapshot(payload);
       this.optionSystem.updateFromData(payload.settings);
       this.userProfile.updateFromData(payload.userProfile);
-      PersistenceV2.save('SystemOptions');
       PersistenceV2.save('UserProfile');
       billSyncController.notifyBillChanged();
       this.lastImportSummary =

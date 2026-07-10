@@ -132,7 +132,6 @@ export struct LogRecording {
       return;
     }
     this.optionSystem.logRecording = isOn;
-    PersistenceV2.save('SystemOptions');
     if (isOn) {
       Clog.enableSave();
       Clog.info(TAG, '详细日志记录已开启');

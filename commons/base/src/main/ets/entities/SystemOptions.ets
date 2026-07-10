@@ -6,12 +6,6 @@
  * @description: 系统设置项
  */
 
-import { DebounceManager } from '../utils/DebounceManager';
-import { PersistenceV2 } from '@kit.ArkUI';
-
-const TAG: string = '[SystemOptions]';
-
-
 @ObservedV2
 export class SystemOptions {
   // 首次运行
@@ -38,8 +32,8 @@ export class SystemOptions {
   @Trace logRecording: boolean = false
 
   /**
-   * 从另一个 SystemOptions 对象更新当前实例的所有属性
-   * 这种逐一赋值的方式确保触发 @Trace 装饰器的监听器，从而触发持久化存储
+   * 从另一个 SystemOptions 对象更新当前实例的所有属性。
+   * 逐一赋值可以触发 @Trace 关联的 PersistenceV2 持久化更新。
    * @param data 源 SystemOptions 对象
    */
   updateFromData(data: SystemOptions): void {
@@ -54,24 +48,5 @@ export class SystemOptions {
     this.weeklyMonthlyReportEnabled = data.weeklyMonthlyReportEnabled
     this.darkMode = data.darkMode
     this.logRecording = data.logRecording
-  }
-
-  @Monitor(
-    'firstStart',
-    'themeIndex',
-    'fontThickness',
-    'iconThickness',
-    'notificationEnabled',
-    'billReminderEnabled',
-    'budgetAlertEnabled',
-    'dailyReminderEnabled',
-    'weeklyMonthlyReportEnabled',
-    'darkMode',
-    'logRecording'
-  )
-  onDataChange(monitor: IMonitor) {
-    DebounceManager.getInstance().execute('SystemOptions', () => {
-      PersistenceV2.save('SystemOptions')
-    }, 300)
   }
 }
