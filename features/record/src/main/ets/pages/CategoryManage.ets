@@ -9,23 +9,36 @@
 import { hdsMaterial, HdsAnimationMode, HdsNavDestination, ScrollEffectType } from '@kit.UIDesignKit';
 import { AppStorageV2, LengthMetrics, PersistenceV2 } from '@kit.ArkUI';
 import { AppThemeState, BillTypeEnum, CategoryBean, CommonConstants, SystemOptions, mainTabController } from 'base';
-import { CategoryManager } from 'data_core';
+import { CategoryManager, CategoryUpdatePatch } from 'data_core';
 import { Clog, WindowUtil } from 'kite_utils';
 
 const TAG: string = '[CategoryManage]';
 const CATEGORY_CARD_SIZE: number = 44;
+const CATEGORY_ICON_CELL_HEIGHT: number = 62;
 
 class CategoryOption {
   id: number = 0;
   label: string = '';
+  iconKey: string = 'ellipsis_circle';
   icon: Resource = $r('sys.symbol.ellipsis_circle');
   isSystem: boolean = false;
 
-  constructor(id: number, label: string, icon: Resource, isSystem: boolean) {
+  constructor(id: number, label: string, iconKey: string, icon: Resource, isSystem: boolean) {
     this.id = id;
     this.label = label;
+    this.iconKey = iconKey;
     this.icon = icon;
     this.isSystem = isSystem;
+  }
+}
+
+class CategoryIconOption {
+  key: string = 'ellipsis_circle';
+  icon: Resource = $r('sys.symbol.ellipsis_circle');
+
+  constructor(key: string, icon: Resource) {
+    this.key = key;
+    this.icon = icon;
   }
 }
 
@@ -43,13 +56,28 @@ export struct CategoryManage {
   @Local isEditingCategory: boolean = false;
   @Local editingCategoryId: number = 0;
   @Local categoryDraftLabel: string = '';
+  @Local categoryDraftIconKey: string = 'ellipsis_circle';
+  private readonly iconOptions: CategoryIconOption[] = [
+    new CategoryIconOption('fork_knife', $r('sys.symbol.fork_knife')),
+    new CategoryIconOption('car', $r('sys.symbol.car')),
+    new CategoryIconOption('cart', $r('sys.symbol.cart')),
+    new CategoryIconOption('gamecontroller', $r('sys.symbol.gamecontroller')),
+    new CategoryIconOption('house', $r('sys.symbol.house')),
+    new CategoryIconOption('cross_case', $r('sys.symbol.cross_case')),
+    new CategoryIconOption('book', $r('sys.symbol.book')),
+    new CategoryIconOption('creditcard', $r('sys.symbol.creditcard')),
+    new CategoryIconOption('gift', $r('sys.symbol.gift')),
+    new CategoryIconOption('arrow_up_circle', $r('sys.symbol.arrow_up_circle')),
+    new CategoryIconOption('arrow_left_arrow_right', $r('sys.symbol.arrow_left_arrow_right')),
+    new CategoryIconOption('ellipsis_circle', $r('sys.symbol.ellipsis_circle'))
+  ];
 
   aboutToAppear(): void {
     this.loadCategories();
   }
 
   private buildCategoryOption(category: CategoryBean): CategoryOption {
-    return new CategoryOption(category.id, category.name, category.getIconResource(), category.isSystem);
+    return new CategoryOption(category.id, category.name, category.icon, category.getIconResource(), category.isSystem);
   }
 
   private async loadCategories(): Promise<void> {
@@ -83,6 +111,7 @@ export struct CategoryManage {
     this.isEditingCategory = false;
     this.editingCategoryId = 0;
     this.categoryDraftLabel = '';
+    this.categoryDraftIconKey = 'ellipsis_circle';
     this.isEditorVisible = true;
   }
 
@@ -94,12 +123,14 @@ export struct CategoryManage {
     this.isEditingCategory = true;
     this.editingCategoryId = item.id;
     this.categoryDraftLabel = item.label;
+    this.categoryDraftIconKey = item.iconKey;
     this.isEditorVisible = true;
   }
 
   private closeEditor(): void {
     this.categoryDraftLabel = '';
     this.editingCategoryId = 0;
+    this.categoryDraftIconKey = 'ellipsis_circle';
     this.isEditorVisible = false;
   }
 
@@ -130,9 +161,12 @@ export struct CategoryManage {
           this.showToast('当前分类不可编辑');
           return;
         }
-        await CategoryManager.updateCategoryName(this.editingCategoryId, draftLabel);
+        const patch: CategoryUpdatePatch = new CategoryUpdatePatch();
+        patch.name = draftLabel;
+        patch.icon = this.categoryDraftIconKey;
+        await CategoryManager.updateCategory(this.editingCategoryId, patch);
       } else {
-        await CategoryManager.addCategory(draftLabel, this.manageType, 'ellipsis_circle');
+        await CategoryManager.addCategory(draftLabel, this.manageType, this.categoryDraftIconKey);
       }
       this.closeEditor();
       await this.loadCategories();
@@ -172,6 +206,16 @@ export struct CategoryManage {
     }
   }
 
+  private getDraftIconResource(): Resource {
+    let selectedIcon: Resource = $r('sys.symbol.ellipsis_circle');
+    this.iconOptions.forEach((item: CategoryIconOption) => {
+      if (item.key === this.categoryDraftIconKey) {
+        selectedIcon = item.icon;
+      }
+    });
+    return selectedIcon;
+  }
+
   build() {
     HdsNavDestination() {
       Column() {
@@ -186,12 +230,6 @@ export struct CategoryManage {
             this.TypeSegment()
           }
 
-          if (this.isEditorVisible) {
-            ListItem() {
-              this.EditorCard()
-            }
-          }
-
           ListItem() {
             this.CategoryGridCard()
           }
@@ -204,7 +242,7 @@ export struct CategoryManage {
       }
       .width('100%')
       .height('100%')
-      .backgroundColor(this.themeState.backgroundPrimary)
+      .backgroundColor($r('[shared_assets].color.title_bar_bg'))
     }
     .titleBar({
       padding: {
@@ -221,6 +259,32 @@ export struct CategoryManage {
         systemMaterialEffect: {
           materialType: hdsMaterial.MaterialType.ADAPTIVE,
           materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+        },
+        originalStyle: {
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
+            }
+          }
+        },
+        scrollEffectStyle: {
+          backgroundStyle: { backgroundColor: $r('[shared_assets].color.title_bar_bg') },
+          contentStyle: {
+            titleStyle: {
+              mainTitleColor: $r('[shared_assets].color.text_primary'),
+              subTitleColor: $r('[shared_assets].color.text_secondary')
+            },
+            backIconStyle: {
+              backgroundColor: $r('[shared_assets].color.action_bg'),
+              iconColor: $r('[shared_assets].color.text_primary')
+            }
+          }
         }
       },
       content: {
@@ -230,6 +294,12 @@ export struct CategoryManage {
         }
       },
       avoidLayoutSafeArea: true
+    })
+    .bindSheet($$this.isEditorVisible, this.CategoryEditorSheet(), {
+      height: 440,
+      preferType: SheetType.BOTTOM,
+      showClose: false,
+      enableFloatingDragBar: true
     })
     .onReady((context: NavDestinationContext) => {
       this.pageInfos = context.pathStack;
@@ -284,30 +354,63 @@ export struct CategoryManage {
   }
 
   @Builder
-  private EditorCard() {
+  private CategoryEditorSheet() {
     Column({ space: 12 }) {
-      Text(this.isEditingCategory ? '编辑自定义分类' : '添加自定义分类')
-        .fontSize(15)
+      Text(this.isEditingCategory ? '编辑分类' : '添加分类')
+        .width('100%')
+        .fontSize(18)
         .fontWeight(FontWeight.Bold)
         .fontColor(this.themeState.fontPrimary)
-        .width('100%')
+        .margin({ bottom: 6 })
 
-      TextInput({
-        text: this.categoryDraftLabel,
-        placeholder: '不能与已有分类名称重复'
-      })
-        .maxLength(6)
-        .showCounter(true)
-        .height(48)
-        .fontSize(15)
-        .fontColor(this.themeState.fontPrimary)
-        .placeholderColor(this.themeState.fontSecondary)
-        .backgroundColor(this.themeState.backgroundPrimary)
-        .borderRadius(14)
-        .padding({ left: 14, right: 14 })
-        .onChange((value: string) => {
-          this.categoryDraftLabel = value;
+      Row({ space: 12 }) {
+        Row() {
+          SymbolGlyph(this.getDraftIconResource())
+            .fontSize(25)
+            .fontWeight(this.optionSystem.iconThickness)
+            .fontColor([this.themeState.brand as ResourceColor])
+        }
+        .width(50)
+        .height(50)
+        .justifyContent(FlexAlign.Center)
+        .borderRadius(25)
+        .backgroundColor(this.themeState.compBackgroundPrimary)
+        .border({ width: 1, color: this.themeState.compDivider })
+
+        TextInput({
+          text: this.categoryDraftLabel,
+          placeholder: '不能与已有分类名称重复'
         })
+          .maxLength(6)
+          .showCounter(true)
+          .height(50)
+          .fontSize(16)
+          .fontColor(this.themeState.fontPrimary)
+          .placeholderColor(this.themeState.fontSecondary)
+          .backgroundColor(this.themeState.compBackgroundPrimary)
+          .borderRadius(16)
+          .padding({ left: 14, right: 14 })
+          .layoutWeight(1)
+          .onChange((value: string) => {
+            this.categoryDraftLabel = value;
+          })
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Top)
+
+      Grid() {
+        ForEach(this.iconOptions, (item: CategoryIconOption) => {
+          GridItem() {
+            this.CategoryIconCell(item)
+          }
+        }, (item: CategoryIconOption) => item.key)
+      }
+      .width('100%')
+      .height(134)
+      .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr')
+      .rowsGap(10)
+      .columnsGap(10)
+      .margin({ top: 4, bottom: 4 })
 
       Row({ space: 10 }) {
         Button('取消')
@@ -336,10 +439,33 @@ export struct CategoryManage {
       }
     }
     .width('100%')
-    .padding(14)
-    .backgroundColor(this.themeState.compBackgroundPrimary)
+    .height('100%')
+    .padding({ left: 20, right: 20, top: 24, bottom: this.winUtil.mainWindowInfo.navIndicatorHeight + 16 })
+    .backgroundColor($r('[shared_assets].color.title_bar_bg'))
+  }
+
+  @Builder
+  private CategoryIconCell(item: CategoryIconOption) {
+    Row() {
+      SymbolGlyph(item.icon)
+        .fontSize(22)
+        .fontWeight(this.optionSystem.iconThickness)
+        .fontColor([this.categoryDraftIconKey === item.key ? this.themeState.fontOnPrimary as ResourceColor :
+          this.themeState.brand as ResourceColor])
+    }
+    .width('100%')
+    .height(CATEGORY_ICON_CELL_HEIGHT)
+    .justifyContent(FlexAlign.Center)
     .borderRadius(16)
-    .border({ width: 1, color: this.themeState.compDivider })
+    .backgroundColor(this.categoryDraftIconKey === item.key ? this.themeState.brand as ResourceColor :
+      this.themeState.compBackgroundPrimary)
+    .border({
+      width: 1,
+      color: this.categoryDraftIconKey === item.key ? this.themeState.brand as ResourceColor : this.themeState.compDivider
+    })
+    .onClick(() => {
+      this.categoryDraftIconKey = item.key;
+    })
   }
 
   @Builder

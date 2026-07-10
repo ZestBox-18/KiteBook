@@ -29,6 +29,15 @@ class CategorySeed {
 }
 
 /**
+ * 分类更新补丁。只填写需要变更的字段，避免页面直接依赖数据库列名。
+ */
+export class CategoryUpdatePatch {
+  name?: string;
+  icon?: string;
+  sortOrder?: number;
+}
+
+/**
  * 分类数据库操作管理类，统一处理默认分类、查询以及新增编辑。
  */
 export class CategoryManager {
@@ -220,7 +229,7 @@ export class CategoryManager {
   /**
    * 更新分类名称或图标，保持更新时间与数据库一致。
    */
-  static async updateCategory(id: number, patch: Partial<CategoryBean>): Promise<number> {
+  static async updateCategory(id: number, patch: CategoryUpdatePatch): Promise<number> {
     const originalCategory: CategoryBean | null = await CategoryManager.getCategoryById(id);
     if (originalCategory === null) {
       return -1;
